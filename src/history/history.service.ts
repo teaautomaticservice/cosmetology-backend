@@ -62,7 +62,7 @@ export class HistoryService {
   }
 
   updateHistory(currentId: string, messageReq: MessageDto) {
-    const formattedCurrentId = parseInt(currentId)
+    const formattedCurrentId = parseInt(currentId);
     const indexItem = this.historyList.findIndex(({id}) => id === formattedCurrentId)
 
     console.log(indexItem);
@@ -83,8 +83,10 @@ export class HistoryService {
     return this.getHistoryList();
   }
 
-  removeHistory(id: string) {
-    this.historyList.splice(parseInt(id), 1);
+  removeHistory(currentId: string) {
+    const formattedCurrentId = parseInt(currentId);
+    const indexItem = this.historyList.findIndex(({id}) => id === formattedCurrentId)
+    this.historyList.splice(indexItem, 1);
 
     return this.getHistoryList();
   }
