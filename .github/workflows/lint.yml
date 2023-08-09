@@ -1,14 +1,9 @@
-name: Server
+name: Lint
 
-on:
-  push:
-  pull_request:
-    branches: 
-      - main
-    types: [closed]
+on: push
 
 jobs:
-  nest:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -19,7 +14,15 @@ jobs:
           node-version: '20.4.0'
       - name: Install deps
         run: npm ci
-      - name: Server build
-        run: npm run build
-      - name: Server start
-        run: npm run start:prod
+  lint:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Lint
+        run: npm run lint
+  test:
+    needs: [lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test
+        run: npm run test
