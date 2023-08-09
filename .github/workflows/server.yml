@@ -7,12 +7,16 @@ on:
     types: [closed]
 
 jobs:
-  server:
+  nest:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-      uses: actions/checkout@v3
+      - name: Checkout branch
+        uses: actions/checkout@v3
+      - name: Use node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.4.0'
       - name: Install deps
-      run: npm ci
+        run: npm ci
       - name: Server start
-      run: npm start:prod 
+        run: npm start:prod
