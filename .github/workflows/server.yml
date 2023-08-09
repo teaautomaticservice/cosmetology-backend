@@ -1,13 +1,14 @@
 name: Server
 
 on:
+  push:
   pull_request:
     branches: 
       - main
     types: [closed]
 
 jobs:
-  server:
+  nest:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
