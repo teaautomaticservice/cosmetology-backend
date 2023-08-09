@@ -6,6 +6,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
       - name: Prepare
         uses: ./.github/template/build
       - name: Lint
@@ -14,6 +16,8 @@ jobs:
     needs: [lint]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
       - name: Prepare
         uses: ./.github/template/build
       - name: Test
