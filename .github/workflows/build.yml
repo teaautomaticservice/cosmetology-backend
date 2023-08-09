@@ -16,10 +16,11 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           file: Dockerfile
+          load: true
           push: false
-          tags: user/app:latest
+          tags: user/nest-server:latest
       - name: Run
         uses: tj-actions/docker-run@v2
         with:
-          image: user/nest-server
+          image: user/nest-server:latest
           name: nest-server
