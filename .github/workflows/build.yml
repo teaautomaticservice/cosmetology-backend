@@ -18,6 +18,15 @@ jobs:
           file: Dockerfile
           push: true
           tags: dahakalab/cosmetology-backend:latest
-      - name: Run Docker
-        run: ./.github/scripts/repull-docker-img.sh
+      - name: Stop Docker container
+        run: docker stop nest-server
+        shell: bash
+      - name: Remove Docker img
+        run: docker rmi dahakalab/cosmetology-backend:latest
+        shell: bash
+      - name: Pull Docker img
+        run: docker image pull dahakalab/cosmetology-backend:latest
+        shell: bash
+      - name: Start Docker img
+        run: docker run -d --rm --name nest-server -p 3000:3000 dahakalab/cosmetology-backend:latest
         shell: bash
