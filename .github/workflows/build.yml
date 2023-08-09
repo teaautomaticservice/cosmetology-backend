@@ -18,12 +18,3 @@ jobs:
           file: Dockerfile
           push: true
           tags: dahakalab/cosmetology-backend:latest
-      - name: Stop Docker container
-        run: docker stop cosmetology-server
-        shell: bash
-      - name: Pull Docker img
-        run: docker image pull dahakalab/cosmetology-backend:latest
-        shell: bash
-      - name: Start Docker img
-        run: docker run -d --rm --name cosmetology-server-p 3000:3000 dahakalab/cosmetology-backend:latest
-        shell: bash
