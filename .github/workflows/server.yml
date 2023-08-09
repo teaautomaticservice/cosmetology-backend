@@ -1,0 +1,18 @@
+name: Server
+
+on:
+  pull_request:
+    branches: 
+      - main
+    types: [closed]
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+      uses: actions/checkout@v3
+      - name: Install deps
+      run: npm ci
+      - name: Server start
+      run: npm start:prod 
