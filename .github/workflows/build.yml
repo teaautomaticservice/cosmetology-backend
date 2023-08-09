@@ -17,4 +17,4 @@ jobs:
         with:
           file: Dockerfile
           push: true
-          tags: user/nest-server:latest
+          tags: dahakalab/cosmetology-backend:latest
