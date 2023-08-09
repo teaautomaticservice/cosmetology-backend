@@ -1,9 +1,9 @@
-import type { ID } from "./history.typings";
+import type { ID } from './history.typings';
 
-import { Injectable } from "@nestjs/common";
+import { Injectable } from '@nestjs/common';
 
-import { MessageDto } from "./dto/message.dto";
-import { HistoryDto } from "./dto/history.dto";
+import { MessageDto } from './dto/message.dto';
+import { HistoryDto } from './dto/history.dto';
 
 @Injectable()
 export class HistoryService {
@@ -11,9 +11,9 @@ export class HistoryService {
     {
       id: 0,
       date: new Date(),
-      message: "Server initialized!",
-      owner: "Server",
-    }
+      message: 'Server initialized!',
+      owner: 'Server',
+    },
   ];
 
   private get itemsCount() {
@@ -25,8 +25,8 @@ export class HistoryService {
       id: id,
       date: new Date(),
       message,
-      owner: "Owner",
-    })
+      owner: 'Owner',
+    });
   }
 
   private getMessage(messageReq: MessageDto) {
@@ -40,8 +40,8 @@ export class HistoryService {
         pagination: {
           itemsCount: this.itemsCount,
           itemsCurrent: [0, this.itemsCount],
-        }
-      }
+        },
+      },
     };
 
     return formattedHistoryList;
@@ -57,13 +57,17 @@ export class HistoryService {
   }
 
   findHistory(currentId: string) {
-    const fundedItem = this.historyList.find(({id}) => (id === parseInt(currentId)));
+    const fundedItem = this.historyList.find(
+      ({ id }) => id === parseInt(currentId),
+    );
     return fundedItem;
   }
 
   updateHistory(currentId: string, messageReq: MessageDto) {
     const formattedCurrentId = parseInt(currentId);
-    const indexItem = this.historyList.findIndex(({id}) => id === formattedCurrentId)
+    const indexItem = this.historyList.findIndex(
+      ({ id }) => id === formattedCurrentId,
+    );
 
     console.log(indexItem);
 
@@ -85,7 +89,9 @@ export class HistoryService {
 
   removeHistory(currentId: string) {
     const formattedCurrentId = parseInt(currentId);
-    const indexItem = this.historyList.findIndex(({id}) => id === formattedCurrentId)
+    const indexItem = this.historyList.findIndex(
+      ({ id }) => id === formattedCurrentId,
+    );
     this.historyList.splice(indexItem, 1);
 
     return this.getHistoryList();

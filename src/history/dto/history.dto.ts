@@ -1,4 +1,4 @@
-import type { ID } from "../history.typings";
+import type { ID } from '../history.typings';
 
 interface HistoryReq {
   readonly id: ID;
@@ -13,7 +13,7 @@ export class HistoryDto {
   readonly owner: string;
   readonly message: string;
 
-  constructor({id, date, owner, message}: HistoryReq) {
+  constructor({ id, date, owner, message }: HistoryReq) {
     this.id = id;
     this.date = date;
     this.owner = owner;

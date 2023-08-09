@@ -1,5 +1,3 @@
-import { HistoryModule } from "./history/history.module";
+import { HistoryModule } from './history/history.module';
 
-export const entities = [
-  HistoryModule,
-];
+export const entities = [HistoryModule];

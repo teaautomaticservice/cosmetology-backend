@@ -1,22 +1,32 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, HttpStatus, HttpException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 
-import { MessageDto } from "./dto/message.dto";
-import { HistoryService } from "./history.service";
+import { MessageDto } from './dto/message.dto';
+import { HistoryService } from './history.service';
 
 interface GetItemParam {
   id: string;
 }
 
-@Controller("/history")
+@Controller('/history')
 export class HistoryController {
   constructor(private readonly historyService: HistoryService) {}
 
-  @Get("/list")
+  @Get('/list')
   getList() {
     return this.historyService.getHistoryList();
   }
 
-  @Get("/:id")
+  @Get('/:id')
   getItem(@Param() { id }: GetItemParam) {
     return this.historyService.findHistory(id);
   }
@@ -26,20 +36,17 @@ export class HistoryController {
     return this.historyService.addHistory(messageReq);
   }
 
-  @Patch("/:id")
-  updateItem(
-    @Param() { id }: GetItemParam,
-    @Body() messageReq: MessageDto
-  ) {
+  @Patch('/:id')
+  updateItem(@Param() { id }: GetItemParam, @Body() messageReq: MessageDto) {
     const result = this.historyService.updateHistory(id, messageReq);
 
     if (result === null) {
-      throw new HttpException("BAD_REQUEST", HttpStatus.BAD_REQUEST)
+      throw new HttpException('BAD_REQUEST', HttpStatus.BAD_REQUEST);
     }
     return this.historyService.updateHistory(id, messageReq);
   }
 
-  @Delete("/:id")
+  @Delete('/:id')
   removeItem(@Param() { id }: GetItemParam) {
     return this.historyService.removeHistory(id);
   }
