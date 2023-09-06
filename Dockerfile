@@ -4,4 +4,4 @@ COPY . /app
 WORKDIR /app
 RUN npm ci
 RUN npm run build
-CMD [ "npm", "run", "start:dev" ]
+CMD [ "npm", "run", "start ]
