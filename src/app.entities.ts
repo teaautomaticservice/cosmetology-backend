@@ -1,3 +1,3 @@
-import { HistoryModule } from './history/history.module';
+import { HistoryModule } from './domain/modules/history/history.module';
 
 export const entities = [HistoryModule];

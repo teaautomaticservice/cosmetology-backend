@@ -28,7 +28,7 @@ export class HistoryController {
 
   @Get('/:id')
   getItem(@Param() { id }: GetItemParam) {
-    return this.historyService.findHistory(id);
+    return this.historyService.findHistory(Number(id));
   }
 
   @Post()

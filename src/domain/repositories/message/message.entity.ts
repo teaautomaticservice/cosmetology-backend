@@ -1,25 +1,16 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
-export class LogEntity {
+export class MessageEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
   @CreateDateColumn()
-  timestamp: Date;
-
-  @Column()
-  key: string;
-
-  @Column()
-  level: string;
-
-  @Column()
-  authorizedUserId: string;
+  date: Date;
 
   @Column()
   message: string;
 
   @Column()
-  meta: string;
+  owner: string;
 }
