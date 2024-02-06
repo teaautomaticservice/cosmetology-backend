@@ -53,39 +53,13 @@ export class HistoryService {
     return fundedItem;
   }
 
-  async updateHistory(currentId: string, messageReq: MessageDto) {
-    // const formattedCurrentId = parseInt(currentId);
-    // const indexItem = this.historyList.findIndex(
-    //   ({ id }) => id === formattedCurrentId,
-    // );
-
-    // console.log(indexItem);
-
-    // if (indexItem < 0) {
-    //   return null;
-    // }
-
-    // if (this.itemsCount === 0) {
-    //   return null;
-    // }
-
-    // const message = this.getMessage(messageReq);
-    // const newHistory = this.createHistory(formattedCurrentId, message);
-
-    // this.historyList[indexItem] = newHistory;
-
-    // return this.getHistoryList();
+  async updateHistory(currentId: number, { message }: MessageDto) {
+    await this.messageRepository.update(currentId, { message });
     return await this.getHistoryList();
   }
 
-  async removeHistory(currentId: string) {
-    // const formattedCurrentId = parseInt(currentId);
-    // const indexItem = this.historyList.findIndex(
-    //   ({ id }) => id === formattedCurrentId,
-    // );
-    // this.historyList.splice(indexItem, 1);
-
-    // return this.getHistoryList();
+  async removeHistory(currentId: number) {
+    await this.messageRepository.delete(currentId);
     return await this.getHistoryList();
   }
 }

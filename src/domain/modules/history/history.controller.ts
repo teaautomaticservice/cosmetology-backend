@@ -38,16 +38,16 @@ export class HistoryController {
 
   @Patch('/:id')
   updateItem(@Param() { id }: GetItemParam, @Body() messageReq: MessageDto) {
-    const result = this.historyService.updateHistory(id, messageReq);
+    const result = this.historyService.updateHistory(Number(id), messageReq);
 
     if (result === null) {
       throw new HttpException('BAD_REQUEST', HttpStatus.BAD_REQUEST);
     }
-    return this.historyService.updateHistory(id, messageReq);
+    return this.historyService.updateHistory(Number(id), messageReq);
   }
 
   @Delete('/:id')
   removeItem(@Param() { id }: GetItemParam) {
-    return this.historyService.removeHistory(id);
+    return this.historyService.removeHistory(Number(id));
   }
 }
