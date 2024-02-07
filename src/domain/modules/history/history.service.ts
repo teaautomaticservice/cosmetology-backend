@@ -1,21 +1,17 @@
-// import type { ID } from './history.typings';
+import { Inject, Injectable } from '@nestjs/common';
 
-import { Injectable } from '@nestjs/common';
+import { HistoryDb } from 'src/domain/modules/history/history.db';
 
 import { MessageDto } from './dto/message.dto';
-// import { HistoryDto } from './dto/history.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { MessageEntity } from 'src/domain/repositories/message/message.entity';
-import { Repository } from 'typeorm';
 
 @Injectable()
 export class HistoryService {
   constructor(
-    @InjectRepository(MessageEntity) private readonly messageRepository: Repository<MessageEntity>,
+    @Inject(HistoryDb) private readonly messageDb: HistoryDb,
   ) {}
 
   private async createHistory(message: string) {
-    return this.messageRepository.save({
+    return this.messageDb.createHistory({
       date: new Date(),
       message,
       owner: 'Owner',
@@ -23,8 +19,8 @@ export class HistoryService {
   }
 
   async getHistoryList() {
-    const historyList = await this.messageRepository.find();
-    const itemsCount = historyList.length;
+    const historyList = await this.messageDb.getHistoryList();
+    const itemsCount = await this.messageDb.getHistoriesCount();
 
     const formattedHistoryList = {
       data: historyList,
@@ -45,21 +41,16 @@ export class HistoryService {
   }
 
   async findHistory(currentId: number) {
-    const fundedItem = await this.messageRepository.findOne({
-      where: {
-        id: currentId,
-      }
-    })
-    return fundedItem;
+    return await this.messageDb.findHistoryById(currentId)
   }
 
   async updateHistory(currentId: number, { message }: MessageDto) {
-    await this.messageRepository.update(currentId, { message });
+    await this.messageDb.updateHistory(currentId, { message });
     return await this.getHistoryList();
   }
 
   async removeHistory(currentId: number) {
-    await this.messageRepository.delete(currentId);
+    await this.messageDb.removeHistory(currentId);
     return await this.getHistoryList();
   }
 }
