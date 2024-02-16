@@ -6,9 +6,7 @@ import { MessageDto } from './dto/message.dto';
 
 @Injectable()
 export class HistoryService {
-  constructor(
-    @Inject(HistoryDb) private readonly messageDb: HistoryDb,
-  ) {}
+  constructor(@Inject(HistoryDb) private readonly messageDb: HistoryDb) {}
 
   private async createHistory(message: string) {
     return this.messageDb.createHistory({
@@ -41,7 +39,7 @@ export class HistoryService {
   }
 
   async findHistory(currentId: number) {
-    return await this.messageDb.findHistoryById(currentId)
+    return await this.messageDb.findHistoryById(currentId);
   }
 
   async updateHistory(currentId: number, { message }: MessageDto) {

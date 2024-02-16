@@ -7,11 +7,9 @@ import { MessageEntity } from 'src/domain/repositories/entities/message/message.
 import { HistoryDb } from 'src/domain/modules/history/history.db';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([MessageEntity]),
-  ],
+  imports: [TypeOrmModule.forFeature([MessageEntity])],
   providers: [HistoryService, HistoryDb],
   controllers: [HistoryController],
-  exports: [HistoryDb]
+  exports: [HistoryDb],
 })
 export class HistoryModule {}

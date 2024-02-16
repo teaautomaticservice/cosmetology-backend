@@ -8,7 +8,8 @@ import { RecordEntity } from '../../repositories/types/common.types';
 @Injectable()
 export class HistoryDb {
   constructor(
-    @InjectRepository(MessageEntity) private readonly messageRepository: Repository<MessageEntity>,
+    @InjectRepository(MessageEntity)
+    private readonly messageRepository: Repository<MessageEntity>,
   ) {}
 
   async getHistoryList() {
@@ -27,12 +28,15 @@ export class HistoryDb {
     const fundedItem = await this.messageRepository.findOne({
       where: {
         id: currentId,
-      }
-    })
+      },
+    });
     return fundedItem;
   }
 
-  async updateHistory(currentId: MessageEntity['id'], message: Partial<RecordEntity<MessageEntity>>) {
+  async updateHistory(
+    currentId: MessageEntity['id'],
+    message: Partial<RecordEntity<MessageEntity>>,
+  ) {
     await this.messageRepository.update(currentId, message);
     return await this.getHistoryList();
   }
