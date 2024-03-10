@@ -1,0 +1,33 @@
+volumes:
+  pg-data:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./pg-data
+  pgadmin-data:
+
+services:
+  postgres:
+    image: postgres
+    container_name: local_pgdb
+    restart: always
+    ports:
+      - "5432:5432"
+    env_file:
+      - .db.env
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dahakalab@gmail.com
+    env_file:
+      - .db.env
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
