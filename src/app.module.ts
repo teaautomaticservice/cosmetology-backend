@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { entities } from './app.entities';
-import { getConfig } from './tech/config/config';
+import { getConfig } from './ambient/config/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DatabaseConfig } from './tech/config/database/database.types';
+import { DatabaseConfig } from './ambient/config/database/database.types';
 
 @Module({
   imports: [
