@@ -8,6 +8,8 @@ import {
   Body,
   HttpStatus,
   HttpException,
+  Logger,
+  Inject,
 } from '@nestjs/common';
 
 import { MessageDto } from './dto/message.dto';
@@ -19,7 +21,10 @@ interface GetItemParam {
 
 @Controller('/history')
 export class HistoryController {
-  constructor(private readonly historyService: HistoryService) {}
+  constructor(
+    private readonly historyService: HistoryService,
+    // @Inject(Logger) private readonly logger: Logger,
+  ) {}
 
   @Get('/list')
   getList() {

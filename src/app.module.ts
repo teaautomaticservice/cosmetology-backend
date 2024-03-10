@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { WinstonModule } from 'nest-winston';
 
 import { entities } from './app.entities';
 import { getConfig } from './ambient/config/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfig } from './ambient/config/database/database.types';
+import { getLogger } from './ambient/logger/logger';
 
 @Module({
   imports: [
@@ -29,9 +31,12 @@ import { DatabaseConfig } from './ambient/config/database/database.types';
       },
       inject: [ConfigService],
     }),
+    // WinstonModule.forRoot(
+    //   getLogger,
+    // ),
     ...entities,
   ],
   controllers: [],
-  providers: [],
+  providers: [getLogger],
 })
 export class AppModule {}
