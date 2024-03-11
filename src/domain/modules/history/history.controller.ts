@@ -8,12 +8,13 @@ import {
   Body,
   HttpStatus,
   HttpException,
-  Logger,
   Inject,
 } from '@nestjs/common';
+import { Logger } from 'winston';
 
 import { MessageDto } from './dto/message.dto';
 import { HistoryService } from './history.service';
+import { Resources } from 'src/app.constants';
 
 interface GetItemParam {
   id: string;
@@ -23,11 +24,12 @@ interface GetItemParam {
 export class HistoryController {
   constructor(
     private readonly historyService: HistoryService,
-    // @Inject(Logger) private readonly logger: Logger,
+    @Inject(Resources.LOGGER) private readonly logger: Logger,
   ) {}
 
   @Get('/list')
   getList() {
+    this.logger.info('history getList');
     return this.historyService.getHistoryList();
   }
 

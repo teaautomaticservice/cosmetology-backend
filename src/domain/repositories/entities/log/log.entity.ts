@@ -13,18 +13,24 @@ export class LogEntity {
   @CreateDateColumn()
   timestamp: Date;
 
-  @Column()
+  @Column({
+    nullable: true,
+  })
   key: string;
 
   @Column()
   level: string;
 
-  @Column()
+  @Column({
+    nullable: true,
+  })
   authorizedUserId: string;
 
   @Column()
   message: string;
 
-  @Column()
+  @Column({
+    nullable: true,
+  })
   meta: string;
 }

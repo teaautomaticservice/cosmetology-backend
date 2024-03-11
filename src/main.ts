@@ -1,14 +1,14 @@
 import { NestFactory } from '@nestjs/core';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { WinstonLogger } from 'nest-winston';
 
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { Configuration } from './ambient/config/config.types';
+import { Resources } from './app.constants';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule); 
-  const logger = app.get('lolkek');
+  const logger = app.get(Resources.LOGGER);
   const config = app.get<ConfigService<Configuration>>(ConfigService);
 
   const port = config.get<Configuration['port']>('port');
