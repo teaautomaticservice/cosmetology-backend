@@ -16,7 +16,7 @@ export class LogEntity {
   @Column({
     nullable: true,
   })
-  key: string;
+  key: string | null;
 
   @Column()
   level: string;
@@ -24,7 +24,7 @@ export class LogEntity {
   @Column({
     nullable: true,
   })
-  authorizedUserId: string;
+  authorizedUserId: string | null;
 
   @Column()
   message: string;
@@ -32,5 +32,5 @@ export class LogEntity {
   @Column({
     nullable: true,
   })
-  meta: string;
+  meta: string | null;
 }
