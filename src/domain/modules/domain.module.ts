@@ -9,6 +9,7 @@ import { LoggerProvider } from 'src/ambient/logger/logger';
 import { LogsController } from './logs/logs.controller';
 import { LogsService } from './logs/logs.service';
 import { LogEntity } from '../repositories/entities/log/log.entity';
+import { LogsDb } from './logs/logs.db';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { LogEntity } from '../repositories/entities/log/log.entity';
     HistoryService,
     HistoryDb,
     LogsService,
+    LogsDb,
   ],
   controllers: [
     HistoryController,
@@ -29,6 +31,7 @@ import { LogEntity } from '../repositories/entities/log/log.entity';
   ],
   exports: [
     HistoryDb,
+    LogsDb,
   ],
 })
 export class DomainModule {}

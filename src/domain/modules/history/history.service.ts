@@ -6,7 +6,7 @@ import { MessageDto } from './dto/message.dto';
 
 @Injectable()
 export class HistoryService {
-  constructor(@Inject(HistoryDb) private readonly messageDb: HistoryDb) {}
+  constructor(private readonly messageDb: HistoryDb) {}
 
   private async createHistory(message: string) {
     return this.messageDb.createHistory({
