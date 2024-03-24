@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { HistoryDb } from 'src/domain/modules/history/history.db';
 
@@ -6,7 +6,7 @@ import { MessageDto } from './dto/message.dto';
 
 @Injectable()
 export class HistoryService {
-  constructor(@Inject(HistoryDb) private readonly messageDb: HistoryDb) {}
+  constructor(private readonly messageDb: HistoryDb) {}
 
   private async createHistory(message: string) {
     return this.messageDb.createHistory({
