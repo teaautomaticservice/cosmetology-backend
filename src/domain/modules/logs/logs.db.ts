@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { FindOneOptions, Repository, FindOperator, FindManyOptions, LessThan } from 'typeorm';
+import { Repository, FindManyOptions, LessThan } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { LogEntity } from 'src/domain/repositories/entities/log/log.entity';
 import { Pagination } from 'src/domain/repositories/types/common.types';
-import { LoggerTypes } from 'src/ambient/constants/loggerTypes';
+
 import { SpecifiedLogsClear } from './logs.types';
 
 @Injectable()

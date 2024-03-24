@@ -3,8 +3,10 @@ import {
   Get,
   Query,
 } from '@nestjs/common';
-import { LogsService } from './logs.service';
+
 import { Pagination } from 'src/domain/repositories/types/common.types';
+
+import { LogsService } from './logs.service';
 
 @Controller('/logs')
 export class LogsController {

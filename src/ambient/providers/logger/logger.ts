@@ -1,10 +1,12 @@
 import { ConfigService } from '@nestjs/config';
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import * as winston from 'winston';
-import { AppConfigService, Configuration } from '../../config/config.types';
-import { Resources } from 'src/ambient/constants/resources';
 import { PostgresTransport } from '@innova2/winston-pg';
+
+import { Resources } from 'src/ambient/constants/resources';
 import { LogEntity } from 'src/domain/repositories/entities/log/log.entity';
+
+import { AppConfigService, Configuration } from '../../config/config.types';
 import { LoggerTypes } from '../../constants/loggerTypes';
 
 export const LoggerProvider = {
@@ -16,7 +18,7 @@ export const LoggerProvider = {
     const isProduction = configService.get<boolean>('isProduction');
     const db = configService.get<Configuration['database']>('database');
 
-    const generalLoggingLevel = isProduction ? LoggerTypes.debug : LoggerTypes.info;
+    const generalLoggingLevel = isProduction ? LoggerTypes.info : LoggerTypes.debug;
 
     const metaFormat = winston.format((info) => {
       const newInfo = {
