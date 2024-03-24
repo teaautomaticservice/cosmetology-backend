@@ -14,7 +14,7 @@ import { Logger } from 'winston';
 
 import { MessageDto } from './dto/message.dto';
 import { HistoryService } from './history.service';
-import { Resources } from 'src/app.constants';
+import { Resources } from 'src/ambient/constants/resources';
 
 interface GetItemParam {
   id: string;

@@ -4,7 +4,7 @@ import { WinstonLogger } from 'nest-winston';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { Configuration } from './ambient/config/config.types';
-import { Resources } from './app.constants';
+import { Resources } from './ambient/constants/resources';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule); 

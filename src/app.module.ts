@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { getConfig } from './ambient/config/config';
 import { DatabaseConfig } from './ambient/config/database/database.types';
-import { LoggerProvider } from './ambient/logger/logger';
+import { LoggerProvider } from './ambient/providers/logger/logger';
 import { DomainModule } from './domain/modules/domain.module';
+import { clearLogsShedulerProvider } from './domain/modules/logs/clearLogsSheduler/clearLogsSheduler.provider';
 
 @Module({
   imports: [
@@ -30,9 +32,13 @@ import { DomainModule } from './domain/modules/domain.module';
       },
       inject: [ConfigService],
     }),
+    ScheduleModule.forRoot(),
     DomainModule,
   ],
   controllers: [],
-  providers: [LoggerProvider],
+  providers: [
+    LoggerProvider,
+    clearLogsShedulerProvider,
+  ],
 })
 export class AppModule {}

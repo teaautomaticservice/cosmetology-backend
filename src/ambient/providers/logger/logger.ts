@@ -1,10 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { utilities as nestWinstonModuleUtilities, WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import * as winston from 'winston';
-import { AppConfigService, Configuration } from '../config/config.types';
-import { Resources } from 'src/app.constants';
+import { AppConfigService, Configuration } from '../../config/config.types';
+import { Resources } from 'src/ambient/constants/resources';
 import { PostgresTransport } from '@innova2/winston-pg';
 import { LogEntity } from 'src/domain/repositories/entities/log/log.entity';
+import { LoggerTypes } from '../../constants/loggerTypes';
 
 export const LoggerProvider = {
   provide: Resources.LOGGER,
@@ -15,13 +16,20 @@ export const LoggerProvider = {
     const isProduction = configService.get<boolean>('isProduction');
     const db = configService.get<Configuration['database']>('database');
 
-    const generalLoggingLevel = isProduction ? 'debug' : 'info';
+    const generalLoggingLevel = isProduction ? LoggerTypes.debug : LoggerTypes.info;
+
+    const metaFormat = winston.format((info) => {
+      const newInfo = {
+        ...info,
+        meta: info.metadata,
+      };
+      delete (newInfo as any).metadata;
+      return newInfo;
+    })();
 
     const consoleTransport = new winston.transports.Console({
       level: generalLoggingLevel,
       format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.ms(),
         nestWinstonModuleUtilities.format.nestLike('CosmetologyApp', {
           colors: true,
           prettyPrint: true,
@@ -72,6 +80,13 @@ export const LoggerProvider = {
 
     const logger = winston.createLogger({
       level: generalLoggingLevel,
+      format: winston.format.combine(
+        winston.format.errors({ stack: true }),
+        winston.format.metadata(),
+        metaFormat,
+        winston.format.timestamp(),
+        winston.format.ms(),
+      ),
       transports: [
         consoleTransport,
         dbTransport,
