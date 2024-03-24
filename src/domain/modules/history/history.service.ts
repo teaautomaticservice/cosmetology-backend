@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import { HistoryDb } from 'src/domain/modules/history/history.db';
 

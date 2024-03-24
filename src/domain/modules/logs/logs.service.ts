@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
+
 import { Pagination } from 'src/domain/repositories/types/common.types';
-import { LogsDb } from './logs.db';
-import { SpecifiedLogsClear } from './logs.types';
 import { LoggerTypes } from 'src/ambient/constants/loggerTypes';
 import { subtract } from 'src/ambient/utils/timestamps';
+
+import { LogsDb } from './logs.db';
+import { SpecifiedLogsClear } from './logs.types';
 
 @Injectable()
 export class LogsService {
@@ -28,8 +30,7 @@ export class LogsService {
     const specified: SpecifiedLogsClear = {
       types: {
         [LoggerTypes.debug]: subtract(new Date(), 1, 'week'),
-        // [LoggerTypes.info]: subtract(new Date(), 2, 'month'),
-        [LoggerTypes.info]: subtract(new Date(), 11, 'day'),
+        [LoggerTypes.info]: subtract(new Date(), 2, 'month'),
         [LoggerTypes.error]: subtract(new Date(), 6, 'month'),
       }
     };

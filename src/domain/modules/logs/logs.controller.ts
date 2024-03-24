@@ -1,15 +1,6 @@
 import {
   Controller,
   Get,
-  Post,
-  Patch,
-  Delete,
-  Param,
-  Body,
-  HttpStatus,
-  HttpException,
-  Inject,
-  ParseIntPipe,
   Query,
 } from '@nestjs/common';
 import { LogsService } from './logs.service';

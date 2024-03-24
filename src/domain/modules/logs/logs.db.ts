@@ -7,8 +7,6 @@ import { Pagination } from 'src/domain/repositories/types/common.types';
 import { LoggerTypes } from 'src/ambient/constants/loggerTypes';
 import { SpecifiedLogsClear } from './logs.types';
 
-
-
 @Injectable()
 export class LogsDb {
   constructor(

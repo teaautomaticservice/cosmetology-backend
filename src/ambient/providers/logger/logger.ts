@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { utilities as nestWinstonModuleUtilities, WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import * as winston from 'winston';
 import { AppConfigService, Configuration } from '../../config/config.types';
 import { Resources } from 'src/ambient/constants/resources';

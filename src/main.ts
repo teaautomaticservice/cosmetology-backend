@@ -1,8 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { WinstonLogger } from 'nest-winston';
+import { ConfigService } from '@nestjs/config';
 
 import { AppModule } from './app.module';
-import { ConfigService } from '@nestjs/config';
 import { Configuration } from './ambient/config/config.types';
 import { Resources } from './ambient/constants/resources';
 
