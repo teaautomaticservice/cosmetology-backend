@@ -19,4 +19,4 @@ COPY . /app
 WORKDIR /app
 RUN npm ci
 
-CMD [ "npm", "run", "start" ]
+CMD [ "npm", "run", "start:prod" ]
