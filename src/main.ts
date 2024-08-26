@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { Configuration } from './ambient/config/config.types';
 import { Resources } from './ambient/constants/resources';
+import { useSwagger } from './ambient/swagger/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule); 
@@ -16,6 +17,8 @@ async function bootstrap() {
 
   app.useLogger(new WinstonLogger(logger));
   app.enableCors();
+
+  useSwagger(app);
 
   await app.listen(port, () => {
     logger.debug('===================');
