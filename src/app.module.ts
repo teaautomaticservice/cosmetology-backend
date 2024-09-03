@@ -36,9 +36,6 @@ import { clearLogsShedulerProvider } from './domain/modules/logs/clearLogsShedul
     DomainModule,
   ],
   controllers: [],
-  providers: [
-    LoggerProvider,
-    clearLogsShedulerProvider,
-  ],
+  providers: [LoggerProvider, clearLogsShedulerProvider],
 })
 export class AppModule {}

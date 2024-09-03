@@ -12,28 +12,9 @@ import { LogEntity } from '../repositories/entities/log/log.entity';
 import { LogsDb } from './logs/logs.db';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      MessageEntity,
-      LogEntity,
-    ]),
-  ],
-  providers: [
-    LoggerProvider,
-    HistoryService,
-    HistoryDb,
-    LogsService,
-    LogsDb,
-  ],
-  controllers: [
-    HistoryController,
-    LogsController,
-  ],
-  exports: [
-    HistoryDb,
-    HistoryService,
-    LogsDb,
-    LogsService,
-  ],
+  imports: [TypeOrmModule.forFeature([MessageEntity, LogEntity])],
+  providers: [LoggerProvider, HistoryService, HistoryDb, LogsService, LogsDb],
+  controllers: [HistoryController, LogsController],
+  exports: [HistoryDb, HistoryService, LogsDb, LogsService],
 })
 export class DomainModule {}

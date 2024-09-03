@@ -15,13 +15,13 @@ export class ClearLogsSheduler {
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_4AM, {
-    name: DAEMON_NAME
+    name: DAEMON_NAME,
   })
   async clearLogs() {
     const { count } = await this.logsService.clearOldLogs();
     this.logger.info('Scheduled log cleanup', {
       daemonName: DAEMON_NAME,
       countEntities: count,
-    })
+    });
   }
 }

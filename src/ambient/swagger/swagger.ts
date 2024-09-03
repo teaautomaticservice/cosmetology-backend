@@ -12,8 +12,4 @@ export const useSwagger = (app: INestApplication) => {
   SwaggerModule.setup('api', app, document, {
     jsonDocumentUrl: 'swagger/json',
   });
-}
-
-
-
-
+};

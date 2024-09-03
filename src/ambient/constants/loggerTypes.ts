@@ -6,4 +6,4 @@ export enum LoggerTypes {
   verbose = 'verbose',
   debug = 'debug',
   silly = 'silly',
-};
+}

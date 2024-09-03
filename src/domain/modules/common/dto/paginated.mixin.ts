@@ -6,7 +6,7 @@ type Constructor<T = object> = new (...args: unknown[]) => T;
 
 export function paginatedMixin<Dto extends Constructor>(
   Base: Dto,
-  options?: ApiPropertyOptions | undefined
+  options?: ApiPropertyOptions | undefined,
 ) {
   class Paginated {
     @ApiProperty({

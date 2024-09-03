@@ -8,12 +8,13 @@ import { Resources } from './ambient/constants/resources';
 import { useSwagger } from './ambient/swagger/swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule); 
+  const app = await NestFactory.create(AppModule);
   const logger = app.get(Resources.LOGGER);
   const config = app.get<ConfigService<Configuration>>(ConfigService);
 
   const port = config.get<Configuration['port']>('port');
-  const isProduction = config.get<Configuration['isProduction']>('isProduction');
+  const isProduction =
+    config.get<Configuration['isProduction']>('isProduction');
 
   app.useLogger(new WinstonLogger(logger));
   app.enableCors();

@@ -1,8 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 
 import { Pagination } from 'src/domain/repositories/types/common.types';
 
@@ -20,10 +16,10 @@ export class LogsController {
     const pagination: Pagination = {
       page: Number(page) || 1,
       pageSize: Number(pageSize) || 10,
-    }
+    };
 
     return await this.logsService.getLogsList({
       pagination,
-    });;
+    });
   }
 }

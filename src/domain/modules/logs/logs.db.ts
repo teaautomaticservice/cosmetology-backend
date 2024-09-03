@@ -14,9 +14,7 @@ export class LogsDb {
     private readonly logsRepository: Repository<LogEntity>,
   ) {}
 
-  public async findAndCount({pagination}: {
-    pagination: Pagination,
-  }) {
+  public async findAndCount({ pagination }: { pagination: Pagination }) {
     const offset = this.getOffset(pagination);
     const sort = this.getSort();
     return Promise.all([
@@ -26,14 +24,14 @@ export class LogsDb {
       }),
       this.logsRepository.count({
         ...offset,
-      })
-    ])
+      }),
+    ]);
   }
 
   public async clearLogs({
     specified,
   }: {
-    specified?: SpecifiedLogsClear,
+    specified?: SpecifiedLogsClear;
   }): Promise<{ count: number }> {
     const where: FindManyOptions<LogEntity>['where'] = [];
 
@@ -41,15 +39,15 @@ export class LogsDb {
       where.push({
         level: key,
         timestamp: LessThan(val),
-      })
+      });
     });
 
     const entities = await this.logsRepository.find({
       where,
-    })
+    });
 
     if (entities.length) {
-      await this.logsRepository.delete(entities.map(({id}) => id));
+      await this.logsRepository.delete(entities.map(({ id }) => id));
     }
 
     return { count: entities.length };
@@ -59,14 +57,14 @@ export class LogsDb {
     return {
       skip: Math.max(0, (page - 1) * pageSize),
       take: pageSize,
-    }
+    };
   }
 
   private getSort(): FindManyOptions<LogEntity> {
     return {
       order: {
         timestamp: -1,
-      }
-    }
+      },
+    };
   }
 }

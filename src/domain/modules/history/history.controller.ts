@@ -45,8 +45,8 @@ export class HistoryController {
         count,
         currentPage: 1,
         itemsPerPage: 10,
-      }
-    }
+      },
+    };
   }
 
   @Get('/:id')
