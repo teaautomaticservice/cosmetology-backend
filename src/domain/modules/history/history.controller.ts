@@ -11,15 +11,19 @@ import {
   Inject,
 } from '@nestjs/common';
 import { Logger } from 'winston';
+import { ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 
 import { MessageDto } from './dto/message.dto';
 import { HistoryService } from './history.service';
 import { Resources } from 'src/ambient/constants/resources';
+import { HistoryDto } from './dto/history.dto';
+import { HistoryPaginatedDto } from './dto/historyPaginated.dto';
 
 interface GetItemParam {
   id: string;
 }
 
+@ApiTags('History')
 @Controller('/history')
 export class HistoryController {
   constructor(
@@ -28,9 +32,21 @@ export class HistoryController {
   ) {}
 
   @Get('/list')
-  getList() {
+  @ApiCreatedResponse({
+    description: 'Successful signup',
+    type: HistoryPaginatedDto,
+  })
+  async getList(): Promise<HistoryPaginatedDto> {
     this.logger.info('history getList');
-    return this.historyService.getHistoryList();
+    const [items, count] = await this.historyService.getHistoryList();
+    return {
+      data: items.map((item) => new HistoryDto(item)),
+      meta: {
+        count,
+        currentPage: 1,
+        itemsPerPage: 10,
+      }
+    }
   }
 
   @Get('/:id')

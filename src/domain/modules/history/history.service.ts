@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { HistoryDb } from 'src/domain/modules/history/history.db';
 
 import { MessageDto } from './dto/message.dto';
+import { HistoryPaginatedDto } from './dto/historyPaginated.dto';
+import { MessageEntity } from 'src/domain/repositories/entities/message/message.entity';
 
 @Injectable()
 export class HistoryService {
@@ -16,21 +18,11 @@ export class HistoryService {
     });
   }
 
-  async getHistoryList() {
+  async getHistoryList(): Promise<[MessageEntity[], number]> {
     const historyList = await this.messageDb.getHistoryList();
-    const itemsCount = await this.messageDb.getHistoriesCount();
+    const count = await this.messageDb.getHistoriesCount();
 
-    const formattedHistoryList = {
-      data: historyList,
-      meta: {
-        pagination: {
-          itemsCount,
-          itemsCurrent: [0, itemsCount],
-        },
-      },
-    };
-
-    return formattedHistoryList;
+    return [historyList, count];
   }
 
   async addHistory({ message }: MessageDto) {

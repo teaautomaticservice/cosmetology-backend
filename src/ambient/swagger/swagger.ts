@@ -9,7 +9,9 @@ const config = new DocumentBuilder()
 
 export const useSwagger = (app: INestApplication) => {
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document, {
+    jsonDocumentUrl: 'swagger/json',
+  });
 }
 
 
