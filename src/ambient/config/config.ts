@@ -1,7 +1,7 @@
 import { Configuration } from './config.types';
 import { getDatabaseConfig } from './database/database';
 
-const ENV_PORT = process.env.PORT;
+const ENV_PORT = process.env.PORT ?? '3000';
 const NODE_ENV = process.env.NODE_ENV;
 const IS_PRODUCTION = NODE_ENV === 'production';
 

@@ -12,7 +12,7 @@ async function bootstrap() {
   const logger = app.get(Resources.LOGGER);
   const config = app.get<ConfigService<Configuration>>(ConfigService);
 
-  const port = config.get<Configuration['port']>('port');
+  const port = config.get<Configuration['port']>('port') ?? 3000;
   const isProduction =
     config.get<Configuration['isProduction']>('isProduction');
 

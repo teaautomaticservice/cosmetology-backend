@@ -39,7 +39,7 @@ export const LoggerProvider = {
       ),
     });
 
-    const connectionDbString = `postgresql://${db.user}:${db.password}@${db.host}:${db.port}/${db.name}`;
+    const connectionDbString = `postgresql://${db?.user}:${db?.password}@${db?.host}:${db?.port}/${db?.name}`;
 
     const dbTransport = new PostgresTransport<LogEntity>({
       connectionString: connectionDbString,

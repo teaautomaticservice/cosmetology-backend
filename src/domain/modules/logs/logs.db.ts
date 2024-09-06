@@ -35,12 +35,14 @@ export class LogsDb {
   }): Promise<{ count: number }> {
     const where: FindManyOptions<LogEntity>['where'] = [];
 
-    Object.entries(specified.types).map(([key, val]) => {
-      where.push({
-        level: key,
-        timestamp: LessThan(val),
+    if (specified) {
+      Object.entries(specified.types ?? {}).map(([key, val]) => {
+        where.push({
+          level: key,
+          timestamp: LessThan(val),
+        });
       });
-    });
+    }
 
     const entities = await this.logsRepository.find({
       where,

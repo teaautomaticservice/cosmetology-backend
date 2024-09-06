@@ -21,11 +21,11 @@ import { clearLogsShedulerProvider } from './domain/modules/logs/clearLogsShedul
         const databaseConfig = configService.get<DatabaseConfig>('database');
         return {
           type: 'postgres',
-          host: databaseConfig.host,
-          port: databaseConfig.port,
-          username: databaseConfig.user,
-          password: databaseConfig.password,
-          database: databaseConfig.name,
+          host: databaseConfig?.host,
+          port: databaseConfig?.port,
+          username: databaseConfig?.user,
+          password: databaseConfig?.password,
+          database: databaseConfig?.name,
           synchronize: true,
           autoLoadEntities: true,
         };
