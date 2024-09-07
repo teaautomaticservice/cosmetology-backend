@@ -12,16 +12,7 @@ export class LogsService {
   constructor(private readonly logRepository: LogsDb) {}
 
   async getLogsList(params: { pagination: Pagination }) {
-    const { page, pageSize } = params.pagination;
-    const [logs, count] = await this.logRepository.findAndCount(params);
-    return {
-      data: logs,
-      meta: {
-        count,
-        page,
-        pageSize,
-      },
-    };
+    return this.logRepository.findAndCount(params);
   }
 
   public async clearOldLogs(): Promise<{ count: number }> {
