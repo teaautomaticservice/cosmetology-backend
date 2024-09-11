@@ -4,10 +4,10 @@ import {
   Post,
   Patch,
   Delete,
-  Param,
   Body,
   Inject,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import { Logger } from 'winston';
 import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -17,10 +17,6 @@ import { Resources } from 'src/ambient/constants/resources';
 import { HistoryDto } from './dto/history.dto';
 import { HistoryPaginatedDto } from './dto/historyPaginated.dto';
 import { UpdateHistoryDto } from './dto/updateHistory.dto';
-
-interface GetItemParam {
-  id: string;
-}
 
 @ApiTags('History')
 @Controller('/history')
@@ -54,7 +50,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryDto,
   })
-  async getItem(@Param() { id }: GetItemParam): Promise<HistoryDto | null> {
+  async getItem(@Query('id') id: number): Promise<HistoryDto | null> {
     const history = await this.historyService.getHistoryById(Number(id));
     if (history == null) {
       throw new NotFoundException();
@@ -69,7 +65,7 @@ export class HistoryController {
   })
   @ApiOkResponse({
     description: 'History successful has been got',
-    type: HistoryDto,
+    type: HistoryPaginatedDto,
   })
   async addItem(
     @Body() messageReq: UpdateHistoryDto,
@@ -96,7 +92,7 @@ export class HistoryController {
     type: HistoryPaginatedDto,
   })
   async updateItem(
-    @Param() { id }: GetItemParam,
+    @Query('id') id: number,
     @Body() messageReq: UpdateHistoryDto,
   ): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.updateHistory(
@@ -119,9 +115,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  async removeItem(
-    @Param() { id }: GetItemParam,
-  ): Promise<HistoryPaginatedDto> {
+  async removeItem(@Query('id') id: number): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.removeHistory(Number(id));
     return {
       data: items.map((item) => new HistoryDto(item)),
