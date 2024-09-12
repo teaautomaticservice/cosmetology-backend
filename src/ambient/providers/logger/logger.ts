@@ -12,13 +12,13 @@ import { LoggerTypes } from '../../constants/loggerTypes';
 export const LoggerProvider = {
   provide: Resources.LOGGER,
   inject: [ConfigService],
-  useFactory: (
-    configService: AppConfigService,
-  ) => {
+  useFactory: (configService: AppConfigService) => {
     const isProduction = configService.get<boolean>('isProduction');
     const db = configService.get<Configuration['database']>('database');
 
-    const generalLoggingLevel = isProduction ? LoggerTypes.info : LoggerTypes.debug;
+    const generalLoggingLevel = isProduction
+      ? LoggerTypes.info
+      : LoggerTypes.debug;
 
     const metaFormat = winston.format((info) => {
       const newInfo = {
@@ -39,7 +39,7 @@ export const LoggerProvider = {
       ),
     });
 
-    const connectionDbString = `postgresql://${db.user}:${db.password}@${db.host}:${db.port}/${db.name}`;
+    const connectionDbString = `postgresql://${db?.user}:${db?.password}@${db?.host}:${db?.port}/${db?.name}`;
 
     const dbTransport = new PostgresTransport<LogEntity>({
       connectionString: connectionDbString,
@@ -55,30 +55,30 @@ export const LoggerProvider = {
         },
         {
           name: 'timestamp',
-          dataType: 'TIMESTAMP'
+          dataType: 'TIMESTAMP',
         },
         {
           name: 'key',
-          dataType: 'VARCHAR'
+          dataType: 'VARCHAR',
         },
         {
           name: 'level',
-          dataType: 'VARCHAR'
+          dataType: 'VARCHAR',
         },
         {
           name: 'authorizedUserId',
-          dataType: 'VARCHAR'
+          dataType: 'VARCHAR',
         },
         {
           name: 'message',
-          dataType: 'VARCHAR'
+          dataType: 'VARCHAR',
         },
         {
           name: 'meta',
           dataType: 'JSON',
         },
       ],
-    })
+    });
 
     const logger = winston.createLogger({
       level: generalLoggingLevel,
@@ -89,11 +89,8 @@ export const LoggerProvider = {
         winston.format.timestamp(),
         winston.format.ms(),
       ),
-      transports: [
-        consoleTransport,
-        dbTransport,
-      ],
+      transports: [consoleTransport, dbTransport],
     });
     return logger;
-  }
-}
+  },
+};

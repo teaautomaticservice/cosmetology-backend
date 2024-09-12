@@ -14,22 +14,29 @@ export class LogEntity {
   timestamp: Date;
 
   @Column({
+    type: 'varchar',
     nullable: true,
   })
   key: string | null;
 
-  @Column()
+  @Column({
+    type: 'varchar',
+  })
   level: string;
 
   @Column({
+    type: 'varchar',
     nullable: true,
   })
   authorizedUserId: string | null;
 
-  @Column()
+  @Column({
+    type: 'varchar',
+  })
   message: string;
 
   @Column({
+    type: 'varchar',
     nullable: true,
   })
   meta: string | null;

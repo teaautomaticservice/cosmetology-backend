@@ -11,19 +11,8 @@ import { SpecifiedLogsClear } from './logs.types';
 export class LogsService {
   constructor(private readonly logRepository: LogsDb) {}
 
-  async getLogsList(params: {
-    pagination: Pagination,
-  }) {
-    const { page, pageSize } = params.pagination;
-    const [logs, count] = await this.logRepository.findAndCount(params);
-    return {
-      data: logs,
-      meta: {
-        count,
-        page,
-        pageSize,
-      }
-    };
+  async getLogsList(params: { pagination: Pagination }) {
+    return this.logRepository.findAndCount(params);
   }
 
   public async clearOldLogs(): Promise<{ count: number }> {
@@ -32,7 +21,7 @@ export class LogsService {
         [LoggerTypes.debug]: subtract(new Date(), 1, 'week'),
         [LoggerTypes.info]: subtract(new Date(), 2, 'month'),
         [LoggerTypes.error]: subtract(new Date(), 6, 'month'),
-      }
+      },
     };
 
     return this.logRepository.clearLogs({

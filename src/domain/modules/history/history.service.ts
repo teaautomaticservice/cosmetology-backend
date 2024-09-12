@@ -2,13 +2,13 @@ import { Injectable } from '@nestjs/common';
 
 import { HistoryDb } from 'src/domain/modules/history/history.db';
 
-import { MessageDto } from './dto/message.dto';
+import { MessageEntity } from 'src/domain/repositories/entities/message/message.entity';
 
 @Injectable()
 export class HistoryService {
   constructor(private readonly messageDb: HistoryDb) {}
 
-  private async createHistory(message: string) {
+  private async createHistory(message: string): Promise<MessageEntity> {
     return this.messageDb.createHistory({
       date: new Date(),
       message,
@@ -16,38 +16,33 @@ export class HistoryService {
     });
   }
 
-  async getHistoryList() {
+  async getHistoryList(): Promise<[MessageEntity[], number]> {
     const historyList = await this.messageDb.getHistoryList();
-    const itemsCount = await this.messageDb.getHistoriesCount();
+    const count = await this.messageDb.getHistoriesCount();
 
-    const formattedHistoryList = {
-      data: historyList,
-      meta: {
-        pagination: {
-          itemsCount,
-          itemsCurrent: [0, itemsCount],
-        },
-      },
-    };
-
-    return formattedHistoryList;
+    return [historyList, count];
   }
 
-  async addHistory({ message }: MessageDto) {
+  async addHistory({
+    message,
+  }: Pick<MessageEntity, 'message'>): Promise<[MessageEntity[], number]> {
     await this.createHistory(message);
-    return await this.getHistoryList();
+    return this.getHistoryList();
   }
 
-  async findHistory(currentId: number) {
+  async getHistoryById(currentId: number): Promise<MessageEntity | null> {
     return await this.messageDb.findHistoryById(currentId);
   }
 
-  async updateHistory(currentId: number, { message }: MessageDto) {
+  async updateHistory(
+    currentId: number,
+    { message }: Pick<MessageEntity, 'message'>,
+  ): Promise<[MessageEntity[], number]> {
     await this.messageDb.updateHistory(currentId, { message });
     return await this.getHistoryList();
   }
 
-  async removeHistory(currentId: number) {
+  async removeHistory(currentId: number): Promise<[MessageEntity[], number]> {
     await this.messageDb.removeHistory(currentId);
     return await this.getHistoryList();
   }

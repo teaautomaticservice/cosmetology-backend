@@ -8,5 +8,6 @@ import { Logger } from 'winston';
 export const clearLogsShedulerProvider: Provider<ClearLogsSheduler> = {
   provide: Resources.ClearLogsSheduler,
   inject: [LogsService, Resources.LOGGER],
-  useFactory: (logsService: LogsService, logger: Logger) => new ClearLogsSheduler(logsService, logger),
-}
+  useFactory: (logsService: LogsService, logger: Logger) =>
+    new ClearLogsSheduler(logsService, logger),
+};
