@@ -6,13 +6,14 @@ import { AppModule } from './app.module';
 import { Configuration } from './ambient/config/config.types';
 import { Resources } from './ambient/constants/resources';
 import { useSwagger } from './ambient/swagger/swagger';
+import { DEFAULT_PORT } from './ambient/constants/app';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const logger = app.get(Resources.LOGGER);
   const config = app.get<ConfigService<Configuration>>(ConfigService);
 
-  const port = config.get<Configuration['port']>('port') ?? 3000;
+  const port = config.get<Configuration['port']>('port') ?? DEFAULT_PORT;
   const isProduction =
     config.get<Configuration['isProduction']>('isProduction');
 
