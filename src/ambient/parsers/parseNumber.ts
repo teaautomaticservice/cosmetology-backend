@@ -5,7 +5,6 @@ export class ParseNumber
   implements PipeTransform<string | undefined, number | undefined>
 {
   public transform(value?: string): number | undefined {
-    console.log('transform', value, typeof value);
     if (typeof value === 'string') {
       const result = Number(value);
       if (Number.isNaN(result)) {
