@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { LogsService } from '@services/logs/logs.service';
 
-import { LogsService } from '../../../services/logs/logs.service';
 import { Resources } from 'src/ambient/constants/resources';
 import { Logger } from 'winston';
 

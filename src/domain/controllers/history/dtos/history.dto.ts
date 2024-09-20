@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import type { ID } from '../../../providers/common/common.type';
-import { MessageEntity } from 'src/domain/providers/postgresql/repositories/history/message.entity';
+import { ID } from '@providers/common/common.type';
+import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
 
 export class HistoryDto {
   @ApiProperty({

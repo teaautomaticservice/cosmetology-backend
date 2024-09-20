@@ -21,6 +21,7 @@
       "@utils/*": ["src/ambient/utils/*"],
       "@constants/*": ["src/ambient/constants/*"],
       "@query/*": ["src/ambient/query/*"],
+      "@ambientProviders/*": ["src/ambient/providers/*"],
       "@domain": ["src/domain"],
       "@controllers/*": ["src/domain/controllers/*"],
       "@providers/*": ["src/domain/providers/*"],

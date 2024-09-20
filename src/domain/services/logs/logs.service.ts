@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import { subtract } from 'src/ambient/utils/timestamps';
-
 import { Pagination } from '@providers/common/common.type';
 import { LoggerTypes } from '@constants/loggerTypes';
 import { LogsDb } from '@providers/postgresql/repositories/logs/logs.db';
 import { SpecifiedLogsClear } from '@providers/postgresql/repositories/logs/logs.types';
+import { subtract } from '@utils/timestamps';
 
 @Injectable()
 export class LogsService {

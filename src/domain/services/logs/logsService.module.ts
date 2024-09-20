@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { LogsService } from './logs.service';
 import { LogsRepositoryModule } from '@providers/postgresql/repositories/logs/logsRepository.module';
-import { LoggerProvider } from 'src/ambient/providers/logger/logger';
+import { LoggerProvider } from '@ambientProviders/logger/logger';
+
+import { LogsService } from './logs.service';
 
 @Module({
   imports: [LogsRepositoryModule],

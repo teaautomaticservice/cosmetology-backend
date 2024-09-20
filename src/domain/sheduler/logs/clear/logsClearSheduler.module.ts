@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { logsClearShedulerProvider } from './logsClear.provider';
 import { LogsServiceModule } from '@services/logs/logsService.module';
-import { LoggerProvider } from 'src/ambient/providers/logger/logger';
+import { LoggerProvider } from '@ambientProviders/logger/logger';
+
+import { logsClearShedulerProvider } from './logsClear.provider';
 
 @Module({
   imports: [LogsServiceModule],

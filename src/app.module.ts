@@ -5,7 +5,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 import { getConfig } from './ambient/config/config';
 import { DatabaseConfig } from './ambient/config/database/database.types';
-import { LoggerProvider } from './ambient/providers/logger/logger';
 import { DomainModule } from './domain/domain.module';
 
 @Module({
@@ -34,6 +33,5 @@ import { DomainModule } from './domain/domain.module';
     ScheduleModule.forRoot(),
     DomainModule,
   ],
-  providers: [LoggerProvider],
 })
 export class AppModule {}
