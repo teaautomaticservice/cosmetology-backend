@@ -4,7 +4,7 @@ import * as winston from 'winston';
 import { PostgresTransport } from '@innova2/winston-pg';
 
 import { Resources } from 'src/ambient/constants/resources';
-import { LogEntity } from 'src/domain/repositories/entities/log/log.entity';
+import { LogEntity } from 'src/domain/providers/postgresql/repositories/logs/log.entity';
 
 import { AppConfigService, Configuration } from '../../config/config.types';
 import { LoggerTypes } from '../../constants/loggerTypes';

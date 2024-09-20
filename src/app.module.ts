@@ -6,8 +6,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { getConfig } from './ambient/config/config';
 import { DatabaseConfig } from './ambient/config/database/database.types';
 import { LoggerProvider } from './ambient/providers/logger/logger';
-import { DomainModule } from './domain/modules/domain.module';
-import { clearLogsShedulerProvider } from './domain/modules/logs/clearLogsSheduler/clearLogsSheduler.provider';
+import { DomainModule } from './domain/domain.module';
 
 @Module({
   imports: [
@@ -35,7 +34,6 @@ import { clearLogsShedulerProvider } from './domain/modules/logs/clearLogsShedul
     ScheduleModule.forRoot(),
     DomainModule,
   ],
-  controllers: [],
-  providers: [LoggerProvider, clearLogsShedulerProvider],
+  providers: [LoggerProvider],
 })
 export class AppModule {}
