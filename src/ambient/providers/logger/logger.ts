@@ -3,11 +3,11 @@ import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import * as winston from 'winston';
 import { PostgresTransport } from '@innova2/winston-pg';
 
-import { Resources } from 'src/ambient/constants/resources';
-import { LogEntity } from 'src/domain/repositories/entities/log/log.entity';
+import { AppConfigService, Configuration } from '@config/config.types';
 
-import { AppConfigService, Configuration } from '../../config/config.types';
-import { LoggerTypes } from '../../constants/loggerTypes';
+import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
+import { LoggerTypes } from '@constants/loggerTypes';
+import { Resources } from '@constants/resources';
 
 export const LoggerProvider = {
   provide: Resources.LOGGER,

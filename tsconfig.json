@@ -17,5 +17,17 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@utils/*": ["src/ambient/utils/*"],
+      "@constants/*": ["src/ambient/constants/*"],
+      "@query/*": ["src/ambient/query/*"],
+      "@ambientProviders/*": ["src/ambient/providers/*"],
+      "@config/*": ["src/ambient/config/*"],
+      "@domain": ["src/domain"],
+      "@controllers/*": ["src/domain/controllers/*"],
+      "@providers/*": ["src/domain/providers/*"],
+      "@services/*": ["src/domain/services/*"],
+      "@sheduler/*": ["src/domain/sheduler/*"]
+    }
   }
 }
