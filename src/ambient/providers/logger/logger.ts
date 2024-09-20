@@ -3,10 +3,7 @@ import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import * as winston from 'winston';
 import { PostgresTransport } from '@innova2/winston-pg';
 
-import {
-  AppConfigService,
-  Configuration,
-} from 'src/ambient/config/config.types';
+import { AppConfigService, Configuration } from '@config/config.types';
 
 import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
 import { LoggerTypes } from '@constants/loggerTypes';
