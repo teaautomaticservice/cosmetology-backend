@@ -18,7 +18,7 @@ export class LogsController {
     description: 'List of logs successful has been got',
     type: LogsPaginatedDto,
   })
-  async getList(
+  public async getList(
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
   ): Promise<LogsPaginatedDto> {

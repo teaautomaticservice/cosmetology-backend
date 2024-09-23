@@ -6,7 +6,7 @@ export class LogsDto {
     required: true,
     nullable: false,
   })
-  id: number;
+  public id: number;
 
   @ApiProperty({
     type: 'string',
@@ -14,40 +14,40 @@ export class LogsDto {
     required: true,
     nullable: false,
   })
-  timestamp: Date;
+  public timestamp: Date;
 
   @ApiProperty({
     type: 'string',
     required: true,
     nullable: true,
   })
-  key: string | null;
+  public key: string | null;
 
   @ApiProperty({
     type: 'string',
     required: true,
     nullable: false,
   })
-  level: string;
+  public level: string;
 
   @ApiProperty({
     type: 'string',
     required: true,
     nullable: true,
   })
-  authorizedUserId: string | null;
+  public authorizedUserId: string | null;
 
   @ApiProperty({
     type: 'string',
     required: true,
     nullable: false,
   })
-  message: string;
+  public message: string;
 
   @ApiProperty({
     type: 'string',
     required: true,
     nullable: true,
   })
-  meta: string | null;
+  public meta: string | null;
 }

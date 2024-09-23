@@ -32,7 +32,7 @@ export class HistoryController {
     description: 'List of history successful has been got',
     type: HistoryPaginatedDto,
   })
-  async getList(): Promise<HistoryPaginatedDto> {
+  public async getList(): Promise<HistoryPaginatedDto> {
     this.logger.info('history getList');
     const [items, count] = await this.historyService.getHistoryList();
     return {
@@ -51,7 +51,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryDto,
   })
-  async getItem(@QueryInt('id') id: number): Promise<HistoryDto | null> {
+  public async getItem(@QueryInt('id') id: number): Promise<HistoryDto | null> {
     const history = await this.historyService.getHistoryById(Number(id));
     if (history == null) {
       throw new NotFoundException();
@@ -68,7 +68,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  async addItem(
+  public async addItem(
     @Body() messageReq: UpdateHistoryDto,
   ): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.addHistory(messageReq);
@@ -92,7 +92,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  async updateItem(
+  public async updateItem(
     @QueryInt('id') id: number,
     @Body() messageReq: UpdateHistoryDto,
   ): Promise<HistoryPaginatedDto> {
@@ -116,7 +116,9 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  async removeItem(@QueryInt('id') id: number): Promise<HistoryPaginatedDto> {
+  public async removeItem(
+    @QueryInt('id') id: number,
+  ): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.removeHistory(Number(id));
     return {
       data: items.map((item) => new HistoryDto(item)),

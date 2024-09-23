@@ -13,19 +13,23 @@ export class HistoryDb {
     private readonly messageRepository: Repository<MessageEntity>,
   ) {}
 
-  async getHistoryList() {
+  public async getHistoryList(): Promise<MessageEntity[]> {
     return await this.messageRepository.find();
   }
 
-  async getHistoriesCount() {
+  public async getHistoriesCount(): Promise<number> {
     return await this.messageRepository.count();
   }
 
-  async createHistory(message: RecordEntity<MessageEntity>) {
+  public async createHistory(
+    message: RecordEntity<MessageEntity>,
+  ): Promise<RecordEntity<MessageEntity>> {
     return this.messageRepository.save(message);
   }
 
-  async findHistoryById(currentId: MessageEntity['id']) {
+  public async findHistoryById(
+    currentId: MessageEntity['id'],
+  ): Promise<MessageEntity | null> {
     const fundedItem = await this.messageRepository.findOne({
       where: {
         id: currentId,
@@ -34,15 +38,17 @@ export class HistoryDb {
     return fundedItem;
   }
 
-  async updateHistory(
+  public async updateHistory(
     currentId: MessageEntity['id'],
     message: Partial<RecordEntity<MessageEntity>>,
-  ) {
+  ): Promise<MessageEntity[]> {
     await this.messageRepository.update(currentId, message);
     return await this.getHistoryList();
   }
 
-  async removeHistory(currentId: MessageEntity['id']) {
+  public async removeHistory(
+    currentId: MessageEntity['id'],
+  ): Promise<MessageEntity[]> {
     await this.messageRepository.delete(currentId);
     return await this.getHistoryList();
   }

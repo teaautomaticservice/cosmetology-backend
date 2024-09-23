@@ -8,14 +8,14 @@ import {
 @Entity()
 export class MessageEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+  public id: number;
 
   @CreateDateColumn()
-  date: Date;
+  public date: Date;
 
   @Column()
-  message: string;
+  public message: string;
 
   @Column()
-  owner: string;
+  public owner: string;
 }

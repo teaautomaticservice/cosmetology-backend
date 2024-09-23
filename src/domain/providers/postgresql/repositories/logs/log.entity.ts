@@ -8,36 +8,36 @@ import {
 @Entity()
 export class LogEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+  public id: number;
 
   @CreateDateColumn()
-  timestamp: Date;
+  public timestamp: Date;
 
   @Column({
     type: 'varchar',
     nullable: true,
   })
-  key: string | null;
+  public key: string | null;
 
   @Column({
     type: 'varchar',
   })
-  level: string;
-
-  @Column({
-    type: 'varchar',
-    nullable: true,
-  })
-  authorizedUserId: string | null;
-
-  @Column({
-    type: 'varchar',
-  })
-  message: string;
+  public level: string;
 
   @Column({
     type: 'varchar',
     nullable: true,
   })
-  meta: string | null;
+  public authorizedUserId: string | null;
+
+  @Column({
+    type: 'varchar',
+  })
+  public message: string;
+
+  @Column({
+    type: 'varchar',
+    nullable: true,
+  })
+  public meta: string | null;
 }

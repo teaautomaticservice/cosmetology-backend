@@ -14,7 +14,11 @@ export class LogsDb {
     private readonly logsRepository: Repository<LogEntity>,
   ) {}
 
-  public async findAndCount({ pagination }: { pagination: Pagination }) {
+  public async findAndCount({
+    pagination,
+  }: {
+    pagination: Pagination;
+  }): Promise<[LogEntity[], number]> {
     const offset = this.getOffset(pagination);
     const sort = this.getSort();
     return Promise.all([
@@ -55,7 +59,10 @@ export class LogsDb {
     return { count: entities.length };
   }
 
-  private getOffset({ pageSize, page }: Pagination) {
+  private getOffset({ pageSize, page }: Pagination): {
+    skip: number;
+    take: number;
+  } {
     return {
       skip: Math.max(0, (page - 1) * pageSize),
       take: pageSize,

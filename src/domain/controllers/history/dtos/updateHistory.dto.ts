@@ -6,5 +6,5 @@ export class UpdateHistoryDto {
     required: true,
     nullable: false,
   })
-  readonly message: string;
+  public readonly message: string;
 }
