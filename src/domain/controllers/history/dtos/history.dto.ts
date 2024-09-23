@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-
 import { ID } from '@providers/common/common.type';
 import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
 

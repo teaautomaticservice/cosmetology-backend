@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
+
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { RecordEntity } from '@providers/common/common.type';
 
 import { MessageEntity } from './message.entity';
-import { RecordEntity } from '@providers/common/common.type';
 
 @Injectable()
 export class HistoryDb {

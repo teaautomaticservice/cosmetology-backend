@@ -1,8 +1,8 @@
-import { Provider } from '@nestjs/common';
 import { Logger } from 'winston';
 
-import { LogsService } from '@services/logs/logs.service';
 import { Resources } from '@constants/resources';
+import { Provider } from '@nestjs/common';
+import { LogsService } from '@services/logs/logs.service';
 
 import { ClearLogsSheduler } from './logsClear.sheduler';
 

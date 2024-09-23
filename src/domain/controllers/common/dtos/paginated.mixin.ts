@@ -1,5 +1,6 @@
 import { mixin } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptions } from '@nestjs/swagger';
+
 import { PaginationMetaDto } from './paginationMeta.dto';
 
 type Constructor<T = object> = new (...args: unknown[]) => T;

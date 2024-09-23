@@ -1,22 +1,23 @@
+import { Logger } from 'winston';
+
+import { Resources } from '@constants/resources';
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Inject,
   NotFoundException,
+  Patch,
+  Post,
 } from '@nestjs/common';
-import { Logger } from 'winston';
 import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import { QueryInt } from '@query/queryInt';
+import { HistoryService } from '@services/history/history.service';
 
 import { HistoryDto } from './dtos/history.dto';
 import { HistoryPaginatedDto } from './dtos/historyPaginated.dto';
 import { UpdateHistoryDto } from './dtos/updateHistory.dto';
-import { QueryInt } from '@query/queryInt';
-import { HistoryService } from '@services/history/history.service';
-import { Resources } from '@constants/resources';
 
 @ApiTags('History')
 @Controller('/history')
