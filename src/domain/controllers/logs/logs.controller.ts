@@ -1,8 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
-
-import { QueryInt } from '@query/queryInt';
 import { Pagination } from '@providers/common/common.type';
+import { QueryInt } from '@query/queryInt';
 import { LogsService } from '@services/logs/logs.service';
 
 import { LogsPaginatedDto } from './dtos/logsPaginated.dto';
@@ -19,11 +18,10 @@ export class LogsController {
     description: 'List of logs successful has been got',
     type: LogsPaginatedDto,
   })
-  async getList(
+  public async getList(
     @QueryInt('page', 1) page: number,
-    @QueryInt('pageSize', 10) pageSize: number,
+    @QueryInt('pageSize', 10) pageSize: number
   ): Promise<LogsPaginatedDto> {
-    console.log('getList');
     const pagination: Pagination = {
       page,
       pageSize,

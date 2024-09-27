@@ -1,37 +1,38 @@
+import { Logger } from 'winston';
+
+import { Resources } from '@constants/resources';
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Inject,
   NotFoundException,
+  Patch,
+  Post
 } from '@nestjs/common';
-import { Logger } from 'winston';
 import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import { QueryInt } from '@query/queryInt';
+import { HistoryService } from '@services/history/history.service';
 
 import { HistoryDto } from './dtos/history.dto';
 import { HistoryPaginatedDto } from './dtos/historyPaginated.dto';
 import { UpdateHistoryDto } from './dtos/updateHistory.dto';
-import { QueryInt } from '@query/queryInt';
-import { HistoryService } from '@services/history/history.service';
-import { Resources } from '@constants/resources';
 
 @ApiTags('History')
 @Controller('/history')
 export class HistoryController {
   constructor(
     private readonly historyService: HistoryService,
-    @Inject(Resources.LOGGER) private readonly logger: Logger,
-  ) {}
+    @Inject(Resources.LOGGER) private readonly logger: Logger
+  ) { }
 
   @Get('/list')
   @ApiOkResponse({
     description: 'List of history successful has been got',
     type: HistoryPaginatedDto,
   })
-  async getList(): Promise<HistoryPaginatedDto> {
+  public async getList(): Promise<HistoryPaginatedDto> {
     this.logger.info('history getList');
     const [items, count] = await this.historyService.getHistoryList();
     return {
@@ -50,7 +51,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryDto,
   })
-  async getItem(@QueryInt('id') id: number): Promise<HistoryDto | null> {
+  public async getItem(@QueryInt('id') id: number): Promise<HistoryDto | null> {
     const history = await this.historyService.getHistoryById(Number(id));
     if (history == null) {
       throw new NotFoundException();
@@ -67,9 +68,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  async addItem(
-    @Body() messageReq: UpdateHistoryDto,
-  ): Promise<HistoryPaginatedDto> {
+  public async addItem(@Body() messageReq: UpdateHistoryDto): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.addHistory(messageReq);
     return {
       data: items.map((item) => new HistoryDto(item)),
@@ -91,14 +90,11 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  async updateItem(
+  public async updateItem(
     @QueryInt('id') id: number,
-    @Body() messageReq: UpdateHistoryDto,
+    @Body() messageReq: UpdateHistoryDto
   ): Promise<HistoryPaginatedDto> {
-    const [items, count] = await this.historyService.updateHistory(
-      Number(id),
-      messageReq,
-    );
+    const [items, count] = await this.historyService.updateHistory(Number(id), messageReq);
     return {
       data: items.map((item) => new HistoryDto(item)),
       meta: {
@@ -115,7 +111,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  async removeItem(@QueryInt('id') id: number): Promise<HistoryPaginatedDto> {
+  public async removeItem(@QueryInt('id') id: number): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.removeHistory(Number(id));
     return {
       data: items.map((item) => new HistoryDto(item)),

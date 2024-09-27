@@ -1,21 +1,21 @@
-import { NestFactory } from '@nestjs/core';
-import { WinstonLogger } from 'nest-winston';
 import { ConfigService } from '@nestjs/config';
+import { NestFactory } from '@nestjs/core';
 
-import { AppModule } from './app.module';
 import { Configuration } from './ambient/config/config.types';
+import { DEFAULT_PORT } from './ambient/constants/app';
 import { Resources } from './ambient/constants/resources';
 import { useSwagger } from './ambient/swagger/swagger';
-import { DEFAULT_PORT } from './ambient/constants/app';
+import { AppModule } from './app.module';
 
-async function bootstrap() {
+import { WinstonLogger } from 'nest-winston';
+
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const logger = app.get(Resources.LOGGER);
   const config = app.get<ConfigService<Configuration>>(ConfigService);
 
   const port = config.get<Configuration['port']>('port') ?? DEFAULT_PORT;
-  const isProduction =
-    config.get<Configuration['isProduction']>('isProduction');
+  const isProduction = config.get<Configuration['isProduction']>('isProduction');
 
   app.useLogger(new WinstonLogger(logger));
   app.enableCors();

@@ -1,5 +1,5 @@
 import { INestApplication } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 const config = new DocumentBuilder()
   .setTitle('Cosmetology')
@@ -7,7 +7,7 @@ const config = new DocumentBuilder()
   .setVersion('1.0')
   .build();
 
-export const useSwagger = (app: INestApplication) => {
+export const useSwagger = (app: INestApplication): undefined => {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {
     jsonDocumentUrl: 'swagger/json',

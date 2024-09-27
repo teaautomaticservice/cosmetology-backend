@@ -1,9 +1,7 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 
 @Injectable()
-export class ParseNumber
-  implements PipeTransform<string | undefined, number | undefined>
-{
+export class ParseNumber implements PipeTransform<string | undefined, number | undefined> {
   public transform(value?: string): number | undefined {
     if (typeof value === 'string') {
       const result = Number(value);

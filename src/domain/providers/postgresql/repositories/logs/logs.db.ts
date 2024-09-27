@@ -1,19 +1,20 @@
-import { Injectable } from '@nestjs/common';
-import { Repository, FindManyOptions, LessThan } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+import { FindManyOptions, LessThan, Repository } from 'typeorm';
 
-import { SpecifiedLogsClear } from './logs.types';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Pagination } from '@providers/common/common.type';
+
 import { LogEntity } from './log.entity';
+import { SpecifiedLogsClear } from './logs.types';
 
 @Injectable()
 export class LogsDb {
   constructor(
     @InjectRepository(LogEntity)
-    private readonly logsRepository: Repository<LogEntity>,
+    private readonly logsRepository: Repository<LogEntity>
   ) {}
 
-  public async findAndCount({ pagination }: { pagination: Pagination }) {
+  public async findAndCount({ pagination }: { pagination: Pagination }): Promise<[LogEntity[], number]> {
     const offset = this.getOffset(pagination);
     const sort = this.getSort();
     return Promise.all([
@@ -27,11 +28,7 @@ export class LogsDb {
     ]);
   }
 
-  public async clearLogs({
-    specified,
-  }: {
-    specified?: SpecifiedLogsClear;
-  }): Promise<{ count: number }> {
+  public async clearLogs({ specified }: { specified?: SpecifiedLogsClear }): Promise<{ count: number }> {
     const where: FindManyOptions<LogEntity>['where'] = [];
 
     if (specified) {
@@ -54,7 +51,10 @@ export class LogsDb {
     return { count: entities.length };
   }
 
-  private getOffset({ pageSize, page }: Pagination) {
+  private getOffset({ pageSize, page }: Pagination): {
+    skip: number;
+    take: number;
+  } {
     return {
       skip: Math.max(0, (page - 1) * pageSize),
       take: pageSize,

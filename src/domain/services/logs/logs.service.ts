@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-
-import { Pagination } from '@providers/common/common.type';
 import { LoggerTypes } from '@constants/loggerTypes';
+import { Injectable } from '@nestjs/common';
+import { Pagination } from '@providers/common/common.type';
+import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
 import { LogsDb } from '@providers/postgresql/repositories/logs/logs.db';
 import { SpecifiedLogsClear } from '@providers/postgresql/repositories/logs/logs.types';
 import { subtract } from '@utils/timestamps';
@@ -10,7 +10,7 @@ import { subtract } from '@utils/timestamps';
 export class LogsService {
   constructor(private readonly logRepository: LogsDb) {}
 
-  async getLogsList(params: { pagination: Pagination }) {
+  public async getLogsList(params: { pagination: Pagination }): Promise<[LogEntity[], number]> {
     return this.logRepository.findAndCount(params);
   }
 
