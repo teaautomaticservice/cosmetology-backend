@@ -15,8 +15,7 @@ async function bootstrap(): Promise<void> {
   const config = app.get<ConfigService<Configuration>>(ConfigService);
 
   const port = config.get<Configuration['port']>('port') ?? DEFAULT_PORT;
-  const isProduction =
-    config.get<Configuration['isProduction']>('isProduction');
+  const isProduction = config.get<Configuration['isProduction']>('isProduction');
 
   app.useLogger(new WinstonLogger(logger));
   app.enableCors();

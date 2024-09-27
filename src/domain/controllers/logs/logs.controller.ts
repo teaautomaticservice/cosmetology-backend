@@ -20,7 +20,7 @@ export class LogsController {
   })
   public async getList(
     @QueryInt('page', 1) page: number,
-    @QueryInt('pageSize', 10) pageSize: number,
+    @QueryInt('pageSize', 10) pageSize: number
   ): Promise<LogsPaginatedDto> {
     const pagination: Pagination = {
       page,

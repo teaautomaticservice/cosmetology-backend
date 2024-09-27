@@ -9,10 +9,7 @@ const DAEMON_NAME = 'daemonClearLogs';
 
 @Injectable()
 export class ClearLogsSheduler {
-  constructor(
-    private readonly logsService: LogsService,
-    @Inject(Resources.LOGGER) private readonly logger: Logger,
-  ) {}
+  constructor(private readonly logsService: LogsService, @Inject(Resources.LOGGER) private readonly logger: Logger) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_4AM, {
     name: DAEMON_NAME,

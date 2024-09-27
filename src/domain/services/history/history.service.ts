@@ -13,30 +13,24 @@ export class HistoryService {
     return [historyList, count];
   }
 
-  public async addHistory({
-    message,
-  }: Pick<MessageEntity, 'message'>): Promise<[MessageEntity[], number]> {
+  public async addHistory({ message }: Pick<MessageEntity, 'message'>): Promise<[MessageEntity[], number]> {
     await this.createHistory(message);
     return this.getHistoryList();
   }
 
-  public async getHistoryById(
-    currentId: number,
-  ): Promise<MessageEntity | null> {
+  public async getHistoryById(currentId: number): Promise<MessageEntity | null> {
     return await this.messageDb.findHistoryById(currentId);
   }
 
   public async updateHistory(
     currentId: number,
-    { message }: Pick<MessageEntity, 'message'>,
+    { message }: Pick<MessageEntity, 'message'>
   ): Promise<[MessageEntity[], number]> {
     await this.messageDb.updateHistory(currentId, { message });
     return await this.getHistoryList();
   }
 
-  public async removeHistory(
-    currentId: number,
-  ): Promise<[MessageEntity[], number]> {
+  public async removeHistory(currentId: number): Promise<[MessageEntity[], number]> {
     await this.messageDb.removeHistory(currentId);
     return await this.getHistoryList();
   }

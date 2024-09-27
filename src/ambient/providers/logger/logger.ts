@@ -12,20 +12,18 @@ import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 export const LoggerProvider = {
   provide: Resources.LOGGER,
   inject: [ConfigService],
-  useFactory: (configService: AppConfigService) => {
+  useFactory: (configService: AppConfigService): winston.Logger => {
     const isProduction = configService.get<boolean>('isProduction');
     const db = configService.get<Configuration['database']>('database');
 
-    const generalLoggingLevel = isProduction
-      ? LoggerTypes.info
-      : LoggerTypes.debug;
+    const generalLoggingLevel = isProduction ? LoggerTypes.info : LoggerTypes.debug;
 
     const metaFormat = winston.format((info) => {
-      const newInfo = {
+      const newInfo: winston.Logform.TransformableInfo & { meta: unknown } = {
         ...info,
         meta: info.metadata,
       };
-      delete (newInfo as any).metadata;
+      delete newInfo.metadata;
       return newInfo;
     })();
 
@@ -35,7 +33,7 @@ export const LoggerProvider = {
         nestWinstonModuleUtilities.format.nestLike('CosmetologyApp', {
           colors: true,
           prettyPrint: true,
-        }),
+        })
       ),
     });
 
@@ -87,7 +85,7 @@ export const LoggerProvider = {
         winston.format.metadata(),
         metaFormat,
         winston.format.timestamp(),
-        winston.format.ms(),
+        winston.format.ms()
       ),
       transports: [consoleTransport, dbTransport],
     });

@@ -9,7 +9,7 @@ import {
   Inject,
   NotFoundException,
   Patch,
-  Post,
+  Post
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { QueryInt } from '@query/queryInt';
@@ -24,8 +24,8 @@ import { UpdateHistoryDto } from './dtos/updateHistory.dto';
 export class HistoryController {
   constructor(
     private readonly historyService: HistoryService,
-    @Inject(Resources.LOGGER) private readonly logger: Logger,
-  ) {}
+    @Inject(Resources.LOGGER) private readonly logger: Logger
+  ) { }
 
   @Get('/list')
   @ApiOkResponse({
@@ -68,9 +68,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  public async addItem(
-    @Body() messageReq: UpdateHistoryDto,
-  ): Promise<HistoryPaginatedDto> {
+  public async addItem(@Body() messageReq: UpdateHistoryDto): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.addHistory(messageReq);
     return {
       data: items.map((item) => new HistoryDto(item)),
@@ -94,12 +92,9 @@ export class HistoryController {
   })
   public async updateItem(
     @QueryInt('id') id: number,
-    @Body() messageReq: UpdateHistoryDto,
+    @Body() messageReq: UpdateHistoryDto
   ): Promise<HistoryPaginatedDto> {
-    const [items, count] = await this.historyService.updateHistory(
-      Number(id),
-      messageReq,
-    );
+    const [items, count] = await this.historyService.updateHistory(Number(id), messageReq);
     return {
       data: items.map((item) => new HistoryDto(item)),
       meta: {
@@ -116,9 +111,7 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  public async removeItem(
-    @QueryInt('id') id: number,
-  ): Promise<HistoryPaginatedDto> {
+  public async removeItem(@QueryInt('id') id: number): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.removeHistory(Number(id));
     return {
       data: items.map((item) => new HistoryDto(item)),

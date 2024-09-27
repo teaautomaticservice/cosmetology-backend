@@ -6,10 +6,7 @@ import { PaginationMetaDto } from './paginationMeta.dto';
 type Constructor<T = object> = new (...args: unknown[]) => T;
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export function paginatedMixin<Dto extends Constructor>(
-  Base: Dto,
-  options?: ApiPropertyOptions | undefined,
-) {
+export function paginatedMixin<Dto extends Constructor>(Base: Dto, options?: ApiPropertyOptions | undefined) {
   class Paginated {
     @ApiProperty({
       isArray: true,

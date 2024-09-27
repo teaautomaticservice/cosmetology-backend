@@ -9,6 +9,5 @@ import { ClearLogsSheduler } from './logsClear.sheduler';
 export const logsClearShedulerProvider: Provider<ClearLogsSheduler> = {
   provide: Resources.ClearLogsSheduler,
   inject: [LogsService, Resources.LOGGER],
-  useFactory: (logsService: LogsService, logger: Logger) =>
-    new ClearLogsSheduler(logsService, logger),
+  useFactory: (logsService: LogsService, logger: Logger) => new ClearLogsSheduler(logsService, logger),
 };

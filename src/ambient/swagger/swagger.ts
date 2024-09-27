@@ -7,7 +7,7 @@ const config = new DocumentBuilder()
   .setVersion('1.0')
   .build();
 
-export const useSwagger = (app: INestApplication) => {
+export const useSwagger = (app: INestApplication): undefined => {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document, {
     jsonDocumentUrl: 'swagger/json',

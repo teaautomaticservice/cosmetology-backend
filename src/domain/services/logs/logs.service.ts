@@ -10,9 +10,7 @@ import { subtract } from '@utils/timestamps';
 export class LogsService {
   constructor(private readonly logRepository: LogsDb) {}
 
-  public async getLogsList(params: {
-    pagination: Pagination;
-  }): Promise<[LogEntity[], number]> {
+  public async getLogsList(params: { pagination: Pagination }): Promise<[LogEntity[], number]> {
     return this.logRepository.findAndCount(params);
   }
 

@@ -11,14 +11,10 @@ import { SpecifiedLogsClear } from './logs.types';
 export class LogsDb {
   constructor(
     @InjectRepository(LogEntity)
-    private readonly logsRepository: Repository<LogEntity>,
+    private readonly logsRepository: Repository<LogEntity>
   ) {}
 
-  public async findAndCount({
-    pagination,
-  }: {
-    pagination: Pagination;
-  }): Promise<[LogEntity[], number]> {
+  public async findAndCount({ pagination }: { pagination: Pagination }): Promise<[LogEntity[], number]> {
     const offset = this.getOffset(pagination);
     const sort = this.getSort();
     return Promise.all([
@@ -32,11 +28,7 @@ export class LogsDb {
     ]);
   }
 
-  public async clearLogs({
-    specified,
-  }: {
-    specified?: SpecifiedLogsClear;
-  }): Promise<{ count: number }> {
+  public async clearLogs({ specified }: { specified?: SpecifiedLogsClear }): Promise<{ count: number }> {
     const where: FindManyOptions<LogEntity>['where'] = [];
 
     if (specified) {

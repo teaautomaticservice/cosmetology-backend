@@ -8,7 +8,7 @@ module.exports = {
   plugins: ['@typescript-eslint/eslint-plugin', 'simple-import-sort', 'import-newlines'],
   extends: [
     'plugin:@typescript-eslint/recommended',
-    'plugin:prettier/recommended',
+    'prettier'
   ],
   root: true,
   env: {
@@ -76,15 +76,6 @@ module.exports = {
         },
       },
     ],
-    'max-len': [
-      'error',
-      {
-        code: 120,
-        tabWidth: 4,
-        ignoreTemplateLiterals: true,
-        ignoreStrings: true,
-      },
-    ],
     '@typescript-eslint/quotes': [
       'error',
       'single',
@@ -96,7 +87,7 @@ module.exports = {
       'error',
       {
         code: 120,
-        tabWidth: 4,
+        tabWidth: 2,
         ignoreTemplateLiterals: true,
         ignoreStrings: true,
       },
@@ -149,10 +140,15 @@ module.exports = {
       'error',
       2,
       {
-        ImportDeclaration: 1,
-        SwitchCase: 1,
+          "ImportDeclaration": 1,
+          SwitchCase: 1,
+          ignoredNodes: [
+              'FunctionExpression > .params[decorators.length > 0]',
+              'FunctionExpression > .params > :matches(Decorator, :not(:first-child))',
+              'ClassBody.body > PropertyDefinition[decorators.length > 0] > .key',
+          ],
       },
-    ],
+  ],
     'no-multiple-empty-lines': [
       'error',
       {
@@ -187,5 +183,14 @@ module.exports = {
         "caughtErrorsIgnorePattern": "^_"
       }
     ],
+    // 'prettier/prettier': [
+    //   'error',
+    //   {
+    //     endOfLine: 'auto',
+    //     printWidth: 120,
+    //     tabWidth: 2,
+    //     useTabs: true,
+    //   },
+    // ],
   },
 };
