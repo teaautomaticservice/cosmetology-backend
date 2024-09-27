@@ -35,7 +35,7 @@ export class HistoryService {
     return await this.getHistoryList();
   }
 
-  private async createHistory(message: string): Promise<MessageEntity> {
+  private async createHistory(message: string): Promise<Omit<MessageEntity, 'id'>> {
     return this.messageDb.createHistory({
       date: new Date(),
       message,

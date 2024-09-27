@@ -183,14 +183,5 @@ module.exports = {
         "caughtErrorsIgnorePattern": "^_"
       }
     ],
-    // 'prettier/prettier': [
-    //   'error',
-    //   {
-    //     endOfLine: 'auto',
-    //     printWidth: 120,
-    //     tabWidth: 2,
-    //     useTabs: true,
-    //   },
-    // ],
   },
 };
