@@ -32,14 +32,15 @@ export abstract class CommonRepository<Entity extends CommonEntity> {
     order?: FindOptionsOrder<Entity>;
   }): Promise<FoundAndCounted<Entity>> {
     const offset = this.getOffset(pagination);
-    const currentOrder: FindOptionsOrder<CommonEntity> = {
+    const currentOrder = {
       createdAt: -1,
       ...order,
-    };
+    } as FindOptionsOrder<Entity>;
+
     return Promise.all([
       this.dbRepository.find({
         ...offset,
-        ...currentOrder,
+        order: currentOrder,
       }),
       this.dbRepository.count({
         ...offset,
@@ -61,8 +62,9 @@ export abstract class CommonRepository<Entity extends CommonEntity> {
   }: {
     where?: Where<Entity>;
   }): Promise<FoundAndCounted<Entity>> {
+    const order = { createdAt: -1 } as FindOptionsOrder<Entity>;
     return Promise.all([
-      this.dbRepository.find({ where }),
+      this.dbRepository.find({ where, order }),
       this.dbRepository.count({ where }),
     ]);
   }
