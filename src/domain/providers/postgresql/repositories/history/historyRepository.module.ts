@@ -1,3 +1,4 @@
+import { LoggerProvider } from '@ambientProviders/logger/logger';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -6,7 +7,7 @@ import { MessageEntity } from './message.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([MessageEntity])],
-  providers: [HistoryDb],
+  providers: [LoggerProvider, HistoryDb],
   exports: [HistoryDb],
 })
 export class HistoryRepositoryModule {}

@@ -1,10 +1,9 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity } from 'typeorm';
+
+import { CommonEntity } from '../common/common.entity';
 
 @Entity()
-export class LogEntity {
-  @PrimaryGeneratedColumn()
-  public id: number;
-
+export class LogEntity extends CommonEntity {
   @CreateDateColumn()
   public timestamp: Date;
 

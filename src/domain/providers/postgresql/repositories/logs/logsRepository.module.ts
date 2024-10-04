@@ -1,3 +1,4 @@
+import { LoggerProvider } from '@ambientProviders/logger/logger';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -6,7 +7,7 @@ import { LogsDb } from './logs.db';
 
 @Module({
   imports: [TypeOrmModule.forFeature([LogEntity])],
-  providers: [LogsDb],
+  providers: [LoggerProvider, LogsDb],
   exports: [LogsDb],
 })
 export class LogsRepositoryModule {}

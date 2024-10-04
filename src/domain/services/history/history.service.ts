@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { RecordEntity } from '@providers/common/common.type';
 import { HistoryDb } from '@providers/postgresql/repositories/history/history.db';
 import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
 
@@ -35,7 +36,7 @@ export class HistoryService {
     return await this.getHistoryList();
   }
 
-  private async createHistory(message: string): Promise<Omit<MessageEntity, 'id'>> {
+  private async createHistory(message: string): Promise<RecordEntity<MessageEntity>> {
     return this.messageDb.createHistory({
       date: new Date(),
       message,

@@ -5,45 +5,45 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { RecordEntity } from '@providers/common/common.type';
 
 import { MessageEntity } from './message.entity';
+import { CommonRepository } from '../common/common.db';
 
 @Injectable()
-export class HistoryDb {
+export class HistoryDb extends CommonRepository<MessageEntity> {
   constructor(
     @InjectRepository(MessageEntity)
     private readonly messageRepository: Repository<MessageEntity>
-  ) {}
+  ) {
+    super(messageRepository);
+  }
 
   public async getHistoryList(): Promise<MessageEntity[]> {
-    return await this.messageRepository.find();
+    const [list] = await this.findAllSpecified({});
+    return list;
   }
 
   public async getHistoriesCount(): Promise<number> {
-    return await this.messageRepository.count();
+    const [_, count] = await this.findAllSpecified({});
+    return count;
   }
 
-  public async createHistory(message: RecordEntity<MessageEntity>): Promise<RecordEntity<MessageEntity>> {
-    return this.messageRepository.save(message);
+  public async createHistory(message: RecordEntity<MessageEntity>): Promise<MessageEntity> {
+    return this.create(message);
   }
 
   public async findHistoryById(currentId: MessageEntity['id']): Promise<MessageEntity | null> {
-    const fundedItem = await this.messageRepository.findOne({
-      where: {
-        id: currentId,
-      },
-    });
-    return fundedItem;
+    return this.findById(currentId);
   }
 
   public async updateHistory(
     currentId: MessageEntity['id'],
     message: Partial<RecordEntity<MessageEntity>>
   ): Promise<MessageEntity[]> {
-    await this.messageRepository.update(currentId, message);
-    return await this.getHistoryList();
+    await this.updateById(currentId, message);
+    return this.getHistoryList();
   }
 
   public async removeHistory(currentId: MessageEntity['id']): Promise<MessageEntity[]> {
-    await this.messageRepository.delete(currentId);
-    return await this.getHistoryList();
+    await this.deleteById(currentId);
+    return this.getHistoryList();
   }
 }
