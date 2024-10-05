@@ -1,4 +1,4 @@
-import { UserStatus } from 'src/domain/types/users.types';
+import { UserStatus, UserType } from 'src/domain/types/users.types';
 import { Column, Entity, Index } from 'typeorm';
 
 import { CommonEntity } from '../common/common.entity';
@@ -22,6 +22,9 @@ export class UserEntity extends CommonEntity {
 
   @Column('enum', { enum: UserStatus })
   public status: UserStatus;
+
+  @Column('enum', { enum: UserType })
+  public type: UserType;
 
   public static getName(entity: UserEntity): string {
     return entity.displayName || entity.email;
