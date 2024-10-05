@@ -1,10 +1,11 @@
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+
+import { getConfig } from '@config/config';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { getConfig } from './ambient/config/config';
-import { DatabaseConfig } from './ambient/config/database/database.types';
 import { DomainModule } from './domain/domain.module';
 
 @Module({
@@ -16,17 +17,8 @@ import { DomainModule } from './domain/domain.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const databaseConfig = configService.get<DatabaseConfig>('database');
-        return {
-          type: 'postgres',
-          host: databaseConfig?.host,
-          port: databaseConfig?.port,
-          username: databaseConfig?.user,
-          password: databaseConfig?.password,
-          database: databaseConfig?.name,
-          synchronize: true,
-          autoLoadEntities: true,
-        };
+        const databaseConfig = configService.getOrThrow<PostgresConnectionOptions>('database');
+        return databaseConfig;
       },
       inject: [ConfigService],
     }),

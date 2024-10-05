@@ -23,7 +23,7 @@
       "@query/*": ["src/ambient/query/*"],
       "@ambientProviders/*": ["src/ambient/providers/*"],
       "@config/*": ["src/ambient/config/*"],
-      "@domain": ["src/domain"],
+      "@domain/*": ["src/domain/*"],
       "@controllers/*": ["src/domain/controllers/*"],
       "@providers/*": ["src/domain/providers/*"],
       "@services/*": ["src/domain/services/*"],
