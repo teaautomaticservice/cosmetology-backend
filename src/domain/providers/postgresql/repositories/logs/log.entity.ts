@@ -1,8 +1,9 @@
 import { Column, CreateDateColumn, Entity } from 'typeorm';
 
+import { LOGS_ENTITY } from '../../constants/entities';
 import { CommonEntity } from '../common/common.entity';
 
-@Entity()
+@Entity(LOGS_ENTITY)
 export class LogEntity extends CommonEntity {
   @CreateDateColumn()
   public timestamp: Date;

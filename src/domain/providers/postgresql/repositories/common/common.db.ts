@@ -69,6 +69,14 @@ export abstract class CommonRepository<Entity extends CommonEntity> {
     ]);
   }
 
+  public findSpecified({
+    where,
+  }: {
+    where?: Where<Entity>;
+  }): Promise<Entity | null> {
+    return this.dbRepository.findOne({ where });
+  }
+
   public async create(data: DeepPartial<Entity>): Promise<DeepPartial<Entity> & Entity> {
     const fullData: DeepPartial<Entity> = {
       createdAt: new Date(),

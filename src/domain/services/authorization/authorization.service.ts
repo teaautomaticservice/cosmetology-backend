@@ -1,3 +1,5 @@
+import { compare } from 'bcrypt';
+
 import { Injectable } from '@nestjs/common';
 import { UsersDb } from '@providers/postgresql/repositories/users/users.db';
 
@@ -12,8 +14,14 @@ export class AuthorizationService {
   }: {
     loginData: AuthorizationLogin;
   }) {
-    const [users, count] = await this.usersDb.findAllSpecified({});
-    console.log('loginByPassword', loginData);
-    console.log('users', users, count);
+    const { email, password } = loginData;
+    const user = await this.usersDb.findSpecified({
+      where: {
+        email,
+      }
+    });
+
+    const passCheck = user ? await compare(password, user.password) : false;
+    console.log('users', user, passCheck);
   }
 }

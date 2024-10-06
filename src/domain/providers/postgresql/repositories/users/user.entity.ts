@@ -2,9 +2,10 @@ import { Column, Entity, Index } from 'typeorm';
 
 import { UserStatus, UserType } from '@domain/types/users.types';
 
+import { USERS_ENTITY } from '../../constants/entities';
 import { CommonEntity } from '../common/common.entity';
 
-@Entity()
+@Entity(USERS_ENTITY)
 export class UserEntity extends CommonEntity {
   @Column()
   @Index('email_1', { unique: true, sparse: true })
