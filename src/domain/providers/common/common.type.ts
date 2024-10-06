@@ -12,3 +12,5 @@ export interface Pagination {
   page: number;
   pageSize: number;
 }
+
+export type FoundAndCounted<Entity> = [Entity[], number];

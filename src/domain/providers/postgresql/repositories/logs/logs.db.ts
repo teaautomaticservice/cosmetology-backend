@@ -1,42 +1,23 @@
-import { LessThan, Repository } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { LogEntity } from './log.entity';
-import { SpecifiedLogsClear } from './logs.types';
 import { CommonRepository } from '../common/common.db';
-import { Where } from '../common/common.types';
 
 @Injectable()
 export class LogsDb extends CommonRepository<LogEntity> {
   constructor(
-    @InjectRepository(LogEntity)
-    private readonly logsRepository: Repository<LogEntity>
+    @InjectRepository(LogEntity) private readonly logsRepository: Repository<LogEntity>,
   ) {
     super(logsRepository);
   }
 
-  public async clearLogs({ specified }: { specified?: SpecifiedLogsClear }): Promise<{ count: number }> {
-    const where: Where<LogEntity> = [];
-
-    if (specified) {
-      Object.entries(specified.types ?? {}).map(([key, val]) => {
-        where.push({
-          level: key,
-          timestamp: LessThan(val),
-        });
-      });
-    }
-
-    const [entities] = await this.findAllSpecified({
-      where,
+  public deleteManyByIds(ids: LogEntity['id'][]): Promise<DeleteResult> {
+    this.logger.info('Delete many logs by ids', {
+      ids,
     });
-
-    if (entities.length) {
-      await this.deleteManyByIds(entities.map(({ id }) => id));
-    }
-
-    return { count: entities.length };
+    return this.dbRepository.delete(ids);
   }
 }

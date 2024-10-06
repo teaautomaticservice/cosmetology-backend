@@ -1,10 +1,10 @@
+import { UsersProviderModule } from '@domain/providers/users/usersProvider.module';
 import { Module } from '@nestjs/common';
-import { UsersRepositoryModule } from '@providers/postgresql/repositories/users/usersRepository.module';
 
 import { AuthorizationService } from './authorization.service';
 
 @Module({
-  imports: [UsersRepositoryModule],
+  imports: [UsersProviderModule],
   providers: [AuthorizationService],
   exports: [AuthorizationService],
 })

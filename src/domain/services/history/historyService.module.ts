@@ -1,10 +1,10 @@
+import { HistoriesProviderModule } from '@domain/providers/histories/historiesProvider.module';
 import { Module } from '@nestjs/common';
-import { HistoryRepositoryModule } from '@providers/postgresql/repositories/history/historyRepository.module';
 
 import { HistoryService } from './history.service';
 
 @Module({
-  imports: [HistoryRepositoryModule],
+  imports: [HistoriesProviderModule],
   providers: [HistoryService],
   exports: [HistoryService],
 })
