@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
+import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
 import { UserEntity } from '../postgresql/repositories/users/user.entity';
 import { UsersDb } from '../postgresql/repositories/users/users.db';
-import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
 
 @Injectable()
 export class UsersProviders extends CommonPostgresqlProvider<UserEntity> {

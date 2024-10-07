@@ -1,4 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Response } from 'express';
+
+import {
+  Body,
+  Controller,
+  Post,
+  Res
+} from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthorizationService } from '@services/authorization/authorization.service';
 
@@ -19,9 +26,17 @@ export class AuthorizationController {
     description: 'User success login',
     type: CurrentUserDto,
   })
-  public async login(@Body() loginForm: LoginFormDto): Promise<CurrentUserDto> {
-    const user = await this.authorizationService.login({
+  public async login(
+    @Body() loginForm: LoginFormDto,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<CurrentUserDto> {
+    const { user, session } = await this.authorizationService.login({
       loginData: loginForm,
+    });
+
+    response.cookie('session', session, {
+      sameSite: 'strict',
+      httpOnly: true,
     });
 
     return new CurrentUserDto(user);

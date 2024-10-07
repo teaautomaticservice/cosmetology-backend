@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 
-import { SessionsRepositoryModule } from '../postgresql/repositories/sessions/sessionsRepository.module';
 import { SessionsProvider } from './sessions.provider';
+import { SessionsRepositoryModule } from '../postgresql/repositories/sessions/sessionsRepository.module';
 
 @Module({
   imports: [SessionsRepositoryModule],

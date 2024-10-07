@@ -3,12 +3,12 @@ import * as winston from 'winston';
 import { AppConfigService, Configuration } from '@config/config.types';
 import { LoggerTypes } from '@constants/loggerTypes';
 import { Resources } from '@constants/resources';
+import { LOGS_ENTITY } from '@domain/providers/postgresql/constants/entities';
 import { PostgresTransport } from '@innova2/winston-pg';
 import { ConfigService } from '@nestjs/config';
 import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
 
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
-import { LOGS_ENTITY } from '@domain/providers/postgresql/constants/entities';
 
 export const LoggerProvider = {
   provide: Resources.LOGGER,
