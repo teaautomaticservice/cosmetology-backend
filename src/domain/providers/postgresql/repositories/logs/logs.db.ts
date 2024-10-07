@@ -4,10 +4,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { LogEntity } from './log.entity';
-import { CommonRepository } from '../common/common.db';
+import { CommonDb } from '../common/common.db';
 
 @Injectable()
-export class LogsDb extends CommonRepository<LogEntity> {
+export class LogsDb extends CommonDb<LogEntity> {
   constructor(
     @InjectRepository(LogEntity) private readonly logsRepository: Repository<LogEntity>,
   ) {

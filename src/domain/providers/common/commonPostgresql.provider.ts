@@ -2,13 +2,13 @@ import { DeepPartial, FindOptionsOrder, FindOptionsWhere } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { FoundAndCounted, Pagination, RecordEntity } from './common.type';
-import { CommonRepository } from '../postgresql/repositories/common/common.db';
+import { CommonDb } from '../postgresql/repositories/common/common.db';
 import { CommonEntity } from '../postgresql/repositories/common/common.entity';
 
 export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
-  protected readonly db: CommonRepository<Entity>;
+  protected readonly db: CommonDb<Entity>;
 
-  constructor(db: CommonRepository<Entity>) {
+  constructor(db: CommonDb<Entity>) {
     this.db = db;
   }
 

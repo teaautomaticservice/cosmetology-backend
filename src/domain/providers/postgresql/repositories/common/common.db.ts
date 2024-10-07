@@ -13,7 +13,7 @@ import { Inject } from '@nestjs/common';
 import { CommonEntity } from './common.entity';
 import { Where } from './common.types';
 
-export abstract class CommonRepository<Entity extends CommonEntity> {
+export abstract class CommonDb<Entity extends CommonEntity> {
   @Inject(Resources.LOGGER) public readonly logger: Logger;
   protected readonly dbRepository: Repository<Entity>;
 

@@ -4,10 +4,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { MessageEntity } from './message.entity';
-import { CommonRepository } from '../common/common.db';
+import { CommonDb } from '../common/common.db';
 
 @Injectable()
-export class HistoryDb extends CommonRepository<MessageEntity> {
+export class HistoryDb extends CommonDb<MessageEntity> {
   constructor(
     @InjectRepository(MessageEntity)
     private readonly messageRepository: Repository<MessageEntity>

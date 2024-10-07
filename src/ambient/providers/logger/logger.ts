@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
 
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
+import { LOGS_ENTITY } from '@domain/providers/postgresql/constants/entities';
 
 export const LoggerProvider = {
   provide: Resources.LOGGER,
@@ -43,7 +44,7 @@ export const LoggerProvider = {
       connectionString: connectionDbString,
       maxPool: 10,
       level: 'info',
-      tableName: 'log_entity',
+      tableName: LOGS_ENTITY,
       tableColumns: [
         {
           name: 'id',

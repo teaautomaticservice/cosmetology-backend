@@ -7,7 +7,7 @@ import { generateUser } from '../utils/generateUser';
 
 const SUPER_ADMIN_EMAIL = 'dahakalab@gmail.com';
 
-export class UsersCreateSuperAdmin1728235771816 implements MigrationInterface {
+export class UsersCreateSuper1728290091882 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const superAdmin = await generateUser({
       email: SUPER_ADMIN_EMAIL,

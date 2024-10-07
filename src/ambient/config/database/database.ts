@@ -23,7 +23,7 @@ export const getDatabaseConfig = (): PostgresConnectionOptions => ({
   password: process.env.POSTGRES_PASSWORD ?? '',
   database: process.env.DB_NAME ?? '',
   autoLoadEntities: true,
-  entities: ['dist/providers/postgresql.repositories/**/*.js'],
+  entities: ['dist/domain/providers/postgresql/repositories/**/*entity.js'],
   migrations,
   migrationsTableName: 'migrations',
   synchronize: false,

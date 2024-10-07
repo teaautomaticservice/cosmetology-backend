@@ -2,6 +2,7 @@ import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthorizationService } from '@services/authorization/authorization.service';
 
+import { CurrentUserDto } from './dtos/currentUser.dto';
 import { LoginFormDto } from './dtos/loginForm.dto';
 
 @ApiTags('Authorization')
@@ -16,10 +17,13 @@ export class AuthorizationController {
   })
   @ApiOkResponse({
     description: 'User success login',
+    type: CurrentUserDto,
   })
-  public async login(@Body() loginForm: LoginFormDto): Promise<void> {
-    this.authorizationService.loginByPassword({
+  public async login(@Body() loginForm: LoginFormDto): Promise<CurrentUserDto> {
+    const user = await this.authorizationService.login({
       loginData: loginForm,
     });
+
+    return new CurrentUserDto(user);
   }
 }
