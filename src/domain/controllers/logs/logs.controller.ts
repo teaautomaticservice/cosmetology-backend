@@ -5,14 +5,14 @@ import { QueryInt } from '@query/queryInt';
 import { LogsService } from '@services/logs/logs.service';
 
 import { LogsPaginatedDto } from './dtos/logsPaginated.dto';
-import { AuthGuard } from '../common/guards/auth.guard';
+import { SuperAdminGuard } from '../common/guards/superAdmin.guard';
 
 @ApiTags('Logs')
 @Controller('/logs')
 export class LogsController {
   constructor(private readonly logsService: LogsService) { }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(SuperAdminGuard)
   @Get('/list')
   @ApiParam({ name: 'page', required: false })
   @ApiParam({ name: 'pageSize', required: false })
