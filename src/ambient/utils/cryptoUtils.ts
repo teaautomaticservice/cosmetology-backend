@@ -5,4 +5,4 @@ export const cryptoUtils = {
     const salt = await genSalt(15);
     return await hash(password, salt);
   },
-}
+};

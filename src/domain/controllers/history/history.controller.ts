@@ -9,7 +9,8 @@ import {
   Inject,
   NotFoundException,
   Patch,
-  Post
+  Post,
+  UseGuards
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { QueryInt } from '@query/queryInt';
@@ -18,6 +19,7 @@ import { HistoryService } from '@services/history/history.service';
 import { HistoryDto } from './dtos/history.dto';
 import { HistoryPaginatedDto } from './dtos/historyPaginated.dto';
 import { UpdateHistoryDto } from './dtos/updateHistory.dto';
+import { AuthGuard } from '../common/guards/auth.guard';
 
 @ApiTags('History')
 @Controller('/history')
@@ -27,6 +29,7 @@ export class HistoryController {
     @Inject(Resources.LOGGER) private readonly logger: Logger
   ) { }
 
+  @UseGuards(AuthGuard)
   @Get('/list')
   @ApiOkResponse({
     description: 'List of history successful has been got',
@@ -45,6 +48,7 @@ export class HistoryController {
     };
   }
 
+  @UseGuards(AuthGuard)
   @Get('/:id')
   @ApiParam({ name: 'id' })
   @ApiOkResponse({
@@ -59,6 +63,7 @@ export class HistoryController {
     return new HistoryDto(history);
   }
 
+  @UseGuards(AuthGuard)
   @Post()
   @ApiBody({
     description: 'Update history body',
@@ -80,6 +85,7 @@ export class HistoryController {
     };
   }
 
+  @UseGuards(AuthGuard)
   @Patch('/:id')
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({
@@ -105,6 +111,7 @@ export class HistoryController {
     };
   }
 
+  @UseGuards(AuthGuard)
   @Delete('/:id')
   @ApiParam({ name: 'id', type: 'string' })
   @ApiOkResponse({

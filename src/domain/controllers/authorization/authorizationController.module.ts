@@ -7,6 +7,6 @@ import { AuthorizationController } from './authorization.controller';
   imports: [AuthorizationServiceModule],
   controllers: [
     AuthorizationController,
-  ]
+  ],
 })
 export class AuthorizationControllerModule {}

@@ -11,6 +11,6 @@ export class SessionsProvider extends CommonPostgresqlProvider<SessionEntity> {
   }
 
   public async findBySessionId(sessionId: string): Promise<SessionEntity | null> {
-    return this.sessionsDb.findOne({ where: { sessionId }});
+    return this.sessionsDb.findOne({ where: { sessionId } });
   }
 }

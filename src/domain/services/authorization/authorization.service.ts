@@ -5,11 +5,11 @@ import { SessionEntity } from '@domain/providers/postgresql/repositories/session
 import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { SessionsProvider } from '@domain/providers/sessions/sessions.provider';
 import { UsersProviders } from '@domain/providers/users/users.provider';
+import { AuthorizationCookies } from '@domain/types/cookies.types';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { dateUtils } from '@utils/dateUtils';
 
 import { AuthorizationLogin } from './authorization.types';
-import { dateUtils } from '@utils/dateUtils';
-import { AuthorizationCookies } from '@domain/types/cookies.types';
 
 @Injectable()
 export class AuthorizationService {
@@ -48,6 +48,16 @@ export class AuthorizationService {
     const newSession = await this.createSession(user);
 
     return { user, session: newSession };
+  }
+
+  public async getUserBySessionId(sessionId: string): Promise<UserEntity | null> {
+    const session = await this.sessionsProvider.findBySessionId(sessionId);
+
+    if (session == null) {
+      return null;
+    }
+
+    return this.usersProviders.findById(session.userId);
   }
 
   private async createSession(user: UserEntity): Promise<SessionEntity> {

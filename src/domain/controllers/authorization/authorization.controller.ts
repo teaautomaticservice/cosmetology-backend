@@ -1,4 +1,4 @@
-import { Response, Request } from 'express';
+import { Request, Response } from 'express';
 
 import {
   Body,
@@ -9,11 +9,11 @@ import {
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthorizationService } from '@services/authorization/authorization.service';
+import { cookieUtils } from '@utils/cookieUtils';
 
 import { CurrentUserDto } from './dtos/currentUser.dto';
 import { LoginFormDto } from './dtos/loginForm.dto';
-import { cookieUtils } from '@utils/cookieUtils';
-import { AuthorizationCookieDto } from './dtos/authorizationCookie.dto';
+import { AuthorizationCookieDto } from '../common/dtos/authorizationCookie.dto';
 
 @ApiTags('Authorization')
 @Controller('/authorization')

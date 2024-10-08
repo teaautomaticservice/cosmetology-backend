@@ -1,16 +1,18 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Pagination } from '@providers/common/common.type';
 import { QueryInt } from '@query/queryInt';
 import { LogsService } from '@services/logs/logs.service';
 
 import { LogsPaginatedDto } from './dtos/logsPaginated.dto';
+import { AuthGuard } from '../common/guards/auth.guard';
 
 @ApiTags('Logs')
 @Controller('/logs')
 export class LogsController {
-  constructor(private readonly logsService: LogsService) {}
+  constructor(private readonly logsService: LogsService) { }
 
+  @UseGuards(AuthGuard)
   @Get('/list')
   @ApiParam({ name: 'page', required: false })
   @ApiParam({ name: 'pageSize', required: false })
