@@ -9,4 +9,8 @@ export class SessionsProvider extends CommonPostgresqlProvider<SessionEntity> {
   constructor(private readonly sessionsDb: SessionsDb) {
     super(sessionsDb);
   }
+
+  public async findBySessionId(sessionId: string): Promise<SessionEntity | null> {
+    return this.sessionsDb.findOne({ where: { sessionId }});
+  }
 }

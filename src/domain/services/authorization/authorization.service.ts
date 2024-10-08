@@ -8,18 +8,22 @@ import { UsersProviders } from '@domain/providers/users/users.provider';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 
 import { AuthorizationLogin } from './authorization.types';
+import { dateUtils } from '@utils/dateUtils';
+import { AuthorizationCookies } from '@domain/types/cookies.types';
 
 @Injectable()
 export class AuthorizationService {
   constructor(
     private readonly usersProviders: UsersProviders,
     private readonly sessionsProvider: SessionsProvider,
-  ) {}
+  ) { }
 
   public async login({
     loginData,
+    cookies,
   }: {
     loginData: AuthorizationLogin;
+    cookies?: AuthorizationCookies;
   }): Promise<{ user: UserEntity; session: SessionEntity }> {
     const { email, password } = loginData;
     const user = await this.usersProviders.getByEmail(email);
@@ -34,14 +38,21 @@ export class AuthorizationService {
       throw new HttpException('Credentials not correct', HttpStatus.FORBIDDEN);
     }
 
-    const session = await this.createSession(user);
+    if (cookies?.session) {
+      const foundSession = await this.sessionsProvider.findBySessionId(cookies.session);
+      if (foundSession) {
+        return { user, session: foundSession };
+      }
+    }
 
-    return { user, session };
+    const newSession = await this.createSession(user);
+
+    return { user, session: newSession };
   }
 
   private async createSession(user: UserEntity): Promise<SessionEntity> {
     return this.sessionsProvider.create({
-      expireAt: new Date(),
+      expireAt: dateUtils.add(new Date(), 1, 'month'),
       userId: user.id,
       sessionId: uuid()
     });

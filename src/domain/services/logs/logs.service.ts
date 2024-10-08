@@ -4,7 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { Pagination } from '@providers/common/common.type';
 import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
 import { SpecifiedLogsClear } from '@providers/postgresql/repositories/logs/logs.types';
-import { subtract } from '@utils/timestamps';
+import { dateUtils } from '@utils/dateUtils';
 
 @Injectable()
 export class LogsService {
@@ -17,9 +17,9 @@ export class LogsService {
   public async clearOldLogs(): Promise<{ count: number }> {
     const specified: SpecifiedLogsClear = {
       types: {
-        [LoggerTypes.debug]: subtract(new Date(), 1, 'week'),
-        [LoggerTypes.info]: subtract(new Date(), 2, 'month'),
-        [LoggerTypes.error]: subtract(new Date(), 6, 'month'),
+        [LoggerTypes.debug]: dateUtils.subtract(new Date(), 1, 'week'),
+        [LoggerTypes.info]: dateUtils.subtract(new Date(), 2, 'month'),
+        [LoggerTypes.error]: dateUtils.subtract(new Date(), 6, 'month'),
       },
     };
 

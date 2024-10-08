@@ -1,9 +1,10 @@
-import { Response } from 'express';
+import { Response, Request } from 'express';
 
 import {
   Body,
   Controller,
   Post,
+  Req,
   Res
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
@@ -11,6 +12,8 @@ import { AuthorizationService } from '@services/authorization/authorization.serv
 
 import { CurrentUserDto } from './dtos/currentUser.dto';
 import { LoginFormDto } from './dtos/loginForm.dto';
+import { cookieUtils } from '@utils/cookieUtils';
+import { AuthorizationCookieDto } from './dtos/authorizationCookie.dto';
 
 @ApiTags('Authorization')
 @Controller('/authorization')
@@ -28,16 +31,19 @@ export class AuthorizationController {
   })
   public async login(
     @Body() loginForm: LoginFormDto,
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<CurrentUserDto> {
+    const cookies = new AuthorizationCookieDto(request);
+
     const { user, session } = await this.authorizationService.login({
       loginData: loginForm,
+      cookies,
     });
 
-    response.cookie('session', session, {
-      sameSite: 'strict',
-      httpOnly: true,
-    });
+    response.cookie('session', session.sessionId, cookieUtils.setOptions({
+      expires: session.expireAt,
+    }));
 
     return new CurrentUserDto(user);
   }
