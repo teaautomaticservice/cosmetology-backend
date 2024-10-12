@@ -13,4 +13,9 @@ export class SessionsProvider extends CommonPostgresqlProvider<SessionEntity> {
   public async findBySessionId(sessionId: string): Promise<SessionEntity | null> {
     return this.sessionsDb.findOne({ where: { sessionId } });
   }
+
+  public async deleteBySessionId(sessionId: string): Promise<boolean> {
+    const { affected } = await this.sessionsDb.deleteBySessionId(sessionId);
+    return affected != null && affected > 0;
+  }
 }

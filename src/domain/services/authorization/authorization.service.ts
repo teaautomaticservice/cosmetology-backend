@@ -60,6 +60,19 @@ export class AuthorizationService {
     return this.usersProviders.findById(session.userId);
   }
 
+  public async logOut(cookies?: AuthorizationCookies): Promise<boolean> {
+    if (cookies?.session == null) {
+      throw new HttpException('Session not correct', HttpStatus.FORBIDDEN);
+    }
+
+    const result = await this.sessionsProvider.deleteBySessionId(cookies.session);
+    if (!result) {
+      throw new HttpException('Session not found', HttpStatus.FORBIDDEN);
+    }
+
+    return true;
+  }
+
   private async createSession(user: UserEntity): Promise<SessionEntity> {
     return this.sessionsProvider.create({
       expireAt: dateUtils.add(new Date(), 1, 'month'),

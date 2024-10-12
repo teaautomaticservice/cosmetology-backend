@@ -1,6 +1,7 @@
 import { Logger } from 'winston';
 
 import { Resources } from '@constants/resources';
+import { QueryInt } from '@decorators/queryInt';
 import {
   Body,
   Controller,
@@ -13,7 +14,6 @@ import {
   UseGuards
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
-import { QueryInt } from '@query/queryInt';
 import { HistoryService } from '@services/history/history.service';
 
 import { HistoryDto } from './dtos/history.dto';

@@ -8,8 +8,8 @@ export enum UserStatus {
 }
 
 export enum UserType {
-  Operator = 'operator',
   Client = 'client',
+  Operator = 'operator',
   Administrator = 'administrator',
   SuperAdministrator = 'superAdministrator',
 }

@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -11,5 +11,9 @@ export class SessionsDb extends CommonDb<SessionEntity> {
     private readonly sessionsRepository: Repository<SessionEntity>
   ) {
     super(sessionsRepository);
+  }
+
+  public async deleteBySessionId(sessionId: string): Promise<DeleteResult> {
+    return this.sessionsRepository.delete({ sessionId });
   }
 }

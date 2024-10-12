@@ -20,7 +20,7 @@
     "paths": {
       "@utils/*": ["src/ambient/utils/*"],
       "@constants/*": ["src/ambient/constants/*"],
-      "@query/*": ["src/ambient/query/*"],
+      "@decorators/*": ["src/ambient/decorators/*"],
       "@ambientProviders/*": ["src/ambient/providers/*"],
       "@config/*": ["src/ambient/config/*"],
       "@domain/*": ["src/domain/*"],

@@ -1,7 +1,8 @@
+import { QueryInt } from 'src/ambient/decorators/queryInt';
+
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Pagination } from '@providers/common/common.type';
-import { QueryInt } from '@query/queryInt';
 import { LogsService } from '@services/logs/logs.service';
 
 import { LogsPaginatedDto } from './dtos/logsPaginated.dto';

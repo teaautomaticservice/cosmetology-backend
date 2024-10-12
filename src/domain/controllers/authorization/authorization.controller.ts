@@ -3,17 +3,18 @@ import { Request, Response } from 'express';
 import {
   Body,
   Controller,
+  Get,
   Post,
   Req,
-  Res
+  Res,
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AuthorizationService } from '@services/authorization/authorization.service';
 import { cookieUtils } from '@utils/cookieUtils';
 
-import { CurrentUserDto } from './dtos/currentUser.dto';
 import { LoginFormDto } from './dtos/loginForm.dto';
 import { AuthorizationCookieDto } from '../common/dtos/authorizationCookie.dto';
+import { CurrentUserDto } from '../common/dtos/currentUser.dto';
 
 @ApiTags('Authorization')
 @Controller('/authorization')
@@ -46,5 +47,20 @@ export class AuthorizationController {
     }));
 
     return new CurrentUserDto(user);
+  }
+
+  @Get('/logout')
+  @ApiOkResponse({
+    description: 'User success log out',
+  })
+  public async logOut(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    const cookies = new AuthorizationCookieDto(request);
+
+    await this.authorizationService.logOut(cookies);
+
+    response.clearCookie('session');
   }
 }
