@@ -6,6 +6,9 @@ export interface Configuration {
   isProduction: boolean;
   port: number;
   database: PostgresConnectionOptions;
+  corsParams: {
+    origin: string | undefined;
+  }
 }
 
 export type AppConfigService = ConfigService<Configuration>;

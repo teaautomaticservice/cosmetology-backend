@@ -1,12 +1,9 @@
-import { config as dotenvConfig } from 'dotenv';
 import { DataSource } from 'typeorm';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
 import { registerAs } from '@nestjs/config';
 
 import { IS_PRODUCTION } from '../../constants/env';
-
-dotenvConfig({ path: '.env' });
 
 const migrations = IS_PRODUCTION ?
   ['dist/migrations/prod/*.js'] :

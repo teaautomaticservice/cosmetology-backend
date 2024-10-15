@@ -17,10 +17,11 @@ async function bootstrap(): Promise<void> {
 
   const port = config.get<Configuration['port']>('port') ?? DEFAULT_PORT;
   const isProduction = config.get<Configuration['isProduction']>('isProduction');
+  const corsParams = config.get<Configuration['corsParams']>('corsParams');
 
   app.useLogger(new WinstonLogger(logger));
   app.enableCors({
-    origin: 'http://localhost:5000',
+    origin: corsParams?.origin,
     methods: 'GET,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
