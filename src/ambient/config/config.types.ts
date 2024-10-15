@@ -1,11 +1,14 @@
-import { ConfigService } from '@nestjs/config';
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
-import { DatabaseConfig } from './database/database.types';
+import { ConfigService } from '@nestjs/config';
 
 export interface Configuration {
   isProduction: boolean;
   port: number;
-  database: DatabaseConfig;
+  database: PostgresConnectionOptions;
+  corsParams: {
+    origin: string | undefined;
+  };
 }
 
 export type AppConfigService = ConfigService<Configuration>;

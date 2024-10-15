@@ -1,71 +1,23 @@
-import { FindManyOptions, LessThan, Repository } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Pagination } from '@providers/common/common.type';
 
 import { LogEntity } from './log.entity';
-import { SpecifiedLogsClear } from './logs.types';
+import { CommonDb } from '../common/common.db';
 
 @Injectable()
-export class LogsDb {
+export class LogsDb extends CommonDb<LogEntity> {
   constructor(
-    @InjectRepository(LogEntity)
-    private readonly logsRepository: Repository<LogEntity>
-  ) {}
-
-  public async findAndCount({ pagination }: { pagination: Pagination }): Promise<[LogEntity[], number]> {
-    const offset = this.getOffset(pagination);
-    const sort = this.getSort();
-    return Promise.all([
-      this.logsRepository.find({
-        ...offset,
-        ...sort,
-      }),
-      this.logsRepository.count({
-        ...offset,
-      }),
-    ]);
+    @InjectRepository(LogEntity) private readonly logsRepository: Repository<LogEntity>,
+  ) {
+    super(logsRepository);
   }
 
-  public async clearLogs({ specified }: { specified?: SpecifiedLogsClear }): Promise<{ count: number }> {
-    const where: FindManyOptions<LogEntity>['where'] = [];
-
-    if (specified) {
-      Object.entries(specified.types ?? {}).map(([key, val]) => {
-        where.push({
-          level: key,
-          timestamp: LessThan(val),
-        });
-      });
-    }
-
-    const entities = await this.logsRepository.find({
-      where,
+  public deleteManyByIds(ids: LogEntity['id'][]): Promise<DeleteResult> {
+    this.logger.info('Delete many logs by ids', {
+      ids,
     });
-
-    if (entities.length) {
-      await this.logsRepository.delete(entities.map(({ id }) => id));
-    }
-
-    return { count: entities.length };
-  }
-
-  private getOffset({ pageSize, page }: Pagination): {
-    skip: number;
-    take: number;
-  } {
-    return {
-      skip: Math.max(0, (page - 1) * pageSize),
-      take: pageSize,
-    };
-  }
-
-  private getSort(): FindManyOptions<LogEntity> {
-    return {
-      order: {
-        timestamp: -1,
-      },
-    };
+    return this.dbRepository.delete(ids);
   }
 }

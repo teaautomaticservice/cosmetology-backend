@@ -1,29 +1,29 @@
 import { LoggerTypes } from '@constants/loggerTypes';
+import { LogsProvider } from '@domain/providers/logs/logs.provider';
 import { Injectable } from '@nestjs/common';
 import { Pagination } from '@providers/common/common.type';
 import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
-import { LogsDb } from '@providers/postgresql/repositories/logs/logs.db';
 import { SpecifiedLogsClear } from '@providers/postgresql/repositories/logs/logs.types';
-import { subtract } from '@utils/timestamps';
+import { dateUtils } from '@utils/dateUtils';
 
 @Injectable()
 export class LogsService {
-  constructor(private readonly logRepository: LogsDb) {}
+  constructor(private readonly logsProvider: LogsProvider) {}
 
   public async getLogsList(params: { pagination: Pagination }): Promise<[LogEntity[], number]> {
-    return this.logRepository.findAndCount(params);
+    return this.logsProvider.findAndCount(params);
   }
 
   public async clearOldLogs(): Promise<{ count: number }> {
     const specified: SpecifiedLogsClear = {
       types: {
-        [LoggerTypes.debug]: subtract(new Date(), 1, 'week'),
-        [LoggerTypes.info]: subtract(new Date(), 2, 'month'),
-        [LoggerTypes.error]: subtract(new Date(), 6, 'month'),
+        [LoggerTypes.debug]: dateUtils.subtract(new Date(), 1, 'week'),
+        [LoggerTypes.info]: dateUtils.subtract(new Date(), 2, 'month'),
+        [LoggerTypes.error]: dateUtils.subtract(new Date(), 6, 'month'),
       },
     };
 
-    return this.logRepository.clearLogs({
+    return this.logsProvider.clearLogs({
       specified,
     });
   }

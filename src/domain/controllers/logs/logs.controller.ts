@@ -1,16 +1,19 @@
-import { Controller, Get } from '@nestjs/common';
+import { QueryInt } from 'src/ambient/decorators/queryInt';
+
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { Pagination } from '@providers/common/common.type';
-import { QueryInt } from '@query/queryInt';
 import { LogsService } from '@services/logs/logs.service';
 
 import { LogsPaginatedDto } from './dtos/logsPaginated.dto';
+import { SuperAdminGuard } from '../common/guards/superAdmin.guard';
 
 @ApiTags('Logs')
 @Controller('/logs')
 export class LogsController {
-  constructor(private readonly logsService: LogsService) {}
+  constructor(private readonly logsService: LogsService) { }
 
+  @UseGuards(SuperAdminGuard)
   @Get('/list')
   @ApiParam({ name: 'page', required: false })
   @ApiParam({ name: 'pageSize', required: false })

@@ -3,6 +3,7 @@ import * as winston from 'winston';
 import { AppConfigService, Configuration } from '@config/config.types';
 import { LoggerTypes } from '@constants/loggerTypes';
 import { Resources } from '@constants/resources';
+import { LOGS_ENTITY } from '@domain/providers/postgresql/constants/entities';
 import { PostgresTransport } from '@innova2/winston-pg';
 import { ConfigService } from '@nestjs/config';
 import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
@@ -37,13 +38,13 @@ export const LoggerProvider = {
       ),
     });
 
-    const connectionDbString = `postgresql://${db?.user}:${db?.password}@${db?.host}:${db?.port}/${db?.name}`;
+    const connectionDbString = `postgresql://${db?.username}:${db?.password}@${db?.host}:${db?.port}/${db?.database}`;
 
     const dbTransport = new PostgresTransport<LogEntity>({
       connectionString: connectionDbString,
       maxPool: 10,
       level: 'info',
-      tableName: 'log_entity',
+      tableName: LOGS_ENTITY,
       tableColumns: [
         {
           name: 'id',

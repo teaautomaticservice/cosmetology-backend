@@ -7,6 +7,7 @@ import { Resources } from './ambient/constants/resources';
 import { useSwagger } from './ambient/swagger/swagger';
 import { AppModule } from './app.module';
 
+import * as cookieParser from 'cookie-parser';
 import { WinstonLogger } from 'nest-winston';
 
 async function bootstrap(): Promise<void> {
@@ -16,9 +17,15 @@ async function bootstrap(): Promise<void> {
 
   const port = config.get<Configuration['port']>('port') ?? DEFAULT_PORT;
   const isProduction = config.get<Configuration['isProduction']>('isProduction');
+  const corsParams = config.get<Configuration['corsParams']>('corsParams');
 
   app.useLogger(new WinstonLogger(logger));
-  app.enableCors();
+  app.enableCors({
+    origin: corsParams?.origin,
+    methods: 'GET,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+  app.use(cookieParser());
 
   useSwagger(app);
 
