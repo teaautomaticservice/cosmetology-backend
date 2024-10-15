@@ -10,5 +10,5 @@ export const getConfig = (): Configuration => ({
   database: getDatabaseConfig(),
   corsParams: {
     origin: CLIENT_ORIGIN,
-  }, 
+  },
 });

@@ -8,7 +8,7 @@ export interface Configuration {
   database: PostgresConnectionOptions;
   corsParams: {
     origin: string | undefined;
-  }
+  };
 }
 
 export type AppConfigService = ConfigService<Configuration>;
