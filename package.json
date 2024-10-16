@@ -22,7 +22,7 @@
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:run": "npm run typeorm migration:run -- -d ./src/ambient/config/database/database.ts",
     "migration:generate": "npm run typeorm -- migration:generate -d ./src/ambient/config/database/database.ts",
-    "migration:create": "npm run typeorm -- migration:create ./src/migrations/$npm_config_name",
+    "migration:create": "cross-env-shell name=$npm_config_NAME npm run typeorm -- migration:create ./src/migrations/$name",
     "migration:revert": "npm run typeorm -- -d ./src/ambient/config/database/database.ts migration:revert"
   },
   "dependencies": {
@@ -55,6 +55,7 @@
     "@types/supertest": "^2.0.12",
     "@typescript-eslint/eslint-plugin": "^5.59.11",
     "@typescript-eslint/parser": "^5.59.11",
+    "cross-env": "^7.0.3",
     "dotenv-cli": "^7.4.2",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^8.8.0",
