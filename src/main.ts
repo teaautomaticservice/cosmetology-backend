@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 
@@ -35,6 +36,8 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
   app.use(cookieParser());
+
+  app.useGlobalPipes(new ValidationPipe());
 
   useSwagger(app);
 
