@@ -1,7 +1,5 @@
 import { Column, CreateDateColumn, Entity } from 'typeorm';
 
-import { CommonEntity } from '../common/common.entity';
-
 @Entity('message_entity')
 export class MessageEntityOld {
   @CreateDateColumn()
