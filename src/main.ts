@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 
@@ -11,7 +13,14 @@ import * as cookieParser from 'cookie-parser';
 import { WinstonLogger } from 'nest-winston';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const httpsOptions = {
+    key: readFileSync('./https/localhost.key'),
+    cert: readFileSync('./https//localhost.crt'),
+  };
+
+  const app = await NestFactory.create(AppModule, {
+    httpsOptions,
+  });
   const logger = app.get(Resources.LOGGER);
   const config = app.get<ConfigService<Configuration>>(ConfigService);
 

@@ -31,3 +31,4 @@
 .env
 .db.env
 pg-data
+https
