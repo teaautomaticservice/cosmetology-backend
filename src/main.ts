@@ -7,6 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import { Configuration } from './ambient/config/config.types';
 import { DEFAULT_PORT } from './ambient/constants/app';
 import { Resources } from './ambient/constants/resources';
+import { exceptionFactory } from './ambient/factories/exceptionFactory';
 import { useSwagger } from './ambient/swagger/swagger';
 import { AppModule } from './app.module';
 
@@ -37,7 +38,9 @@ async function bootstrap(): Promise<void> {
   });
   app.use(cookieParser());
 
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({
+    exceptionFactory,
+  }));
 
   useSwagger(app);
 
