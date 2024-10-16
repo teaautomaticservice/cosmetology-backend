@@ -11,6 +11,7 @@ export class UsersProviders extends CommonPostgresqlProvider<UserEntity> {
   }
 
   public async getByEmail(email: string): Promise<UserEntity | null> {
-    return this.usersDb.findOne({ where: { email } });
+    const lowerEmail = email.toLocaleLowerCase();
+    return this.usersDb.findOne({ where: { email: lowerEmail } });
   }
 }
