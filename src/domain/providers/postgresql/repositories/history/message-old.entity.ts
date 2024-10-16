@@ -3,7 +3,7 @@ import { Column, CreateDateColumn, Entity } from 'typeorm';
 import { CommonEntity } from '../common/common.entity';
 
 @Entity('message_entity')
-export class MessageEntityOld extends CommonEntity {
+export class MessageEntityOld {
   @CreateDateColumn()
   public date: Date;
 

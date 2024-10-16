@@ -14,8 +14,8 @@ export class DropOldTable1729080439689 implements MigrationInterface {
     await queryRunner.manager.createQueryBuilder()
       .insert()
       .into(MESSAGES_ENTITY)
-      .values(result.map(({ createdAt, updatedAt, date, message, owner }) => ({
-        createdAt, updatedAt, date, message, owner
+      .values(result.map(({ date, message, owner }) => ({
+        createdAt: date, updatedAt: date, date, message, owner
       })))
       .execute();
 
@@ -32,17 +32,6 @@ export class DropOldTable1729080439689 implements MigrationInterface {
           type: 'int',
           isPrimary: true,
           isGenerated: true,
-        },
-        {
-          name: 'createdAt',
-          type: 'timestamptz',
-          default: 'now()',
-        },
-        {
-          name: 'updatedAt',
-          type: 'timestamptz',
-          default: 'now()',
-          onUpdate: 'CURRENT_TIMESTAMP',
         },
         {
           name: 'date',
