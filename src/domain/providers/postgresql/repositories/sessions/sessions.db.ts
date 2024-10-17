@@ -19,7 +19,8 @@ export class SessionsDb extends CommonDb<SessionEntity> {
 
   public async deleteManyByWhere(where: FindOptionsWhere<SessionEntity>): Promise<DeleteResult> {
     const result = await this.dbRepository.delete(where);
-    this.logger.info('Delete all expired sessions', {
+    this.logger.info('Delete all sessions by where', {
+      where,
       affected: result.affected ?? 0,
     });
 
