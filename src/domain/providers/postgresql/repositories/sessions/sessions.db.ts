@@ -1,4 +1,4 @@
-import { DeleteResult, Repository } from 'typeorm';
+import { DeleteResult, FindOptionsWhere, Repository } from 'typeorm';
 
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -15,5 +15,15 @@ export class SessionsDb extends CommonDb<SessionEntity> {
 
   public async deleteBySessionId(sessionId: string): Promise<DeleteResult> {
     return this.sessionsRepository.delete({ sessionId });
+  }
+
+  public async deleteManyByWhere(where: FindOptionsWhere<SessionEntity>): Promise<DeleteResult> {
+    const result = await this.dbRepository.delete(where);
+    this.logger.info('Delete all sessions by where', {
+      where,
+      affected: result.affected ?? 0,
+    });
+
+    return result;
   }
 }

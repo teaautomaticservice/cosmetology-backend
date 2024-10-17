@@ -1,3 +1,5 @@
+import { LessThan } from 'typeorm';
+
 import { Injectable } from '@nestjs/common';
 
 import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
@@ -18,4 +20,12 @@ export class SessionsProvider extends CommonPostgresqlProvider<SessionEntity> {
     const { affected } = await this.sessionsDb.deleteBySessionId(sessionId);
     return affected != null && affected > 0;
   }
+
+  public async clearExpiredSessions(): Promise<{ count: number }> {
+    const { affected } = await this.sessionsDb.deleteManyByWhere({
+      expireAt: LessThan(new Date()),
+    });
+    return { count: affected ?? 0 };
+  }
+
 }
