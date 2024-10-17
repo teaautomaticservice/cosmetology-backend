@@ -73,6 +73,10 @@ export class AuthorizationService {
     return true;
   }
 
+  public async clearExpiredSessions(): Promise<{ count: number }> {
+    return this.sessionsProvider.clearExpiredSessions();
+  }
+
   private async createSession(user: UserEntity): Promise<SessionEntity> {
     return this.sessionsProvider.create({
       expireAt: dateUtils.add(new Date(), 1, 'month'),
