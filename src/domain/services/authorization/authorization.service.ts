@@ -4,7 +4,7 @@ import { v4 as uuid } from 'uuid';
 import { SessionEntity } from '@domain/providers/postgresql/repositories/sessions/session.entity';
 import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { SessionsProvider } from '@domain/providers/sessions/sessions.provider';
-import { UsersProviders } from '@domain/providers/users/users.provider';
+import { UsersProvider } from '@domain/providers/users/users.provider';
 import { AuthorizationCookies } from '@domain/types/cookies.types';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { dateUtils } from '@utils/dateUtils';
@@ -14,7 +14,7 @@ import { AuthorizationLogin } from './authorization.types';
 @Injectable()
 export class AuthorizationService {
   constructor(
-    private readonly usersProviders: UsersProviders,
+    private readonly usersProviders: UsersProvider,
     private readonly sessionsProvider: SessionsProvider,
   ) { }
 
