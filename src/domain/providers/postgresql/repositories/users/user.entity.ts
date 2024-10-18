@@ -28,7 +28,7 @@ export class UserEntity extends CommonEntity {
   @Column('enum', { enum: UserType })
   public type: UserType;
 
-  public static getName(entity: UserEntity): string {
+  public static getDisplayName(entity: UserEntity): string {
     return entity.displayName || entity.email;
   }
 }

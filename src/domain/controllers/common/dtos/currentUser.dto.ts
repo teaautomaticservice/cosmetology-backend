@@ -35,7 +35,7 @@ export class CurrentUserDto {
 
   constructor(user: UserEntity) {
     this.email = user.email;
-    this.displayName = UserEntity.getName(user);
+    this.displayName = UserEntity.getDisplayName(user);
     this.status = user.status;
     this.type = user.type;
   }

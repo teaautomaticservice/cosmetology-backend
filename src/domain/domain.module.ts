@@ -5,6 +5,7 @@ import { LogsControllerModule } from '@controllers/logs/logsController.module';
 import { Module } from '@nestjs/common';
 import { LogsClearShedulerModule } from '@sheduler/logs/clear/logsClearSheduler.module';
 
+import { UsersControllerModule } from './controllers/users/usersControllerModule';
 import {
   AuthorizationClearExpiredShedulerModule
 } from './sheduler/authorization/clearExpired/authorizationClearExpiredSheduler.module';
@@ -17,6 +18,7 @@ import {
     AuthorizationControllerModule,
     AppConfigControllerModule,
     AuthorizationClearExpiredShedulerModule,
+    UsersControllerModule,
   ],
 })
 export class DomainModule {}
