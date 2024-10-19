@@ -42,7 +42,9 @@ async function bootstrap(): Promise<void> {
     exceptionFactory,
   }));
 
-  useSwagger(app);
+  if (!isProduction) {
+    useSwagger(app);
+  }
 
   await app.listen(port, () => {
     logger.debug('===================');
