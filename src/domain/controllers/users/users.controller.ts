@@ -1,7 +1,7 @@
 import { QueryInt } from '@decorators/queryInt';
 import { Pagination } from '@domain/providers/common/common.type';
 import { UsersProvider } from '@domain/providers/users/users.provider';
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { UsersDto } from './dtos/users.dto';
@@ -35,5 +35,21 @@ export class UsersController {
         itemsPerPage: 10,
       }
     };
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('/:id')
+  @ApiParam({ name: 'id' })
+  @ApiOkResponse({
+    description: 'User by ID successful has been got',
+    type: UsersDto,
+  })
+  public async getUserById(@QueryInt('id') id: number): Promise<UsersDto> {
+    const user = await this.usersProvider.findById(id);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return new UsersDto(user);
   }
 }
