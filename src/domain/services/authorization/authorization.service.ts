@@ -6,7 +6,7 @@ import { UserEntity } from '@domain/providers/postgresql/repositories/users/user
 import { SessionsProvider } from '@domain/providers/sessions/sessions.provider';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { AuthorizationCookies } from '@domain/types/cookies.types';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { dateUtils } from '@utils/dateUtils';
 
 import { AuthorizationLogin } from './authorization.types';
@@ -29,13 +29,13 @@ export class AuthorizationService {
     const user = await this.usersProviders.getByEmail(email);
 
     if (user == undefined) {
-      throw new HttpException('Credentials not correct', HttpStatus.FORBIDDEN);
+      throw new BadRequestException('Credentials not correct');
     }
 
     const isPasswordCompared = await compare(password, user.password);
 
     if (!isPasswordCompared) {
-      throw new HttpException('Credentials not correct', HttpStatus.FORBIDDEN);
+      throw new BadRequestException('Credentials not correct');
     }
 
     if (cookies?.session) {
@@ -62,12 +62,12 @@ export class AuthorizationService {
 
   public async logOut(cookies?: AuthorizationCookies): Promise<boolean> {
     if (cookies?.session == null) {
-      throw new HttpException('Session not correct', HttpStatus.FORBIDDEN);
+      throw new BadRequestException('Session not correct');
     }
 
     const result = await this.sessionsProvider.deleteBySessionId(cookies.session);
     if (!result) {
-      throw new HttpException('Session not found', HttpStatus.FORBIDDEN);
+      throw new BadRequestException('Session not found');
     }
 
     return true;
