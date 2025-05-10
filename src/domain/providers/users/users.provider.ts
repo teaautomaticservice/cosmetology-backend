@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { UserStatus } from '@domain/types/users.types';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
 import { UserEntity } from '../postgresql/repositories/users/user.entity';
@@ -13,5 +14,24 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
   public async getByEmail(email: string): Promise<UserEntity | null> {
     const lowerEmail = email.toLocaleLowerCase();
     return this.usersDb.findOne({ where: { email: lowerEmail } });
+  }
+
+  public async createUser({ email, type, displayName }: Pick<UserEntity, 'email' | 'type' | 'displayName'>): Promise<UserEntity | null> {
+    const lowerEmail = email.toLocaleLowerCase();
+    const matchedByEmail = await this.getByEmail(lowerEmail);
+
+    if (matchedByEmail) {
+      throw new BadRequestException('User with this email already exist');
+    }
+
+    const resp = await this.create({
+      email,
+      password: 'test',
+      status: UserStatus.Active,
+      type,
+      displayName,
+    });
+
+    return resp;
   }
 }
