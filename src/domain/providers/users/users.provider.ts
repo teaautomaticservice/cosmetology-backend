@@ -21,7 +21,7 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
     const matchedByEmail = await this.getByEmail(lowerEmail);
 
     if (matchedByEmail) {
-      throw new BadRequestException('Incorrect email.', { cause: { email: 'Please enter a valid email address.' } });
+      throw new BadRequestException('Incorrect email.', { cause: { email: ['Please enter a valid email address.'] } });
     }
 
     const resp = await this.create({
