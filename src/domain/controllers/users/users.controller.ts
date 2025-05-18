@@ -6,6 +6,7 @@ import {
   Body,
   Controller,
   Get,
+  InternalServerErrorException,
   Post,
   UseGuards
 } from '@nestjs/common';
@@ -74,7 +75,7 @@ export class UsersController {
   public async createUser(@Body() newUserData: CreateUserDto): Promise<UsersDto> {
     const user = await this.usersProvider.createUser(newUserData);
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new InternalServerErrorException('User not found');
     }
 
     return new UsersDto(user);

@@ -8,6 +8,7 @@ import { Configuration } from './ambient/config/config.types';
 import { DEFAULT_PORT } from './ambient/constants/app';
 import { Resources } from './ambient/constants/resources';
 import { exceptionFactory } from './ambient/factories/exceptionFactory';
+import { AllExceptionsFilter } from './ambient/filters/allExceptionsFilter.filter';
 import { useSwagger } from './ambient/swagger/swagger';
 import { AppModule } from './app.module';
 
@@ -41,6 +42,8 @@ async function bootstrap(): Promise<void> {
   app.useGlobalPipes(new ValidationPipe({
     exceptionFactory,
   }));
+
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   if (!isProduction) {
     useSwagger(app);
