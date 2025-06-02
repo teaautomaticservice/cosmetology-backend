@@ -1,5 +1,6 @@
 import { UserStatus } from '@domain/types/users.types';
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { generateRandomString } from '@utils/generateRanomString';
 
 import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
 import { UserEntity } from '../postgresql/repositories/users/user.entity';
@@ -19,6 +20,7 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
   public async createUser({ email, type, displayName }: Pick<UserEntity, 'email' | 'type' | 'displayName'>): Promise<UserEntity | null> {
     const lowerEmail = email.toLocaleLowerCase();
     const matchedByEmail = await this.getByEmail(lowerEmail);
+    const newPassword = generateRandomString();
 
     if (matchedByEmail) {
       throw new BadRequestException('Incorrect email.', { cause: { email: ['Please enter a valid email address.'] } });
@@ -26,8 +28,8 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
 
     const resp = await this.create({
       email,
-      password: 'test',
-      status: UserStatus.Active,
+      password: newPassword,
+      status: UserStatus.Pending,
       type,
       displayName,
     });
