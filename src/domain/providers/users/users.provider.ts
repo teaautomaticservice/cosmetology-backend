@@ -1,3 +1,4 @@
+import { EMAIL_ERROR, VALIDATION_ERROR } from '@domain/constants/errors';
 import { UserStatus } from '@domain/types/users.types';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { generateRandomString } from '@utils/generateRanomString';
@@ -17,13 +18,17 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
     return this.usersDb.findOne({ where: { email: lowerEmail } });
   }
 
-  public async createUser({ email, type, displayName }: Pick<UserEntity, 'email' | 'type' | 'displayName'>): Promise<UserEntity | null> {
+  public async createUser({
+    email,
+    type,
+    displayName,
+  }: Pick<UserEntity, 'email' | 'type' | 'displayName'>): Promise<UserEntity | null> {
     const lowerEmail = email.toLocaleLowerCase();
     const matchedByEmail = await this.getByEmail(lowerEmail);
     const newPassword = generateRandomString();
 
     if (matchedByEmail) {
-      throw new BadRequestException('Incorrect email.', { cause: { email: ['Please enter a valid email address.'] } });
+      throw new BadRequestException(VALIDATION_ERROR, { cause: { email: [EMAIL_ERROR] } });
     }
 
     const resp = await this.create({
