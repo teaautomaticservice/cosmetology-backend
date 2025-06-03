@@ -2,6 +2,7 @@ export enum UserStatus {
   Blocked = 'blocked',
   Deleted = 'deleted',
   DeletedByGdpr = 'deletedByGdpr',
+  Pending = 'pending',
   Active = 'active',
   Banned = 'banned',
   Deactivated = 'deactivated'

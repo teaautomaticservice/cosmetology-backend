@@ -1,9 +1,18 @@
 import { QueryInt } from '@decorators/queryInt';
 import { Pagination } from '@domain/providers/common/common.type';
 import { UsersProvider } from '@domain/providers/users/users.provider';
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  InternalServerErrorException,
+  Post,
+  UseGuards
+} from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 
+import { CreateUserDto } from './dtos/createUser.dto';
 import { UsersDto } from './dtos/users.dto';
 import { UsersPaginatedDto } from './dtos/usersPaginated.dto';
 import { AdminGuard } from '../common/guards/admin.guard';
@@ -11,7 +20,7 @@ import { AdminGuard } from '../common/guards/admin.guard';
 @ApiTags('Users')
 @Controller('/users')
 export class UsersController {
-  constructor(private readonly usersProvider: UsersProvider) {}
+  constructor(private readonly usersProvider: UsersProvider) { }
 
   @UseGuards(AdminGuard)
   @Get('/')
@@ -35,5 +44,40 @@ export class UsersController {
         itemsPerPage: 10,
       }
     };
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('/:id')
+  @ApiParam({ name: 'id' })
+  @ApiOkResponse({
+    description: 'User by ID successful has been got',
+    type: UsersDto,
+  })
+  public async getUserById(@QueryInt('id') id: number): Promise<UsersDto> {
+    const user = await this.usersProvider.findById(id);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    return new UsersDto(user);
+  }
+
+  @UseGuards(AdminGuard)
+  @Post('/create')
+  @ApiBody({
+    description: 'Create user',
+    type: CreateUserDto,
+  })
+  @ApiOkResponse({
+    description: 'User was created',
+    type: UsersDto,
+  })
+  public async createUser(@Body() newUserData: CreateUserDto): Promise<UsersDto> {
+    const user = await this.usersProvider.createUser(newUserData);
+    if (!user) {
+      throw new InternalServerErrorException('User not found');
+    }
+
+    return new UsersDto(user);
   }
 }
