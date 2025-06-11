@@ -1,6 +1,7 @@
 import { EMAIL_ERROR, VALIDATION_ERROR } from '@domain/constants/errors';
 import { UserStatus } from '@domain/types/users.types';
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { MailerService } from '@nestjs-modules/mailer';
 import { generateRandomString } from '@utils/generateRanomString';
 
 import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
@@ -9,7 +10,10 @@ import { UsersDb } from '../postgresql/repositories/users/users.db';
 
 @Injectable()
 export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
-  constructor(private readonly usersDb: UsersDb) {
+  constructor(
+    private readonly usersDb: UsersDb,
+    private readonly mailerService: MailerService,
+  ) {
     super(usersDb);
   }
 
@@ -27,9 +31,29 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
     const matchedByEmail = await this.getByEmail(lowerEmail);
     const newPassword = generateRandomString();
 
+    console.log('Start message');
+
+    try {
+      const result = await this.mailerService.sendMail({
+        to: lowerEmail,
+        template: 'confirm-email',
+        subject: 'Confirm what you sweet bun',
+        context: {
+          title: 'Confirm what you very sweet bun! <3',
+          welcome: `Hello, ${lowerEmail}!`
+        }
+      });
+
+      console.log('result', result);
+    } catch(e) {
+      console.error(e);
+    }
+
     if (matchedByEmail) {
       throw new BadRequestException(VALIDATION_ERROR, { cause: { email: [EMAIL_ERROR] } });
     }
+
+    throw new Error('sss');
 
     const resp = await this.create({
       email,
