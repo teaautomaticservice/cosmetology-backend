@@ -1,4 +1,5 @@
 import { EMAIL_ERROR, VALIDATION_ERROR } from '@domain/constants/errors';
+import { Mailer } from '@domain/services/mailer/mailer.service';
 import { UserStatus } from '@domain/types/users.types';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { generateRandomString } from '@utils/generateRanomString';
@@ -9,7 +10,10 @@ import { UsersDb } from '../postgresql/repositories/users/users.db';
 
 @Injectable()
 export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
-  constructor(private readonly usersDb: UsersDb) {
+  constructor(
+    private readonly usersDb: UsersDb,
+    private readonly mailer: Mailer,
+  ) {
     super(usersDb);
   }
 
@@ -25,11 +29,14 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
   }: Pick<UserEntity, 'email' | 'type' | 'displayName'>): Promise<UserEntity | null> {
     const lowerEmail = email.toLocaleLowerCase();
     const matchedByEmail = await this.getByEmail(lowerEmail);
-    const newPassword = generateRandomString();
 
     if (matchedByEmail) {
       throw new BadRequestException(VALIDATION_ERROR, { cause: { email: [EMAIL_ERROR] } });
     }
+
+    const newPassword = generateRandomString();
+
+    await this.mailer.sendConfirmEmail({ email: lowerEmail });
 
     const resp = await this.create({
       email,
