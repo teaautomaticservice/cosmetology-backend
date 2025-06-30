@@ -4,6 +4,8 @@ import { Resources } from '@constants/resources';
 import { Inject, Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 
+import { confirmEmail } from './templates/confirmEmail';
+
 @Injectable()
 export class Mailer {
   constructor(
@@ -18,32 +20,28 @@ export class Mailer {
   }): Promise<void> {
     this.sendEmail({
       email,
-      template: 'confirm-email',
       subject: 'Confirm what you sweet bun',
-      context: {
-        title: 'Confirm what you very sweet bun! <3',
-        welcome: `Hello, ${email}!`
-      },
+      html: confirmEmail({
+        title: 'Confirm what you sweet bun',
+        welcome: 'Confirm what you sweet bun'
+      })
     });
   }
 
   private async sendEmail({
     email,
-    template,
     subject,
-    context,
+    html,
   }: {
     email: string;
-    template: string;
     subject: string;
-    context: Record<string, string>;
+    html: string;
   }): Promise<void> {
     try {
       const result = await this.mailerService.sendMail({
         to: email,
-        template,
         subject,
-        context,
+        html,
       });
 
       this.logger.info('Mailer sendConfirmEmail', {
