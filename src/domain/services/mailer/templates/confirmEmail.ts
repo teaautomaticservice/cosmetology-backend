@@ -1,10 +1,5 @@
 import { commonTemplate } from './common';
 
-type ConfirmEmail = {
-  title: string;
-  welcome: string;
-}
-
 const head =
 `<style>
   .content {
@@ -27,7 +22,10 @@ const content = ({
 export const confirmEmail = ({
   title,
   welcome,
-}: ConfirmEmail): string => commonTemplate({
+}: {
+  title: string;
+  welcome: string;
+}): string => commonTemplate({
   head,
   title,
   content: content({

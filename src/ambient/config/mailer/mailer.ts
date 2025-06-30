@@ -30,6 +30,6 @@ export const getMailerConfig = (): MailerOptions => {
     defaults: {
       from: `"No Reply" <${user}>`,
     },
-    preview: true,
+    preview: !IS_PRODUCTION,
   };
 };

@@ -20,7 +20,7 @@ export const commonTemplate = ({
         text-align: center;
         font-family: Arial;
       }
-      .body {
+      body {
         width: 100%;
         height: 100%;
       }

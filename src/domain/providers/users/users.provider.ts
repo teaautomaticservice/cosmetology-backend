@@ -37,8 +37,6 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
       throw new BadRequestException(VALIDATION_ERROR, { cause: { email: [EMAIL_ERROR] } });
     }
 
-    throw new Error('sss');
-
     const resp = await this.create({
       email,
       password: newPassword,
