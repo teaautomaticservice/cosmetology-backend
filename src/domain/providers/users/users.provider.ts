@@ -29,13 +29,14 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
   }: Pick<UserEntity, 'email' | 'type' | 'displayName'>): Promise<UserEntity | null> {
     const lowerEmail = email.toLocaleLowerCase();
     const matchedByEmail = await this.getByEmail(lowerEmail);
-    const newPassword = generateRandomString();
-
-    await this.mailer.sendConfirmEmail({ email: lowerEmail });
 
     if (matchedByEmail) {
       throw new BadRequestException(VALIDATION_ERROR, { cause: { email: [EMAIL_ERROR] } });
     }
+
+    const newPassword = generateRandomString();
+
+    await this.mailer.sendConfirmEmail({ email: lowerEmail });
 
     const resp = await this.create({
       email,
