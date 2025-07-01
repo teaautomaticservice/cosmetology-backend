@@ -1,4 +1,3 @@
-import { compare } from 'bcrypt';
 import { v4 as uuid } from 'uuid';
 
 import { SessionEntity } from '@domain/providers/postgresql/repositories/sessions/session.entity';
@@ -7,6 +6,7 @@ import { SessionsProvider } from '@domain/providers/sessions/sessions.provider';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { AuthorizationCookies } from '@domain/types/cookies.types';
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { cryptoUtils } from '@utils/cryptoUtils';
 import { dateUtils } from '@utils/dateUtils';
 
 import { AuthorizationLogin } from './authorization.types';
@@ -32,7 +32,7 @@ export class AuthorizationService {
       throw new BadRequestException('Credentials not correct');
     }
 
-    const isPasswordCompared = await compare(password, user.password);
+    const isPasswordCompared = await cryptoUtils.compare(password, user.password);
 
     if (!isPasswordCompared) {
       throw new BadRequestException('Credentials not correct');
