@@ -2,6 +2,7 @@ import { EMAIL_ERROR, VALIDATION_ERROR } from '@domain/constants/errors';
 import { Mailer } from '@domain/services/mailer/mailer.service';
 import { UserStatus } from '@domain/types/users.types';
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { cryptoUtils } from '@utils/cryptoUtils';
 import { generateRandomString } from '@utils/generateRanomString';
 
 import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
@@ -35,12 +36,13 @@ export class UsersProvider extends CommonPostgresqlProvider<UserEntity> {
     }
 
     const newPassword = generateRandomString();
+    const newHashedPassword = await cryptoUtils.encryptPassword(newPassword);
 
     await this.mailer.sendConfirmEmail({ email: lowerEmail });
 
     const resp = await this.create({
       email,
-      password: newPassword,
+      password: newHashedPassword,
       status: UserStatus.Pending,
       type,
       displayName,
