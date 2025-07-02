@@ -1,9 +1,13 @@
+import { windowWhen } from 'rxjs';
+import { Logger } from 'winston';
+
+import { Resources } from '@constants/resources';
 import { EMAIL_ERROR, entityNotFound, VALIDATION_ERROR } from '@domain/constants/errors';
 import { FoundAndCounted, ID, Pagination } from '@domain/providers/common/common.type';
 import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { UserStatus } from '@domain/types/users.types';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { cryptoUtils } from '@utils/cryptoUtils';
 import { generateRandomString } from '@utils/generateRanomString';
 
@@ -14,6 +18,7 @@ export class UserService {
   constructor(
     private readonly usersProvider: UsersProvider,
     private readonly mailer: Mailer,
+    @Inject(Resources.LOGGER) private readonly logger: Logger,
   ) { }
 
   public async getUsersList({
@@ -33,7 +38,7 @@ export class UserService {
     return this.usersProvider.getByEmail(lowerEmail);
   }
 
-  public async createUser({
+  public async createUserByAmin({
     email,
     type,
     displayName,
@@ -58,6 +63,8 @@ export class UserService {
       displayName,
     });
 
+    this.logger.info('User has been created by admin', resp);
+
     return resp;
   }
 
@@ -74,8 +81,12 @@ export class UserService {
 
     const { email } = user;
 
-    await this.mailer.sendConfirmEmail({ email });
+    await this.mailer.sendConfirmEmail({ email });windowWhen;
 
-    return this.getUserById(userId);
+    const updatedUser = await this.getUserById(userId);
+
+    this.logger.info('Admin initiated hard reset password for user', updatedUser);
+
+    return updatedUser;
   }
 }

@@ -1,3 +1,4 @@
+import { LoggerProvider } from '@ambientProviders/logger/logger';
 import { UsersProviderModule } from '@domain/providers/users/usersProvider.module';
 import { Module } from '@nestjs/common';
 
@@ -8,6 +9,7 @@ import { MailerModule } from '../mailer/mailer.module';
   imports: [UsersProviderModule, MailerModule],
   providers: [
     UserService,
+    LoggerProvider,
   ],
   exports: [UserService],
 })
