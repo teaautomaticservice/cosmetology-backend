@@ -1,4 +1,3 @@
-import { windowWhen } from 'rxjs';
 import { Logger } from 'winston';
 
 import { Resources } from '@constants/resources';
@@ -7,7 +6,7 @@ import { FoundAndCounted, ID, Pagination } from '@domain/providers/common/common
 import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { UserStatus } from '@domain/types/users.types';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { cryptoUtils } from '@utils/cryptoUtils';
 import { generateRandomString } from '@utils/generateRanomString';
 
@@ -42,7 +41,7 @@ export class UserService {
     email,
     type,
     displayName,
-  }: Pick<UserEntity, 'email' | 'type' | 'displayName'>): Promise<UserEntity | null> {
+  }: Pick<UserEntity, 'email' | 'type' | 'displayName'>): Promise<UserEntity> {
     const lowerEmail = email.toLocaleLowerCase();
     const matchedByEmail = await this.getByEmail(lowerEmail);
 
@@ -53,9 +52,7 @@ export class UserService {
     const newPassword = generateRandomString();
     const newHashedPassword = await cryptoUtils.encryptPassword(newPassword);
 
-    await this.mailer.sendConfirmEmail({ email: lowerEmail });
-
-    const resp = await this.usersProvider.createUser({
+    const newUser = await this.usersProvider.createUser({
       email,
       password: newHashedPassword,
       status: UserStatus.Pending,
@@ -63,9 +60,18 @@ export class UserService {
       displayName,
     });
 
-    this.logger.info('User has been created by admin', resp);
+    if (!newUser) {
+      throw new InternalServerErrorException('createUserByAmin. User not created.');
+    }
 
-    return resp;
+    await this.mailer.sendConfirmEmailCreatedByAdmin({
+      email: newUser.email,
+      displayName: UserEntity.getDisplayName(newUser)
+    });
+
+    this.logger.info('User has been created by admin', newUser);
+
+    return newUser;
   }
 
   public async initiateHardResetPassword({
@@ -79,9 +85,10 @@ export class UserService {
       throw new BadRequestException(VALIDATION_ERROR, { cause: { id: [entityNotFound('User')] } });
     }
 
-    const { email } = user;
-
-    await this.mailer.sendConfirmEmail({ email });windowWhen;
+    await this.mailer.sendInstructionsForSetNewPassword({
+      email: user.email,
+      displayName: UserEntity.getDisplayName(user),
+    });
 
     const updatedUser = await this.getUserById(userId);
 

@@ -75,10 +75,6 @@ export class UsersController {
   })
   public async createUser(@Body() newUserData: CreateUserDto): Promise<UsersDto> {
     const user = await this.userService.createUserByAmin(newUserData);
-    if (!user) {
-      throw new InternalServerErrorException('User not found');
-    }
-
     return new UsersDto(user);
   }
 

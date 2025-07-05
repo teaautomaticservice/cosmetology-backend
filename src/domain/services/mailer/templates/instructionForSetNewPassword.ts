@@ -1,3 +1,5 @@
+import { APP_NAME } from '@constants/env';
+
 import { commonTemplate } from './common';
 
 const head =
@@ -17,10 +19,14 @@ const content = ({
   `<div class="content">
     <h1>${title}</h1>
     <p>Dear, ${displayName}</P>
-    <p>You have been registered in the app by an admin. Please verify your email.</p>
+    <p>A password reset has been initiated for your account.</p>
+    <p>Your password has been reset, and all sessions have been terminated.
+    To regain access to the ${APP_NAME}, please set a new password using the link provided.</p>
+    <br>
+    <p>If you believe this was a mistake, contact the ${APP_NAME} support team immediately.</p>
 </div>`;
 
-export const confirmEmailCreatedUserByAdmin = ({
+export const instructionForSetNewPassword = ({
   title,
   displayName,
 }: {
