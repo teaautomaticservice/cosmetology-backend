@@ -1,10 +1,12 @@
 import { Logger } from 'winston';
 
+import { APP_NAME } from '@constants/env';
 import { Resources } from '@constants/resources';
 import { Inject, Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 
-import { confirmEmail } from './templates/confirmEmail';
+import { confirmEmailCreatedUserByAdmin } from './templates/confirmEmail';
+import { instructionForSetNewPassword } from './templates/instructionForSetNewPassword';
 
 @Injectable()
 export class Mailer {
@@ -13,17 +15,38 @@ export class Mailer {
     @Inject(Resources.LOGGER) private readonly logger: Logger,
   ) { }
 
-  public async sendConfirmEmail({
+  public async sendConfirmEmailCreatedByAdmin({
     email,
+    displayName,
   }: {
+    displayName: string;
     email: string;
   }): Promise<void> {
+    const title = `Welcome to ${APP_NAME}!`;
     this.sendEmail({
       email,
-      subject: 'Confirm what you sweet bun',
-      html: confirmEmail({
-        title: 'Confirm what you sweet bun',
-        welcome: 'Confirm what you sweet bun'
+      subject: title,
+      html: confirmEmailCreatedUserByAdmin({
+        title,
+        displayName,
+      })
+    });
+  }
+
+  public async sendInstructionsForSetNewPassword({
+    email,
+    displayName,
+  }: {
+    email: string;
+    displayName: string;
+  }): Promise<void> {
+    const title = `Restore access to ${APP_NAME}`;
+    this.sendEmail({
+      email,
+      subject: title,
+      html: instructionForSetNewPassword({
+        title,
+        displayName,
       })
     });
   }
