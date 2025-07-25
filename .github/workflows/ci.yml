@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
-    types: [closed]
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
   lint:
@@ -20,7 +19,11 @@ jobs:
 
   build:
     needs: lint
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    if: |
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.merged == true &&
+       github.base_ref == 'main')
     runs-on: self-hosted
     steps:
       - name: Checkout branch
