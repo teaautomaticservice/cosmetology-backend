@@ -9,7 +9,7 @@ export interface Configuration {
   database: PostgresConnectionOptions;
   mailer: MailerOptions;
   corsParams: {
-    origin: string | undefined;
+    origin: string | string[] | undefined;
   };
 }
 

@@ -12,19 +12,21 @@ const migrations = IS_PRODUCTION ?
     'dist/migrations/dev/*.js',
   ];
 
-export const getDatabaseConfig = (): PostgresConnectionOptions => ({
-  type: 'postgres',
-  host: process.env.DB_HOST ?? '',
-  port: Number(process.env.DB_PORT),
-  username: process.env.POSTGRES_USER ?? '',
-  password: process.env.POSTGRES_PASSWORD ?? '',
-  database: process.env.DB_NAME ?? '',
-  autoLoadEntities: true,
-  entities: ['dist/domain/providers/postgresql/repositories/**/*entity.js'],
-  migrations,
-  migrationsTableName: 'migrations',
-  synchronize: false,
-} as PostgresConnectionOptions);
+export const getDatabaseConfig = (): PostgresConnectionOptions => {
+  return {
+    type: 'postgres',
+    host: process.env.DB_HOST ?? '',
+    port: Number(process.env.DB_PORT),
+    username: process.env.POSTGRES_USER ?? '',
+    password: process.env.POSTGRES_PASSWORD ?? '',
+    database: process.env.DB_NAME ?? '',
+    autoLoadEntities: false,
+    entities: ['dist/domain/providers/postgresql/repositories/**/*entity.js'],
+    migrations,
+    migrationsTableName: 'migrations',
+    synchronize: false,
+  } as PostgresConnectionOptions;
+};
 
 export default registerAs('typeorm', () => getDatabaseConfig());
 export const connectionSource = new DataSource(getDatabaseConfig());
