@@ -11,6 +11,6 @@ export const getConfig = (): Configuration => ({
   database: getDatabaseConfig(),
   mailer: getMailerConfig(),
   corsParams: {
-    origin: CLIENT_ORIGIN,
+    origin: CLIENT_ORIGIN?.split(',') ?? '',
   },
 });
