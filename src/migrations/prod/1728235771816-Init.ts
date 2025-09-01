@@ -14,8 +14,7 @@ export class Init1728235771816 implements MigrationInterface {
     await queryRunner.query(`CREATE INDEX "sessionId_1" ON "sessions" ("sessionId") `);
     await queryRunner.query(`CREATE INDEX "expireAt_1" ON "sessions" ("expireAt") `);
     await queryRunner.query(`CREATE INDEX "userId_1" ON "sessions" ("userIdId") `);
-    await queryRunner.query(`CREATE TABLE "messages" ("id" SERIAL NOT NULL, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "date" TIMESTAMP NOT NULL DEFAULT now(), "message" character varying NOT NULL, "owner" character varying NOT NULL, CONSTRAINT "PK_18325f38ae6de43878487eff986" PRIMARY KEY ("id"))`);
-    await queryRunner.query(`CREATE INDEX "IDX_284257a7a4f1c23a4bda08ecf2" ON "messages" ("updatedAt") `);
+    await queryRunner.query(`CREATE TABLE "message_entity" ("id" SERIAL NOT NULL, "date" TIMESTAMP NOT NULL DEFAULT now(), "message" character varying NOT NULL, "owner" character varying NOT NULL)`);
     await queryRunner.query(`ALTER TABLE "logs" ADD "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()`);
     await queryRunner.query(`ALTER TABLE "logs" ADD "updatedAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()`);
     await queryRunner.query(`ALTER TABLE "logs" ALTER COLUMN "timestamp" SET NOT NULL`);
@@ -39,8 +38,7 @@ export class Init1728235771816 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "logs" ALTER COLUMN "timestamp" DROP NOT NULL`);
     await queryRunner.query(`ALTER TABLE "logs" DROP COLUMN "updatedAt"`);
     await queryRunner.query(`ALTER TABLE "logs" DROP COLUMN "createdAt"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_284257a7a4f1c23a4bda08ecf2"`);
-    await queryRunner.query(`DROP TABLE "messages"`);
+    await queryRunner.query(`DROP TABLE "message_entity"`);
     await queryRunner.query(`DROP INDEX "public"."userId_1"`);
     await queryRunner.query(`DROP INDEX "public"."expireAt_1"`);
     await queryRunner.query(`DROP INDEX "public"."sessionId_1"`);

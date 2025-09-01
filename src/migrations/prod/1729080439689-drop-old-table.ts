@@ -7,9 +7,45 @@ const OLD_MESSAGE_ENTITY = 'message_entity';
 export class DropOldTable1729080439689 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const result = await queryRunner.manager.createQueryBuilder(OLD_MESSAGE_ENTITY, 'entity')
-      .select('entity')
-      .getMany();
+    await queryRunner.createTable(new Table({
+      name: MESSAGES_ENTITY,
+      columns: [
+        {
+          name: 'id',
+          type: 'int',
+          isPrimary: true,
+          isGenerated: true,
+          isNullable: false,
+        },
+        {
+          name: 'date',
+          type: 'timestamptz',
+          default: 'now()',
+        },
+        {
+          name: 'message',
+          type: 'varchar',
+        },
+        {
+          name: 'owner',
+          type: 'varchar',
+        },
+        {
+          name: 'createdAt',
+          type: 'timestamptz',
+          default: 'now()',
+        },
+        {
+          name: 'updatedAt',
+          type: 'timestamptz',
+          default: 'now()',
+        },
+      ],
+    }), true);
+
+    const result = await queryRunner.query(
+      `SELECT * FROM "${OLD_MESSAGE_ENTITY}"`
+    );
 
     await queryRunner.manager.createQueryBuilder()
       .insert()
@@ -19,8 +55,8 @@ export class DropOldTable1729080439689 implements MigrationInterface {
       })))
       .execute();
 
-    await queryRunner.dropTable(OLD_MESSAGE_ENTITY);
-    await queryRunner.dropTable('log_entity');
+    await queryRunner.query(`DROP TABLE IF EXISTS "${OLD_MESSAGE_ENTITY}"`);
+    await queryRunner.query('DROP TABLE IF EXISTS "log_entity"');
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

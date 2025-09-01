@@ -8,8 +8,8 @@ import { IS_PRODUCTION } from '../../constants/env';
 const migrations = IS_PRODUCTION ?
   ['dist/migrations/prod/*.js'] :
   [
-    'dist/migrations/prod/*.js',
     'dist/migrations/dev/*.js',
+    'dist/migrations/prod/*.js',
   ];
 
 export const getDatabaseConfig = (): PostgresConnectionOptions => {
