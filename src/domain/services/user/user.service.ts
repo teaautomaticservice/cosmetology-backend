@@ -4,6 +4,7 @@ import { Resources } from '@constants/resources';
 import { EMAIL_ERROR, entityNotFound, VALIDATION_ERROR } from '@domain/constants/errors';
 import { FoundAndCounted, ID, Pagination } from '@domain/providers/common/common.type';
 import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
+import { TokensCreatedUsersProvider } from '@domain/providers/tokensCreatedUsers/tokensCreatedUsers.provider';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { UserStatus } from '@domain/types/users.types';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
@@ -18,6 +19,7 @@ export class UserService {
     private readonly usersProvider: UsersProvider,
     private readonly mailer: Mailer,
     @Inject(Resources.LOGGER) private readonly logger: Logger,
+    private readonly tokensCreatedUsersProvider: TokensCreatedUsersProvider,
   ) { }
 
   public async getUsersList({
@@ -63,6 +65,8 @@ export class UserService {
     if (!newUser) {
       throw new InternalServerErrorException('createUserByAmin. User not created.');
     }
+
+    this.tokensCreatedUsersProvider.addNewUserToken(newUser.id, 'testtoken');
 
     await this.mailer.sendConfirmEmailCreatedByAdmin({
       email: newUser.email,

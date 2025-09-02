@@ -31,3 +31,12 @@ services:
       - .db.env
     volumes:
       - pgadmin-data:/var/lib/pgadmin
+
+  cache:
+    image: redis/redis-stack-server:latest
+    container_name: cache
+    restart: always
+    ports:
+      - 6379:6379
+    environment:
+      - "REDIS_ARGS=--enable-debug-command yes --enable-module-command yes"
