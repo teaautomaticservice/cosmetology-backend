@@ -9,7 +9,7 @@ import { UsersProvider } from '@domain/providers/users/users.provider';
 import { UserStatus } from '@domain/types/users.types';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { cryptoUtils } from '@utils/cryptoUtils';
-import { generateRandomString } from '@utils/generateRanomString';
+import { generateRandomString } from '@utils/generateRandomString';
 
 import { Mailer } from '../mailer/mailer.service';
 
@@ -66,11 +66,16 @@ export class UserService {
       throw new InternalServerErrorException('createUserByAmin. User not created.');
     }
 
-    this.tokensCreatedUsersProvider.addNewUserToken(newUser.id, 'testtoken');
+    const userToken = generateRandomString(60, {
+      isNumberChars: true,
+      isSpecialChars: false,
+    });
+    this.tokensCreatedUsersProvider.addNewUserToken(newUser.id, userToken);
 
     await this.mailer.sendConfirmEmailCreatedByAdmin({
       email: newUser.email,
-      displayName: UserEntity.getDisplayName(newUser)
+      displayName: UserEntity.getDisplayName(newUser),
+      userToken
     });
 
     this.logger.info('User has been created by admin', newUser);

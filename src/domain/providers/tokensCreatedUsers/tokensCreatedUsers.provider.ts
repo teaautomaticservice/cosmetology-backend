@@ -7,6 +7,14 @@ export class TokensCreatedUsersProvider extends CommonRedisProvider {
   }
 
   public async addNewUserToken(userID: ID, token: string): Promise<void> {
-    return this.set(userID.toString(), token, 30 * 60);
+    return this.set(token, userID.toString(), 30 * 60);
+  }
+
+  public async getUserIdByToken(userToken: string): Promise<ID | null> {
+    const val = await this.get(userToken);
+    if (val) {
+      return Number(val);
+    }
+    return null;
   }
 }

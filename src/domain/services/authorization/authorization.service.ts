@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { SessionEntity } from '@domain/providers/postgresql/repositories/sessions/session.entity';
 import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { SessionsProvider } from '@domain/providers/sessions/sessions.provider';
+import { TokensCreatedUsersProvider } from '@domain/providers/tokensCreatedUsers/tokensCreatedUsers.provider';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { AuthorizationCookies } from '@domain/types/cookies.types';
 import { BadRequestException, Injectable } from '@nestjs/common';
@@ -16,6 +17,7 @@ export class AuthorizationService {
   constructor(
     private readonly usersProviders: UsersProvider,
     private readonly sessionsProvider: SessionsProvider,
+    private readonly tokensCreatedUsersProvider: TokensCreatedUsersProvider,
   ) { }
 
   public async login({
@@ -36,6 +38,35 @@ export class AuthorizationService {
 
     if (!isPasswordCompared) {
       throw new BadRequestException('Credentials not correct');
+    }
+
+    if (cookies?.session) {
+      const foundSession = await this.sessionsProvider.findBySessionId(cookies.session);
+      if (foundSession) {
+        return { user, session: foundSession };
+      }
+    }
+
+    const newSession = await this.createSession(user);
+
+    return { user, session: newSession };
+  }
+
+  public async loginByUserToken({
+    userToken,
+    cookies,
+  }: {
+    userToken: string;
+    cookies?: AuthorizationCookies;
+  }): Promise<{ user: UserEntity; session: SessionEntity } | null> {
+    const userId = await this.tokensCreatedUsersProvider.getUserIdByToken(userToken);
+    if (!userId) {
+      throw new BadRequestException('token is expired or incorrect');
+    }
+
+    const user = await this.usersProviders.findById(userId);
+    if (!user) {
+      throw new BadRequestException('token is expired or incorrect');
     }
 
     if (cookies?.session) {

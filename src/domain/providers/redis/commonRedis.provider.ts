@@ -5,7 +5,7 @@ import { Resources } from '@constants/resources';
 import { Inject, InternalServerErrorException } from '@nestjs/common';
 
 export class CommonRedisProvider<ValueType extends string = string> {
-  @Inject(Resources.LOGGER) public readonly logger: Logger;
+  @Inject(Resources.LOGGER) protected readonly logger: Logger;
   private client = createClient();
   private hash = '';
   private reconnectAttempts = 0;
@@ -23,7 +23,7 @@ export class CommonRedisProvider<ValueType extends string = string> {
     this.hash = hash;
   }
 
-  public async onApplicationBootstrap(): Promise<void> {
+  protected async onApplicationBootstrap(): Promise<void> {
     if (!this.client.isOpen) {
       this.client.on('error', (err) => {
         this.logger.error(`Redis error: ${err.message}`, err.stack);
@@ -38,14 +38,14 @@ export class CommonRedisProvider<ValueType extends string = string> {
     }
   }
 
-  public async onModuleDestroy(): Promise<void> {
+  protected async onModuleDestroy(): Promise<void> {
     if (this.client.isOpen) {
       await this.client.disconnect();
       this.logger.info('Redis client disconnected.');
     }
   }
 
-  public async set(key: string, value: ValueType, ttlSeconds?: number): Promise<void> {
+  protected async set(key: string, value: ValueType, ttlSeconds?: number): Promise<void> {
     const currentKey = this.getKey(key);
     try {
       await this.client.set(currentKey, value, { ...(ttlSeconds && { EX: ttlSeconds }) });
@@ -56,7 +56,7 @@ export class CommonRedisProvider<ValueType extends string = string> {
     }
   }
 
-  public async get<T = ValueType>(key: string): Promise<T | null> {
+  protected async get<T = ValueType>(key: string): Promise<T | null> {
     const currentKey = this.getKey(key);
     try {
       const value = await this.client.get(currentKey);

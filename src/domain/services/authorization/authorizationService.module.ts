@@ -1,5 +1,8 @@
 import { ExtractUserGuard } from '@domain/controllers/common/guards/extractUser.guard';
 import { SessionsProviderModule } from '@domain/providers/sessions/sessionsProvider.module';
+import {
+  TokensCreatedUsersProviderModule
+} from '@domain/providers/tokensCreatedUsers/tokensCreatedUsersProvider.module';
 import { UsersProviderModule } from '@domain/providers/users/usersProvider.module';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
@@ -7,7 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthorizationService } from './authorization.service';
 
 @Module({
-  imports: [UsersProviderModule, SessionsProviderModule],
+  imports: [UsersProviderModule, SessionsProviderModule, TokensCreatedUsersProviderModule],
   providers: [
     AuthorizationService,
     {
