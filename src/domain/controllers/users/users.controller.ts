@@ -98,4 +98,19 @@ export class UsersController {
 
     return new UsersDto(user);
   }
+
+  @UseGuards(AdminGuard)
+  @Get('/restart-complete-registration/:id')
+  @ApiOkResponse({
+    description: 'Restart complete registration has been initiated',
+    type: UsersDto,
+  })
+  public async restartCompleteRegistration(@QueryInt('id') id: number): Promise<UsersDto> {
+    const user = await this.userService.restartCompleteRegistration({ userId: id });
+    if (!user) {
+      throw new InternalServerErrorException('User not found');
+    }
+
+    return new UsersDto(user);
+  }
 }

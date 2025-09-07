@@ -105,4 +105,36 @@ export class UserService {
 
     return updatedUser;
   }
+
+  public async restartCompleteRegistration({
+    userId,
+  }: {
+    userId: ID;
+  }): Promise<UserEntity | null> {
+    const user = await this.getUserById(userId);
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    if (user.status !== UserStatus.Pending) {
+      throw new BadRequestException('User status is not the pending');
+    }
+
+    const userToken = generateRandomString(60, {
+      isNumberChars: true,
+      isSpecialChars: false,
+    });
+    this.tokensCreatedUsersProvider.addNewUserToken(user.id, userToken);
+
+    await this.mailer.sendConfirmEmailCreatedByAdmin({
+      email: user.email,
+      displayName: UserEntity.getDisplayName(user),
+      userToken
+    });
+
+    this.logger.info('User has been created by admin', user);
+
+    return user;
+  }
 }
