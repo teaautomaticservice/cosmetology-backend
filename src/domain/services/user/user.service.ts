@@ -31,6 +31,9 @@ export class UserService {
   }
 
   public async getUserById(id: ID): Promise<UserEntity | null> {
+    if (!id) {
+      throw new InternalServerErrorException('Error find user by id. Id should be exist');
+    }
     return this.usersProvider.findById(id);
   }
 

@@ -4,6 +4,7 @@ import { CurrentUser } from '@decorators/currentUser';
 import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { UserStatus } from '@domain/types/users.types';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -17,6 +18,7 @@ import { AuthorizationService } from '@services/authorization/authorization.serv
 import { cookieUtils } from '@utils/cookieUtils';
 
 import { LoginFormDto } from './dtos/loginForm.dto';
+import { SetupNewPasswordDto } from './dtos/setupNewPassword.dto';
 import { AuthorizationCookieDto } from '../common/dtos/authorizationCookie.dto';
 import { CurrentUserDto } from '../common/dtos/currentUser.dto';
 
@@ -101,6 +103,31 @@ export class AuthorizationController {
     response.cookie('session', session.sessionId, cookieUtils.setOptions({
       expires: session.expireAt,
     }));
+
+    return new CurrentUserDto(user);
+  }
+
+  @Post('/setup-new-password')
+  @ApiBody({
+    description: 'User login',
+    type: SetupNewPasswordDto,
+  })
+  @ApiOkResponse({
+    description: 'User success login',
+    type: CurrentUserDto,
+  })
+  public async setupNewPassword(
+    @Body() setupNewPasswordForm: SetupNewPasswordDto,
+    @CurrentUser() currentUser: UserEntity | null
+  ): Promise<CurrentUserDto> {
+    if (!currentUser) {
+      throw new BadRequestException('Authorized error');
+    }
+
+    const user = await this.authorizationService.setupNewPassword(
+      currentUser,
+      setupNewPasswordForm,
+    );
 
     return new CurrentUserDto(user);
   }

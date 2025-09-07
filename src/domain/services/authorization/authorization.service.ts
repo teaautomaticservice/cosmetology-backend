@@ -6,7 +6,8 @@ import { SessionsProvider } from '@domain/providers/sessions/sessions.provider';
 import { TokensCreatedUsersProvider } from '@domain/providers/tokensCreatedUsers/tokensCreatedUsers.provider';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { AuthorizationCookies } from '@domain/types/cookies.types';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { UserStatus } from '@domain/types/users.types';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { cryptoUtils } from '@utils/cryptoUtils';
 import { dateUtils } from '@utils/dateUtils';
 
@@ -106,6 +107,36 @@ export class AuthorizationService {
 
   public async clearExpiredSessions(): Promise<{ count: number }> {
     return this.sessionsProvider.clearExpiredSessions();
+  }
+
+  public async setupNewPassword(
+    currentUser: UserEntity,
+    {
+      password,
+      repeatPassword,
+    }: {
+      password: string;
+      repeatPassword: string;
+    }
+  ): Promise<UserEntity> {
+    if (currentUser.status !== UserStatus.Pending || password !== repeatPassword) {
+      throw new BadRequestException(`Passwords didn't match`);
+    }
+
+    const hashedPassword = await cryptoUtils.encryptPassword(password);
+
+    const result = await this.usersProviders.updateById(currentUser.id, {
+      status: UserStatus.Active,
+      password: hashedPassword,
+    });
+
+    const updatedUser = await this.usersProviders.findById(currentUser.id);
+
+    if (!updatedUser || !result) {
+      throw new InternalServerErrorException(`Error update user: ${currentUser}`);
+    }
+
+    return updatedUser;
   }
 
   private async createSession(user: UserEntity): Promise<SessionEntity> {
