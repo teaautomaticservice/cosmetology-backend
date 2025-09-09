@@ -1,5 +1,7 @@
+import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
+
 import { QueryInt } from '@decorators/queryInt';
-import { Pagination } from '@domain/providers/common/common.type';
+import { ID, Pagination } from '@domain/providers/common/common.type';
 import { UserService } from '@domain/services/user/user.service';
 import {
   BadRequestException,
@@ -7,10 +9,17 @@ import {
   Controller,
   Get,
   InternalServerErrorException,
+  Param,
   Post,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiParam,
+  ApiQuery,
+  ApiTags
+} from '@nestjs/swagger';
 
 import { CreateUserDto } from './dtos/createUser.dto';
 import { InitiateHardResetPasswordDto } from './dtos/initiateHardResetPassword.dto';
@@ -25,8 +34,8 @@ export class UsersController {
 
   @UseGuards(AdminGuard)
   @Get('/')
-  @ApiParam({ name: 'page', required: false })
-  @ApiParam({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
   @ApiOkResponse({
     description: 'List of users successful has been got',
     type: UsersPaginatedDto,
@@ -54,7 +63,9 @@ export class UsersController {
     description: 'User by ID successful has been got',
     type: UsersDto,
   })
-  public async getUserById(@QueryInt('id') id: number): Promise<UsersDto> {
+  public async getUserById(
+    @Param('id', ParseObjectIdPipe) id: ID,
+  ): Promise<UsersDto> {
     const user = await this.userService.getUserById(id);
     if (!user) {
       throw new BadRequestException('User not found');
@@ -92,6 +103,21 @@ export class UsersController {
     @Body() initiateHardResetPasswordData: InitiateHardResetPasswordDto,
   ): Promise<UsersDto> {
     const user = await this.userService.initiateHardResetPassword(initiateHardResetPasswordData);
+    if (!user) {
+      throw new InternalServerErrorException('User not found');
+    }
+
+    return new UsersDto(user);
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('/restart-complete-registration/:id')
+  @ApiOkResponse({
+    description: 'Restart complete registration has been initiated',
+    type: UsersDto,
+  })
+  public async restartCompleteRegistration(@QueryInt('id') id: number): Promise<UsersDto> {
+    const user = await this.userService.restartCompleteRegistration({ userId: id });
     if (!user) {
       throw new InternalServerErrorException('User not found');
     }

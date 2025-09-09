@@ -1,7 +1,7 @@
 import { QueryInt } from 'src/ambient/decorators/queryInt';
 
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Pagination } from '@providers/common/common.type';
 import { LogsService } from '@services/logs/logs.service';
 
@@ -15,8 +15,8 @@ export class LogsController {
 
   @UseGuards(SuperAdminGuard)
   @Get('/list')
-  @ApiParam({ name: 'page', required: false })
-  @ApiParam({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
   @ApiOkResponse({
     description: 'List of logs successful has been got',
     type: LogsPaginatedDto,

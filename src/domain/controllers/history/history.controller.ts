@@ -1,7 +1,8 @@
+import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 import { Logger } from 'winston';
 
 import { Resources } from '@constants/resources';
-import { QueryInt } from '@decorators/queryInt';
+import { ID } from '@domain/providers/common/common.type';
 import {
   Body,
   Controller,
@@ -9,6 +10,7 @@ import {
   Get,
   Inject,
   NotFoundException,
+  Param,
   Patch,
   Post,
   UseGuards
@@ -55,7 +57,9 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryDto,
   })
-  public async getItem(@QueryInt('id') id: number): Promise<HistoryDto | null> {
+  public async getItem(
+    @Param('id', ParseObjectIdPipe) id: ID,
+  ): Promise<HistoryDto | null> {
     const history = await this.historyService.getHistoryById(Number(id));
     if (history == null) {
       throw new NotFoundException();
@@ -97,7 +101,7 @@ export class HistoryController {
     type: HistoryPaginatedDto,
   })
   public async updateItem(
-    @QueryInt('id') id: number,
+    @Param('id', ParseObjectIdPipe) id: ID,
     @Body() messageReq: UpdateHistoryDto
   ): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.updateHistory(Number(id), messageReq);
@@ -118,7 +122,9 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  public async removeItem(@QueryInt('id') id: number): Promise<HistoryPaginatedDto> {
+  public async removeItem(
+    @Param('id', ParseObjectIdPipe) id: ID,
+  ): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.removeHistory(Number(id));
     return {
       data: items.map((item) => new HistoryDto(item)),

@@ -18,9 +18,11 @@ export class Mailer {
   public async sendConfirmEmailCreatedByAdmin({
     email,
     displayName,
+    userToken,
   }: {
     displayName: string;
     email: string;
+    userToken: string;
   }): Promise<void> {
     const title = `Welcome to ${APP_NAME}!`;
     this.sendEmail({
@@ -29,6 +31,7 @@ export class Mailer {
       html: confirmEmailCreatedUserByAdmin({
         title,
         displayName,
+        userToken,
       })
     });
   }
