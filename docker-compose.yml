@@ -38,5 +38,8 @@ services:
     restart: always
     ports:
       - 6379:6379
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
     environment:
       - "REDIS_ARGS=--enable-debug-command yes --enable-module-command yes"
+    env_file:
+      - .env
