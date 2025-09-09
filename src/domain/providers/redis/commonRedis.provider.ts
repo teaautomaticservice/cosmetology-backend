@@ -6,7 +6,7 @@ import { Inject, InternalServerErrorException } from '@nestjs/common';
 
 export class CommonRedisProvider<ValueType extends string = string> {
   @Inject(Resources.LOGGER) protected readonly logger: Logger;
-  private client = createClient();
+  private client: ReturnType<typeof createClient>;
   private hash = '';
   private reconnectAttempts = 0;
 
@@ -15,7 +15,15 @@ export class CommonRedisProvider<ValueType extends string = string> {
   }: {
     hash: string;
   }) {
-    this.client = createClient();
+    const port = process.env.REDIS_PORT ?? '';
+    const password = process.env.REDIS_PASSWORD ?? '';
+
+    this.client = createClient({
+      socket: {
+        port: Number(port),
+      },
+      password,
+    });
     if (!hash.length) {
       throw new InternalServerErrorException('Error initialize Cash. Hash shouldn\'t be empty string');
     }
