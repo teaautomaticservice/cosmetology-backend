@@ -1,5 +1,7 @@
+import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
+
 import { QueryInt } from '@decorators/queryInt';
-import { Pagination } from '@domain/providers/common/common.type';
+import { ID, Pagination } from '@domain/providers/common/common.type';
 import { UserService } from '@domain/services/user/user.service';
 import {
   BadRequestException,
@@ -7,6 +9,7 @@ import {
   Controller,
   Get,
   InternalServerErrorException,
+  Param,
   Post,
   UseGuards
 } from '@nestjs/common';
@@ -54,7 +57,9 @@ export class UsersController {
     description: 'User by ID successful has been got',
     type: UsersDto,
   })
-  public async getUserById(@QueryInt('id') id: number): Promise<UsersDto> {
+  public async getUserById(
+    @Param('id', ParseObjectIdPipe) id: ID,
+  ): Promise<UsersDto> {
     const user = await this.userService.getUserById(id);
     if (!user) {
       throw new BadRequestException('User not found');
