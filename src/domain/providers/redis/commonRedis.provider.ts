@@ -15,11 +15,13 @@ export class CommonRedisProvider<ValueType extends string = string> {
   }: {
     hash: string;
   }) {
+    const host = process.env.REDIS_HOST ?? '';
     const port = process.env.REDIS_PORT ?? '';
     const password = process.env.REDIS_PASSWORD ?? '';
 
     this.client = createClient({
       socket: {
+        host,
         port: Number(port),
       },
       password,
