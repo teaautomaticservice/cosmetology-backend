@@ -13,7 +13,12 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiQuery,
+  ApiTags
+} from '@nestjs/swagger';
 import { AuthorizationService } from '@services/authorization/authorization.service';
 import { cookieUtils } from '@utils/cookieUtils';
 
@@ -75,7 +80,7 @@ export class AuthorizationController {
     description: 'User success login',
     type: CurrentUserDto,
   })
-  @ApiParam({ name: 'userToken', type: 'string' })
+  @ApiQuery({ name: 'userToken', type: 'string' })
   public async authByUserToken(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,

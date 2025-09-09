@@ -13,7 +13,13 @@ import {
   Post,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiParam,
+  ApiQuery,
+  ApiTags
+} from '@nestjs/swagger';
 
 import { CreateUserDto } from './dtos/createUser.dto';
 import { InitiateHardResetPasswordDto } from './dtos/initiateHardResetPassword.dto';
@@ -28,8 +34,8 @@ export class UsersController {
 
   @UseGuards(AdminGuard)
   @Get('/')
-  @ApiParam({ name: 'page', required: false })
-  @ApiParam({ name: 'pageSize', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
   @ApiOkResponse({
     description: 'List of users successful has been got',
     type: UsersPaginatedDto,
