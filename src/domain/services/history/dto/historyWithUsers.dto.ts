@@ -2,7 +2,7 @@ import { UserEntity } from '@domain/providers/postgresql/repositories/users/user
 import { ID } from '@providers/common/common.type';
 import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
 
-export class historyWithUsersDto {
+export class HistoryWithUsersDto {
   public readonly id: ID;
   public readonly date: Date;
   public readonly message: string;

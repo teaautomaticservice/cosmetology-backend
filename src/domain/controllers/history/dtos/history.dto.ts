@@ -1,5 +1,5 @@
 import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
-import { historyWithUsersDto } from '@domain/services/history/dto/historyWithUsers.dto';
+import { HistoryWithUsersDto } from '@domain/services/history/dto/historyWithUsers.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { ID } from '@providers/common/common.type';
 
@@ -40,7 +40,7 @@ export class HistoryDto {
   })
   public readonly message: string;
 
-  constructor({ id, date, message, createdByUser, updatedByUser }: historyWithUsersDto) {
+  constructor({ id, date, message, createdByUser, updatedByUser }: HistoryWithUsersDto) {
     this.id = id;
     this.date = date;
     this.owner = createdByUser ? UserEntity.getDisplayName(createdByUser) : 'N/A';
