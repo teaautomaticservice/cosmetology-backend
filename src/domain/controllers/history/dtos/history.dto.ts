@@ -1,6 +1,7 @@
+import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
+import { historyWithUsersDto } from '@domain/services/history/dto/historyWithUsers.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { ID } from '@providers/common/common.type';
-import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
 
 export class HistoryDto {
   @ApiProperty({
@@ -30,12 +31,20 @@ export class HistoryDto {
     required: true,
     nullable: false,
   })
+  public readonly updatedBy: string;
+
+  @ApiProperty({
+    type: 'string',
+    required: true,
+    nullable: false,
+  })
   public readonly message: string;
 
-  constructor({ id, date, message }: MessageEntity) {
+  constructor({ id, date, message, createdByUser, updatedByUser }: historyWithUsersDto) {
     this.id = id;
     this.date = date;
-    this.owner = 'Owner';
+    this.owner = createdByUser ? UserEntity.getDisplayName(createdByUser) : 'N/A';
+    this.updatedBy = updatedByUser ? UserEntity.getDisplayName(updatedByUser) : 'N/A';
     this.message = message;
   }
 }

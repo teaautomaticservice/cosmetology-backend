@@ -1,4 +1,4 @@
-import { DeepPartial, FindOptionsOrder, FindOptionsWhere } from 'typeorm';
+import { DeepPartial, FindOptionsOrder, FindOptionsWhere, In } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { FoundAndCounted, Pagination, RecordEntity } from './common.type';
@@ -17,6 +17,15 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
       id,
     } as FindOptionsWhere<Entity>;
     return this.db.findOne({
+      where,
+    });
+  }
+
+  public async findByIds(ids: Entity['id'][]): Promise<Entity[] | null> {
+    const where = {
+      id: In(ids),
+    } as FindOptionsWhere<Entity>;
+    return this.db.find({
       where,
     });
   }

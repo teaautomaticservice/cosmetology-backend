@@ -107,9 +107,10 @@ export class HistoryController {
   })
   public async updateItem(
     @Param('id', ParseObjectIdPipe) id: ID,
-    @Body() messageReq: UpdateHistoryDto
+    @Body() messageReq: UpdateHistoryDto,
+    @CurrentUser() currentUser: UserEntity,
   ): Promise<HistoryPaginatedDto> {
-    const [items, count] = await this.historyService.updateHistory(Number(id), messageReq);
+    const [items, count] = await this.historyService.updateHistory(Number(id), messageReq, currentUser);
     return {
       data: items.map((item) => new HistoryDto(item)),
       meta: {
