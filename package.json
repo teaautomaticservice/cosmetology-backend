@@ -21,7 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
     "migration:run": "npm run typeorm migration:run -- -d ./src/ambient/config/database/database.ts",
-    "migration:generate": "npm run typeorm -- migration:generate -d ./src/ambient/config/database/database.ts",
+    "migration:generate": "npm run typeorm -- migration:generate -d ./src/ambient/config/database/database.ts --pretty",
     "migration:create": "cross-env-shell name=$npm_config_NAME npm run typeorm -- migration:create ./src/migrations/$name",
     "migration:revert": "npm run typeorm -- -d ./src/ambient/config/database/database.ts migration:revert",
     "smtp": "maildev --smtp=1025 --web=1080"

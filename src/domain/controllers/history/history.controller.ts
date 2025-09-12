@@ -2,7 +2,9 @@ import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 import { Logger } from 'winston';
 
 import { Resources } from '@constants/resources';
+import { CurrentUser } from '@decorators/currentUser';
 import { ID } from '@domain/providers/common/common.type';
+import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import {
   Body,
   Controller,
@@ -77,8 +79,11 @@ export class HistoryController {
     description: 'History successful has been got',
     type: HistoryPaginatedDto,
   })
-  public async addItem(@Body() messageReq: UpdateHistoryDto): Promise<HistoryPaginatedDto> {
-    const [items, count] = await this.historyService.addHistory(messageReq);
+  public async addItem(
+    @Body() messageReq: UpdateHistoryDto,
+    @CurrentUser() currentUser: UserEntity,
+  ): Promise<HistoryPaginatedDto> {
+    const [items, count] = await this.historyService.addHistory(messageReq, currentUser);
     return {
       data: items.map((item) => new HistoryDto(item)),
       meta: {
@@ -102,9 +107,10 @@ export class HistoryController {
   })
   public async updateItem(
     @Param('id', ParseObjectIdPipe) id: ID,
-    @Body() messageReq: UpdateHistoryDto
+    @Body() messageReq: UpdateHistoryDto,
+    @CurrentUser() currentUser: UserEntity,
   ): Promise<HistoryPaginatedDto> {
-    const [items, count] = await this.historyService.updateHistory(Number(id), messageReq);
+    const [items, count] = await this.historyService.updateHistory(Number(id), messageReq, currentUser);
     return {
       data: items.map((item) => new HistoryDto(item)),
       meta: {
