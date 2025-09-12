@@ -32,10 +32,10 @@ export class HistoryDto {
   })
   public readonly message: string;
 
-  constructor({ id, date, owner, message }: MessageEntity) {
+  constructor({ id, date, message }: MessageEntity) {
     this.id = id;
     this.date = date;
-    this.owner = owner;
+    this.owner = 'Owner';
     this.message = message;
   }
 }

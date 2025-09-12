@@ -1,4 +1,5 @@
 import { HistoriesProvider } from '@domain/providers/histories/histories.provider';
+import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { Injectable } from '@nestjs/common';
 import { RecordEntity } from '@providers/common/common.type';
 import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
@@ -13,8 +14,11 @@ export class HistoryService {
     });;
   }
 
-  public async addHistory({ message }: Pick<MessageEntity, 'message'>): Promise<[MessageEntity[], number]> {
-    await this.createHistory(message);
+  public async addHistory(
+    { message }: Pick<MessageEntity, 'message'>,
+    user: UserEntity,
+  ): Promise<[MessageEntity[], number]> {
+    await this.createHistory(message, user);
     return this.getHistoryList();
   }
 
@@ -35,11 +39,12 @@ export class HistoryService {
     return await this.getHistoryList();
   }
 
-  private async createHistory(message: string): Promise<RecordEntity<MessageEntity>> {
+  private async createHistory(message: string, user: UserEntity,): Promise<RecordEntity<MessageEntity>> {
     return this.historiesProvider.create({
       date: new Date(),
       message,
-      owner: 'Owner',
+      createdByUserId: user.id,
+      updatedByUserId: user.id,
     });
   }
 }

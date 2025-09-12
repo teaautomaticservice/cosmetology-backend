@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index } from 'typeorm';
 
 import { MESSAGES_ENTITY } from '../../constants/entities';
 import { CommonEntity } from '../common/common.entity';
@@ -12,5 +12,10 @@ export class MessageEntity extends CommonEntity {
   public message: string;
 
   @Column()
-  public owner: string;
+  @Index('messageCreatedByUserId_1')
+  public createdByUserId: number;
+
+  @Column()
+  @Index('messageUpdatedByUserId_1')
+  public updatedByUserId: number;
 }
