@@ -45,7 +45,7 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
 
     return Promise.all([
       this.db.find({
-        ...offset,
+        offset,
         order: currentOrder,
       }),
       this.db.count(),

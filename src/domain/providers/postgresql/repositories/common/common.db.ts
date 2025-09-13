@@ -47,7 +47,7 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       where,
       order: currentOrder,
       ...(offset?.skip && { skip: offset.skip }),
-      ...(offset?.take && { skip: offset.take }),
+      ...(offset?.take && { take: offset.take }),
     });
   }
 
