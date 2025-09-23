@@ -22,11 +22,15 @@ export class HistoryService {
     const uniqIdsForUsersCreated: Set<ID> = new Set();
 
     rawHistoryList.forEach(({
-      createdByUserId,
-      updatedByUserId,
+      createdBy,
+      updatedBy,
     }) => {
-      uniqIdsForUsersCreated.add(createdByUserId);
-      uniqIdsForUsersCreated.add(updatedByUserId);
+      if (createdBy) {
+        uniqIdsForUsersCreated.add(createdBy);
+      }
+      if (updatedBy) {
+        uniqIdsForUsersCreated.add(updatedBy);
+      }
     });
 
     const usersIds = Array.from(uniqIdsForUsersCreated);
@@ -42,8 +46,12 @@ export class HistoryService {
     const historyWithUsers: HistoryWithUsersDto[] = rawHistoryList.map((messageEntity) =>
       new HistoryWithUsersDto({
         messageEntity,
-        createdByUser: usersMap[messageEntity.createdByUserId],
-        updatedByUser: usersMap[messageEntity.updatedByUserId],
+        ...(messageEntity.createdBy && {
+          createdByUser: usersMap[messageEntity.createdBy],
+        }),
+        ...(messageEntity.updatedBy && {
+          updatedByUser: usersMap[messageEntity.updatedBy],
+        })
       }));
 
     return [historyWithUsers, count];
@@ -89,7 +97,7 @@ export class HistoryService {
       currentId,
       {
         message: newMessage.message,
-        updatedByUserId: currentUser.id,
+        updatedBy: currentUser.id,
       }
     );
     return await this.getHistoryList({
@@ -117,12 +125,16 @@ export class HistoryService {
     const messageEntity = await this.historiesProvider.create({
       date: new Date(),
       message,
-      createdByUserId: user.id,
-      updatedByUserId: user.id,
+      createdBy: user.id,
+      updatedBy: user.id,
     });
 
-    const createdByUser = await this.usersProvider.findById(messageEntity.createdByUserId);
-    const updatedByUser = await this.usersProvider.findById(messageEntity.updatedByUserId);
+    const createdByUser = messageEntity.createdBy ?
+      await this.usersProvider.findById(messageEntity.createdBy) :
+      null;
+    const updatedByUser = messageEntity.updatedBy ?
+      await this.usersProvider.findById(messageEntity.updatedBy) :
+      null;
 
     return new HistoryWithUsersDto({
       messageEntity,
