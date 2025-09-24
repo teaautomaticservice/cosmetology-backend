@@ -11,11 +11,17 @@ export class MessageEntity extends CommonEntity {
   @Column()
   public message: string;
 
-  @Column()
+  @Column({
+    type: 'int',
+    nullable: true,
+  })
   @Index('messageCreatedByUserId_1')
-  public createdByUserId: number;
+  public createdBy: number | null;
 
-  @Column()
+  @Column({
+    type: 'int',
+    nullable: true,
+  })
   @Index('messageUpdatedByUserId_1')
-  public updatedByUserId: number;
+  public updatedBy: number | null;
 }

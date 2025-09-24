@@ -1,4 +1,5 @@
 import {
+  Column,
   CreateDateColumn,
   Index,
   PrimaryGeneratedColumn,
@@ -15,4 +16,19 @@ export abstract class CommonEntity {
   @Index()
   @UpdateDateColumn({ type: 'timestamptz' })
   public updatedAt: Date;
+
+  @Column({
+    type: 'int',
+    nullable: true,
+
+  })
+  @Index()
+  public createdBy?: number | null;
+
+  @Column({
+    type: 'int',
+    nullable: true,
+  })
+  @Index()
+  public updatedBy?: number | null;
 }

@@ -1,7 +1,6 @@
 import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity';
 
 import { HistoriesProvider } from '@domain/providers/histories/histories.provider';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ID, Pagination } from '@providers/common/common.type';
@@ -22,11 +21,15 @@ export class HistoryService {
     const uniqIdsForUsersCreated: Set<ID> = new Set();
 
     rawHistoryList.forEach(({
-      createdByUserId,
-      updatedByUserId,
+      createdBy,
+      updatedBy,
     }) => {
-      uniqIdsForUsersCreated.add(createdByUserId);
-      uniqIdsForUsersCreated.add(updatedByUserId);
+      if (createdBy) {
+        uniqIdsForUsersCreated.add(createdBy);
+      }
+      if (updatedBy) {
+        uniqIdsForUsersCreated.add(updatedBy);
+      }
     });
 
     const usersIds = Array.from(uniqIdsForUsersCreated);
@@ -42,8 +45,12 @@ export class HistoryService {
     const historyWithUsers: HistoryWithUsersDto[] = rawHistoryList.map((messageEntity) =>
       new HistoryWithUsersDto({
         messageEntity,
-        createdByUser: usersMap[messageEntity.createdByUserId],
-        updatedByUser: usersMap[messageEntity.updatedByUserId],
+        ...(messageEntity.createdBy && {
+          createdByUser: usersMap[messageEntity.createdBy],
+        }),
+        ...(messageEntity.updatedBy && {
+          updatedByUser: usersMap[messageEntity.updatedBy],
+        })
       }));
 
     return [historyWithUsers, count];
@@ -52,15 +59,13 @@ export class HistoryService {
   public async addHistory(
     {
       newMessage,
-      currentUser,
       pageSize,
     }: {
       newMessage: Pick<MessageEntity, 'message'>;
-      currentUser: UserEntity;
       pageSize?: number;
     }
   ): Promise<[HistoryWithUsersDto[], number]> {
-    await this.createHistory(newMessage.message, currentUser);
+    await this.createHistory(newMessage.message);
     return this.getHistoryList({
       pagination: this.getDefaultPagination({
         pageSize,
@@ -75,22 +80,17 @@ export class HistoryService {
   public async updateHistory({
     currentId,
     newMessage,
-    currentUser,
     page,
     pageSize,
   }: {
     currentId: number;
     newMessage: Pick<MessageEntity, 'message'>;
-    currentUser: UserEntity;
     page: number;
     pageSize: number;
   }): Promise<[HistoryWithUsersDto[], number]> {
     await this.historiesProvider.updateById(
       currentId,
-      {
-        message: newMessage.message,
-        updatedByUserId: currentUser.id,
-      }
+      { message: newMessage.message }
     );
     return await this.getHistoryList({
       pagination: {
@@ -113,16 +113,18 @@ export class HistoryService {
     });
   }
 
-  private async createHistory(message: string, user: UserEntity,): Promise<HistoryWithUsersDto> {
+  private async createHistory(message: string): Promise<HistoryWithUsersDto> {
     const messageEntity = await this.historiesProvider.create({
       date: new Date(),
       message,
-      createdByUserId: user.id,
-      updatedByUserId: user.id,
     });
 
-    const createdByUser = await this.usersProvider.findById(messageEntity.createdByUserId);
-    const updatedByUser = await this.usersProvider.findById(messageEntity.updatedByUserId);
+    const createdByUser = messageEntity.createdBy ?
+      await this.usersProvider.findById(messageEntity.createdBy) :
+      null;
+    const updatedByUser = messageEntity.updatedBy ?
+      await this.usersProvider.findById(messageEntity.updatedBy) :
+      null;
 
     return new HistoryWithUsersDto({
       messageEntity,

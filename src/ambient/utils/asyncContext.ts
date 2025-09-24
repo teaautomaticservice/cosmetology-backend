@@ -41,13 +41,13 @@ export class AsyncContext extends AsyncContextBase<string, unknown> {
     this.set(KEY_USER, user);
   }
 
-  public getUser(): UserEntity {
-    return this.get(KEY_USER) as UserEntity;
+  public getUser(): UserEntity | undefined {
+    return this.get(KEY_USER) as UserEntity | undefined;
   }
 
   public getUserIfRegistered(): UserEntity | undefined {
     if (this.isRegistered()) {
-      return this.get(KEY_USER) as UserEntity;
+      return this.get(KEY_USER) as UserEntity | undefined;
     }
 
     return undefined;

@@ -2,10 +2,8 @@ import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 import { Logger } from 'winston';
 
 import { Resources } from '@constants/resources';
-import { CurrentUser } from '@decorators/currentUser';
 import { QueryInt } from '@decorators/queryInt';
 import { ID } from '@domain/providers/common/common.type';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import {
   Body,
   Controller,
@@ -98,11 +96,9 @@ export class HistoryController {
   })
   public async addItem(
     @Body() messageReq: UpdateHistoryDto,
-    @CurrentUser() currentUser: UserEntity,
     @QueryInt('pageSize', 10) pageSize: number,
   ): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.addHistory({
-      currentUser,
       newMessage: messageReq,
       pageSize,
     });
@@ -132,14 +128,12 @@ export class HistoryController {
   public async updateItem(
     @Param('id', ParseObjectIdPipe) id: ID,
     @Body() messageReq: UpdateHistoryDto,
-    @CurrentUser() currentUser: UserEntity,
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
   ): Promise<HistoryPaginatedDto> {
     const [items, count] = await this.historyService.updateHistory({
       currentId: Number(id),
       newMessage: messageReq,
-      currentUser,
       page,
       pageSize,
     });
