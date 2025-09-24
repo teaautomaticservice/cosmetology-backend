@@ -1,13 +1,12 @@
-import {  } from '@ambientProviders/logger/logger.provider';
-import { LoggerProviderModule } from '@ambientProviders/logger/loggerProvider.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { UserEntity } from './user.entity';
 import { UsersDb } from './users.db';
+import { CommonDbModule } from '../common/commonDb.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity]), LoggerProviderModule],
+  imports: [TypeOrmModule.forFeature([UserEntity]), CommonDbModule],
   providers: [UsersDb],
   exports: [UsersDb],
 })

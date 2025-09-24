@@ -6,7 +6,22 @@ export type WithID<Type> = Type & {
   id: ID;
 };
 
-export type RecordEntity<T extends CommonEntity> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>;
+export type RecordEntity<T extends CommonEntity> =
+  Omit<
+    T,
+    Extract<
+      'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy',
+      keyof T>
+  > &
+  Partial<
+    Pick<
+      T,
+      Extract<
+        'createdBy' | 'updatedBy',
+        keyof T
+      >
+    >
+  >;
 
 export interface Pagination {
   page: number;

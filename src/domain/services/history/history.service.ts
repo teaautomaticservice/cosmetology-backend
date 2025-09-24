@@ -1,7 +1,6 @@
 import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity';
 
 import { HistoriesProvider } from '@domain/providers/histories/histories.provider';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { UsersProvider } from '@domain/providers/users/users.provider';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ID, Pagination } from '@providers/common/common.type';
@@ -60,15 +59,13 @@ export class HistoryService {
   public async addHistory(
     {
       newMessage,
-      currentUser,
       pageSize,
     }: {
       newMessage: Pick<MessageEntity, 'message'>;
-      currentUser: UserEntity;
       pageSize?: number;
     }
   ): Promise<[HistoryWithUsersDto[], number]> {
-    await this.createHistory(newMessage.message, currentUser);
+    await this.createHistory(newMessage.message);
     return this.getHistoryList({
       pagination: this.getDefaultPagination({
         pageSize,
@@ -83,22 +80,17 @@ export class HistoryService {
   public async updateHistory({
     currentId,
     newMessage,
-    currentUser,
     page,
     pageSize,
   }: {
     currentId: number;
     newMessage: Pick<MessageEntity, 'message'>;
-    currentUser: UserEntity;
     page: number;
     pageSize: number;
   }): Promise<[HistoryWithUsersDto[], number]> {
     await this.historiesProvider.updateById(
       currentId,
-      {
-        message: newMessage.message,
-        updatedBy: currentUser.id,
-      }
+      { message: newMessage.message }
     );
     return await this.getHistoryList({
       pagination: {
@@ -121,12 +113,10 @@ export class HistoryService {
     });
   }
 
-  private async createHistory(message: string, user: UserEntity,): Promise<HistoryWithUsersDto> {
+  private async createHistory(message: string): Promise<HistoryWithUsersDto> {
     const messageEntity = await this.historiesProvider.create({
       date: new Date(),
       message,
-      createdBy: user.id,
-      updatedBy: user.id,
     });
 
     const createdByUser = messageEntity.createdBy ?
