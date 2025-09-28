@@ -18,7 +18,7 @@ export abstract class CommonDb<Entity extends CommonEntity> {
   @Inject(Resources.AsyncContext) public readonly asyncContext: AsyncContext;
   @Inject(Resources.LOGGER) public readonly logger: Logger;
 
-  protected readonly dbRepository: Repository<Entity>;
+  private readonly dbRepository: Repository<Entity>;
 
   protected constructor(dbRepository: Repository<Entity>) {
     this.dbRepository = dbRepository;

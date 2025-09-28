@@ -19,6 +19,6 @@ export class HistoryDb extends CommonDb<MessageEntity> {
     this.logger.info('Delete one history by id', {
       id,
     });
-    return await this.dbRepository.delete(id);
+    return await this.messageRepository.delete(id);
   }
 }
