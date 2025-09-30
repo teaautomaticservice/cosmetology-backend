@@ -8,4 +8,12 @@ export class CurrenciesProvider extends CommonPostgresqlProvider<CurrencyEntity>
   constructor(private readonly currenciesDb: CurrenciesDb) {
     super(currenciesDb);
   }
+
+  public async findByCode(code: CurrencyEntity['code']): Promise<CurrencyEntity | null> {
+    return this.currenciesDb.findOne({
+      where: {
+        code,
+      },
+    });
+  }
 }
