@@ -12,10 +12,10 @@ import { ApiBody, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { CreateCurrencyDto } from './dtos/createCurrency.dto';
 import { CurrencyDto } from './dtos/currency.dto';
-import { CurrencyPaginatedDto } from './dtos/currencyPaginatedDto';
+import { CurrencyPaginatedDto } from './dtos/currencyPaginated.dto';
 import { CASHIER_CURRENCIES_PATH } from '../cashier.paths';
 
-@ApiTags('Cashier', 'Currencies')
+@ApiTags('Cashier')
 @Controller(CASHIER_CURRENCIES_PATH)
 export class CurrenciesController {
   constructor(

@@ -3,6 +3,9 @@ import { MoneyStoragesProvider } from '@domain/providers/cashier/moneyStorages/m
 import { Pagination } from '@domain/providers/common/common.type';
 import { CurrencyEntity } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.entity';
 import { CurrencyStatus } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.types';
+import {
+  MoneyStoragesEntity
+} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import { BadRequestException, Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -13,7 +16,6 @@ export class CashierService {
   ) { }
 
   public async getCurrenciesList(params: { pagination: Pagination }): Promise<[CurrencyEntity[], number]> {
-    await this.moneyStoragesProvider.findAndCount(params);
     return this.currenciesProvider.findAndCount(params);
   }
 
@@ -34,5 +36,9 @@ export class CashierService {
       status: CurrencyStatus.ACTIVE,
     });
     return this.getCurrenciesList({ pagination });
+  }
+
+  public async getMoneyStoragesList(params: { pagination: Pagination }): Promise<[MoneyStoragesEntity[], number]> {
+    return await this.moneyStoragesProvider.findAndCount(params);
   }
 }

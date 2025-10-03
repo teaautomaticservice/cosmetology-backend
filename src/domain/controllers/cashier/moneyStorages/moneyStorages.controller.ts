@@ -1,0 +1,46 @@
+import { QueryInt } from '@decorators/queryInt';
+import { AuthGuard } from '@domain/controllers/common/guards/auth.guard';
+import { CashierService } from '@domain/services/cashier/cashier.service';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+
+import { MoneyStorageDto } from './dtos/moneyStorage.dto';
+import { MoneyStoragePaginatedDto } from './dtos/moneyStoragePaginated.dto';
+import { CASHIER_MONEY_STORAGES_PATH } from '../cashier.paths';
+
+@ApiTags('Cashier')
+@Controller(CASHIER_MONEY_STORAGES_PATH)
+export class MoneyStoragesController {
+  constructor(
+    private readonly cashierService: CashierService,
+  ) { }
+
+  @UseGuards(AuthGuard)
+  @Get('/list')
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiOkResponse({
+    description: 'List of money storages successful has been got',
+    type: MoneyStoragePaginatedDto,
+  })
+  public async getList(
+    @QueryInt('page', 1) page: number,
+    @QueryInt('pageSize', 10) pageSize: number,
+  ): Promise<MoneyStoragePaginatedDto> {
+    const [data, count] = await this.cashierService.getMoneyStoragesList({
+      pagination: {
+        page,
+        pageSize,
+      }
+    });
+
+    return {
+      data: data.map((currency) => new MoneyStorageDto(currency)),
+      meta: {
+        count,
+        currentPage: page,
+        itemsPerPage: pageSize,
+      },
+    };
+  }
+}
