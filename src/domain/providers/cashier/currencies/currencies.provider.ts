@@ -1,8 +1,8 @@
-import { RecordEntity } from '@domain/providers/common/common.type';
-import { CommonPostgresqlProvider } from '@domain/providers/common/commonPostgresql.provider';
-import { CurrenciesDb } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.db';
-import { CurrencyEntity } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.entity';
 import { Injectable } from '@nestjs/common';
+import { RecordEntity } from '@providers/common/common.type';
+import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
+import { CurrenciesDb } from '@providers/postgresql/repositories/cashier/currencies/currencies.db';
+import { CurrencyEntity } from '@providers/postgresql/repositories/cashier/currencies/currencies.entity';
 
 @Injectable()
 export class CurrenciesProvider extends CommonPostgresqlProvider<CurrencyEntity> {

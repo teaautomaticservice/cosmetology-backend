@@ -1,7 +1,7 @@
+import { Module } from '@nestjs/common';
 import {
   CurrenciesRepositoryModule
-} from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.module';
-import { Module } from '@nestjs/common';
+} from '@providers/postgresql/repositories/cashier/currencies/currencies.module';
 
 import { CurrenciesProvider } from './currencies.provider';
 
