@@ -6,7 +6,7 @@ import { CurrencyStatus } from '@domain/providers/postgresql/repositories/cashie
 import {
   MoneyStoragesEntity
 } from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 
 @Injectable()
 export class CashierService {
@@ -38,7 +38,21 @@ export class CashierService {
     return this.getCurrenciesList({ pagination });
   }
 
-  public async getMoneyStoragesList(params: { pagination: Pagination }): Promise<[MoneyStoragesEntity[], number]> {
-    return await this.moneyStoragesProvider.findAndCount(params);
+  public async getMoneyStoragesList({
+    pagination,
+  }: {
+    pagination: Pagination;
+  }): Promise<[MoneyStoragesEntity[], number]> {
+    return await this.moneyStoragesProvider.findAndCount({
+      pagination,
+    });
+  }
+
+  public async getObligationAccount(): Promise<MoneyStoragesEntity> {
+    const result = await this.moneyStoragesProvider.findObligationAccount();
+    if(!result) {
+      throw new InternalServerErrorException('Obligation account hasn\'t find.');
+    }
+    return result;
   }
 }

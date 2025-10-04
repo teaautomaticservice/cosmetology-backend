@@ -1,10 +1,14 @@
-import { RecordEntity } from '@domain/providers/common/common.type';
+import { FindOptionsOrder, Not } from 'typeorm';
+
+import { FoundAndCounted, Pagination, RecordEntity } from '@domain/providers/common/common.type';
 import { Injectable } from '@nestjs/common';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { MoneyStoragesDb } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.db';
 import {
   MoneyStoragesEntity
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
+
+import { OBLIGATION_ACCOUNT_CODE } from './moneyStorages.constants';
 
 @Injectable()
 export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStoragesEntity> {
@@ -27,5 +31,25 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
         code: formattedCode,
       },
     });
+  }
+
+  public async findAndCount({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: FindOptionsOrder<MoneyStoragesEntity> | undefined;
+  }): Promise<FoundAndCounted<MoneyStoragesEntity>> {
+    return super.findAndCount({
+      pagination,
+      order,
+      where: {
+        code: Not(OBLIGATION_ACCOUNT_CODE),
+      }
+    });
+  }
+
+  public async findObligationAccount(): Promise<MoneyStoragesEntity | null> {
+    return this.findByCode(OBLIGATION_ACCOUNT_CODE);
   }
 }

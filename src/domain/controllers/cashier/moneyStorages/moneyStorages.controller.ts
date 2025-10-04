@@ -43,4 +43,16 @@ export class MoneyStoragesController {
       },
     };
   }
+
+  @UseGuards(AuthGuard)
+  @Get('/obligation-account')
+  @ApiOkResponse({
+    description: 'Obligation account of money storages successful has been got',
+    type: MoneyStorageDto,
+  })
+  public async getObligationAccount(): Promise<MoneyStorageDto> {
+    const result = await this.cashierService.getObligationAccount();
+
+    return new MoneyStorageDto(result);
+  }
 }
