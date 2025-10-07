@@ -4,6 +4,7 @@ import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity
 import { FoundAndCounted, Pagination, RecordEntity } from './common.type';
 import { CommonDb } from '../postgresql/repositories/common/common.db';
 import { CommonEntity } from '../postgresql/repositories/common/common.entity';
+import { Where } from '../postgresql/repositories/common/common.types';
 
 export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
   protected readonly db: CommonDb<Entity>;
@@ -33,9 +34,11 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
   public async findAndCount({
     pagination,
     order,
+    where,
   }: {
     pagination: Pagination;
     order?: FindOptionsOrder<Entity>;
+    where?: Where<Entity>;
   }): Promise<FoundAndCounted<Entity>> {
     const offset = this.getOffset(pagination);
     const currentOrder = {
@@ -47,8 +50,9 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
       this.db.find({
         offset,
         order: currentOrder,
+        where,
       }),
-      this.db.count(),
+      this.db.count({ where }),
     ]);
   }
 

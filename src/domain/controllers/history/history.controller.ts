@@ -1,7 +1,5 @@
 import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
-import { Logger } from 'winston';
 
-import { Resources } from '@constants/resources';
 import { QueryInt } from '@decorators/queryInt';
 import { ID } from '@domain/providers/common/common.type';
 import {
@@ -9,7 +7,6 @@ import {
   Controller,
   Delete,
   Get,
-  Inject,
   NotFoundException,
   Param,
   Patch,
@@ -35,7 +32,6 @@ import { AuthGuard } from '../common/guards/auth.guard';
 export class HistoryController {
   constructor(
     private readonly historyService: HistoryService,
-    @Inject(Resources.LOGGER) private readonly logger: Logger
   ) { }
 
   @UseGuards(AuthGuard)

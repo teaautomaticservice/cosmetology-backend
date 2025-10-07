@@ -1,0 +1,1 @@
+export const OBLIGATION_ACCOUNT_CODE = 'OBL';

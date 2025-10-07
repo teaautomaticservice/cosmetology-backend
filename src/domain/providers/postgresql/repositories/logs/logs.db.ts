@@ -18,6 +18,6 @@ export class LogsDb extends CommonDb<LogEntity> {
     this.logger.info('Delete many logs by ids', {
       ids,
     });
-    return this.dbRepository.delete(ids);
+    return this.logsRepository.delete(ids);
   }
 }

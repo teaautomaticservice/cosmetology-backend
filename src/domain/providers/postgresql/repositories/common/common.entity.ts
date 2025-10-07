@@ -1,7 +1,6 @@
 import {
   Column,
   CreateDateColumn,
-  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -13,7 +12,6 @@ export abstract class CommonEntity {
   @CreateDateColumn({ type: 'timestamptz' })
   public createdAt: Date;
 
-  @Index()
   @UpdateDateColumn({ type: 'timestamptz' })
   public updatedAt: Date;
 
@@ -22,13 +20,11 @@ export abstract class CommonEntity {
     nullable: true,
 
   })
-  @Index()
   public createdBy?: number | null;
 
   @Column({
     type: 'int',
     nullable: true,
   })
-  @Index()
   public updatedBy?: number | null;
 }

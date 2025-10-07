@@ -1,0 +1,58 @@
+import { CurrenciesProvider } from '@domain/providers/cashier/currencies/currencies.provider';
+import { MoneyStoragesProvider } from '@domain/providers/cashier/moneyStorages/moneyStorages.provider';
+import { Pagination } from '@domain/providers/common/common.type';
+import { CurrencyEntity } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.entity';
+import { CurrencyStatus } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.types';
+import {
+  MoneyStoragesEntity
+} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+
+@Injectable()
+export class CashierService {
+  constructor(
+    private readonly currenciesProvider: CurrenciesProvider,
+    private readonly moneyStoragesProvider: MoneyStoragesProvider,
+  ) { }
+
+  public async getCurrenciesList(params: { pagination: Pagination }): Promise<[CurrencyEntity[], number]> {
+    return this.currenciesProvider.findAndCount(params);
+  }
+
+  public async createCurrency({
+    data,
+    pagination,
+  }: {
+    data: Pick<CurrencyEntity, 'code' | 'name'>;
+    pagination: Pagination;
+  }): Promise<[CurrencyEntity[], number]> {
+    const result = await this.currenciesProvider.findByCode(data.code);
+    if (result) {
+      throw new BadRequestException('Currencies with this code already exist');
+    }
+
+    this.currenciesProvider.create({
+      ...data,
+      status: CurrencyStatus.ACTIVE,
+    });
+    return this.getCurrenciesList({ pagination });
+  }
+
+  public async getMoneyStoragesList({
+    pagination,
+  }: {
+    pagination: Pagination;
+  }): Promise<[MoneyStoragesEntity[], number]> {
+    return await this.moneyStoragesProvider.findAndCount({
+      pagination,
+    });
+  }
+
+  public async getObligationAccount(): Promise<MoneyStoragesEntity> {
+    const result = await this.moneyStoragesProvider.findObligationAccount();
+    if(!result) {
+      throw new InternalServerErrorException('Obligation account hasn\'t find.');
+    }
+    return result;
+  }
+}
