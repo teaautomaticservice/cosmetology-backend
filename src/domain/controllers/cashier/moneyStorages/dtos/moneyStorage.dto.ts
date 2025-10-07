@@ -39,7 +39,7 @@ export class MoneyStorageDto {
 
   @ApiProperty({
     type: 'string',
-    required: false,
+    required: true,
     nullable: true,
   })
   public readonly description: string | null;

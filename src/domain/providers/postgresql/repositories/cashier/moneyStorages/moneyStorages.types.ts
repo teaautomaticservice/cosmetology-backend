@@ -1,6 +1,6 @@
 export enum MoneyStorageStatus {
   CREATED = 'created',
   ACTIVE = 'active',
-  FREEZE = 'freeze',
+  FREEZED = 'freezed',
   DEACTIVATED = 'deactivated',
 }
