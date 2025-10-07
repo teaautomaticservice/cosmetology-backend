@@ -1,4 +1,3 @@
-import { CurrencyStatus } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.types';
 import {
   MoneyStoragesEntity
 } from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
@@ -24,7 +23,7 @@ export class MoneyStorageDto {
   public readonly name: string;
 
   @ApiProperty({
-    enum: CurrencyStatus,
+    enum: MoneyStorageStatus,
     required: true,
     nullable: false,
   })
