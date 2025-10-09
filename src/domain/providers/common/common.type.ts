@@ -6,11 +6,13 @@ export type WithID<Type> = Type & {
   id: ID;
 };
 
+type CommonEntityKeys = keyof CommonEntity
+
 export type RecordEntity<T extends CommonEntity> =
   Omit<
     T,
     Extract<
-      'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy',
+      CommonEntityKeys,
       keyof T>
   > &
   Partial<
@@ -29,3 +31,8 @@ export interface Pagination {
 }
 
 export type FoundAndCounted<Entity> = [Entity[], number];
+
+export type UpdatedEntity<T extends CommonEntity> = {
+  currentId: CommonEntity['id'];
+  newData: Omit<Partial<T>, CommonEntityKeys>;
+}
