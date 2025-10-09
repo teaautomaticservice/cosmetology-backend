@@ -84,13 +84,17 @@ export class CashierService {
     const updatedEntity = await this.moneyStoragesProvider.findById(currentId);
 
     if (!result || !updatedEntity) {
-      this.logger.error('Money storage update error', {
+      this.logger.error('moneyStorage update error', {
         currentId,
         newData,
       });
       throw new InternalServerErrorException(`Money storage update error`);
     }
 
+    this.logger.warn('moneyStorage update bu user', {
+      currentId,
+      newData,
+    });
     return updatedEntity;
   }
 }
