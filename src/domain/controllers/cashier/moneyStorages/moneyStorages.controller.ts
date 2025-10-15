@@ -7,6 +7,7 @@ import { CashierService } from '@domain/services/cashier/cashier.service';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -115,5 +116,17 @@ export class MoneyStoragesController {
       description: moneyStorageReq.description ?? null,
     });
     return new MoneyStorageDto(resp);
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('/:id')
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({
+    description: 'Money storage successful deleted',
+  })
+  public async removeItem(
+    @Param('id', ParseObjectIdPipe) currentId: ID,
+  ): Promise<void> {
+    await this.cashierService.removeMoneyStorage(currentId);
   }
 }
