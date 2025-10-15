@@ -7,9 +7,11 @@ import { CashierService } from '@domain/services/cashier/cashier.service';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
+  Post,
   UseGuards
 } from '@nestjs/common';
 import {
@@ -20,6 +22,7 @@ import {
   ApiTags
 } from '@nestjs/swagger';
 
+import { CreateMoneyStorageDto } from './dtos/createMoneyStorage.dto';
 import { MoneyStorageDto } from './dtos/moneyStorage.dto';
 import { MoneyStoragePaginatedDto } from './dtos/moneyStoragePaginated.dto';
 import { UpdateMoneyStorageDto } from './dtos/updateMoneyStorage.dto';
@@ -93,5 +96,37 @@ export class MoneyStoragesController {
       newData: moneyStorageReq,
     });
     return new MoneyStorageDto(resp);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post()
+  @ApiBody({
+    description: 'Create money storage body',
+    type: CreateMoneyStorageDto,
+  })
+  @ApiOkResponse({
+    description: 'Money storage successful created',
+    type: MoneyStorageDto,
+  })
+  public async createItem(
+    @Body() moneyStorageReq: CreateMoneyStorageDto,
+  ): Promise<MoneyStorageDto> {
+    const resp = await this.cashierService.createMoneyStorage({
+      ...moneyStorageReq,
+      description: moneyStorageReq.description ?? null,
+    });
+    return new MoneyStorageDto(resp);
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('/:id')
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({
+    description: 'Money storage successful deleted',
+  })
+  public async removeItem(
+    @Param('id', ParseObjectIdPipe) currentId: ID,
+  ): Promise<void> {
+    await this.cashierService.removeMoneyStorage(currentId);
   }
 }

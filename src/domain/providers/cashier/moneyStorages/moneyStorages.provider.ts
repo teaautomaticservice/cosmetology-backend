@@ -1,7 +1,10 @@
 import { FindOptionsOrder, Not } from 'typeorm';
 
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR } from '@domain/constants/errors';
-import { FoundAndCounted, Pagination, RecordEntity } from '@domain/providers/common/common.type';
+import { FoundAndCounted, ID, Pagination, RecordEntity } from '@domain/providers/common/common.type';
+import {
+  MoneyStorageStatus
+} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { MoneyStoragesDb } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.db';
@@ -17,16 +20,17 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
     super(moneyStoragesDb);
   }
 
-  public async create(data: RecordEntity<MoneyStoragesEntity>): Promise<MoneyStoragesEntity> {
+  public async create(data: Omit<RecordEntity<MoneyStoragesEntity>, 'status'>): Promise<MoneyStoragesEntity> {
     const formattedCode = data.code.toUpperCase();
     return this.moneyStoragesDb.create({
       ...data,
       code: formattedCode,
+      status: MoneyStorageStatus.CREATED,
     });
   }
 
   public async findByCode(code: MoneyStoragesEntity['code']): Promise<MoneyStoragesEntity | null> {
-    const formattedCode = code.toUpperCase();
+    const formattedCode = code.toUpperCase().replace(/\s/g, '');
     return this.moneyStoragesDb.findOne({
       where: {
         code: formattedCode,
@@ -71,5 +75,10 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
       ...data,
       code: formattedCode,
     });
+  }
+
+  public async deleteById(currentId: ID): Promise<boolean> {
+    await this.moneyStoragesDb.deleteById(currentId);
+    return true;
   }
 }
