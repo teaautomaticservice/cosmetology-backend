@@ -141,6 +141,10 @@ export class CashierService {
       );
     }
 
+    this.logger.warn('moneyStorage deleted bu user', {
+      entity,
+    });
+
     return this.moneyStoragesProvider.deleteById(currentId);
   }
 }
