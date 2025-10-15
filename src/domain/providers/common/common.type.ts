@@ -32,7 +32,9 @@ export interface Pagination {
 
 export type FoundAndCounted<Entity> = [Entity[], number];
 
+export type NewData<T> = Omit<Partial<T>, CommonEntityKeys>;
+
 export type UpdatedEntity<T extends CommonEntity> = {
   currentId: CommonEntity['id'];
-  newData: Omit<Partial<T>, CommonEntityKeys>;
+  newData: NewData<T>;
 }

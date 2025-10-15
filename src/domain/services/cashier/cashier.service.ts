@@ -5,7 +5,7 @@ import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } fro
 import { CurrenciesProvider } from '@domain/providers/cashier/currencies/currencies.provider';
 import { OBLIGATION_ACCOUNT_CODE } from '@domain/providers/cashier/moneyStorages/moneyStorages.constants';
 import { MoneyStoragesProvider } from '@domain/providers/cashier/moneyStorages/moneyStorages.provider';
-import { Pagination, UpdatedEntity } from '@domain/providers/common/common.type';
+import { Pagination, RecordEntity, UpdatedEntity } from '@domain/providers/common/common.type';
 import { CurrencyEntity } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.entity';
 import { CurrencyStatus } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.types';
 import {
@@ -34,7 +34,11 @@ export class CashierService {
   }): Promise<[CurrencyEntity[], number]> {
     const result = await this.currenciesProvider.findByCode(data.code);
     if (result) {
-      throw new BadRequestException('Currencies with this code already exist');
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          code: ['Currencies with this code already exist'],
+        },
+      });
     }
 
     this.currenciesProvider.create({
@@ -91,10 +95,33 @@ export class CashierService {
       throw new InternalServerErrorException(`Money storage update error`);
     }
 
-    this.logger.warn('moneyStorage update bu user', {
+    this.logger.warn('moneyStorage update by user', {
       currentId,
       newData,
     });
     return updatedEntity;
+  }
+
+  public async createMoneyStorage(
+    newData: Omit<RecordEntity<MoneyStoragesEntity>, 'status' | 'updatedBy' | 'createdBy'>,
+  ): Promise<MoneyStoragesEntity> {
+    const entity = await this.moneyStoragesProvider.findByCode(newData.code);
+
+    if (entity) {
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          code: ['Money storage with this code already exist'],
+        },
+      });
+    }
+
+    const result = await this.moneyStoragesProvider.create(newData);
+
+    this.logger.warn('moneyStorage created bu user', {
+      newData,
+      result,
+    });
+
+    return result;
   }
 }

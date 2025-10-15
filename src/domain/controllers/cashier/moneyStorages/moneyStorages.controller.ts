@@ -10,6 +10,7 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   UseGuards
 } from '@nestjs/common';
 import {
@@ -20,6 +21,7 @@ import {
   ApiTags
 } from '@nestjs/swagger';
 
+import { CreateMoneyStorageDto } from './dtos/createMoneyStorage.dto';
 import { MoneyStorageDto } from './dtos/moneyStorage.dto';
 import { MoneyStoragePaginatedDto } from './dtos/moneyStoragePaginated.dto';
 import { UpdateMoneyStorageDto } from './dtos/updateMoneyStorage.dto';
@@ -91,6 +93,26 @@ export class MoneyStoragesController {
     const resp = await this.cashierService.updateMoneyStorage({
       currentId,
       newData: moneyStorageReq,
+    });
+    return new MoneyStorageDto(resp);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post()
+  @ApiBody({
+    description: 'Create money storage body',
+    type: CreateMoneyStorageDto,
+  })
+  @ApiOkResponse({
+    description: 'Money storage successful created',
+    type: MoneyStorageDto,
+  })
+  public async createItem(
+    @Body() moneyStorageReq: CreateMoneyStorageDto,
+  ): Promise<MoneyStorageDto> {
+    const resp = await this.cashierService.createMoneyStorage({
+      ...moneyStorageReq,
+      description: moneyStorageReq.description ?? null,
     });
     return new MoneyStorageDto(resp);
   }
