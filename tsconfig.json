@@ -27,7 +27,8 @@
       "@controllers/*": ["src/domain/controllers/*"],
       "@providers/*": ["src/domain/providers/*"],
       "@services/*": ["src/domain/services/*"],
-      "@sheduler/*": ["src/domain/sheduler/*"]
+      "@sheduler/*": ["src/domain/sheduler/*"],
+      "@postgres/*": ["src/domain/providers/postgresql/*"]
     }
   }
 }
