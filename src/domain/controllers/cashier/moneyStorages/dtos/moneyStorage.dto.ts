@@ -44,10 +44,12 @@ export class MoneyStorageDto {
   public readonly description: string | null;
 
   constructor({ id, name, status, code, description }: MoneyStoragesEntity) {
-    this.id = id;
-    this.name = name;
-    this.status = status;
-    this.code = code;
-    this.description = description;
+    Object.assign(this, {
+      id,
+      name,
+      status,
+      code,
+      description,
+    });
   }
 }
