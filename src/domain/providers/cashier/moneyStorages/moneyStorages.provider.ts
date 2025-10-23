@@ -46,7 +46,7 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
   }: {
     pagination: Pagination;
     filter?: MoneyStoragesFilter;
-    order?: FindOptionsOrder<MoneyStoragesEntity> | undefined;
+    order?: FindOptionsOrder<MoneyStoragesEntity>;
   }): Promise<FoundAndCounted<MoneyStoragesEntity>> {
     const {
       status,

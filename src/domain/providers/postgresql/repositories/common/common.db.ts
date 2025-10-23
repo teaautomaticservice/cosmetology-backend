@@ -34,7 +34,7 @@ export abstract class CommonDb<Entity extends CommonEntity> {
 
   public find({
     where,
-    order,
+    order = {},
     offset,
   }: {
     where?: Where<Entity>;
@@ -44,7 +44,10 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       take: number;
     };
   } = {}): Promise<Entity[]> {
-    const currentOrder = { createdAt: -1, ...order } as FindOptionsOrder<Entity>;
+    const currentOrder = {
+      ...order,
+      createdAt: order.createdAt ?? -1,
+    } as FindOptionsOrder<Entity>;
 
     return this.dbRepository.find({
       where,

@@ -41,15 +41,11 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     where?: Where<Entity>;
   }): Promise<FoundAndCounted<Entity>> {
     const offset = this.getOffset(pagination);
-    const currentOrder = {
-      createdAt: -1,
-      ...order,
-    } as FindOptionsOrder<Entity>;
 
     return Promise.all([
       this.db.find({
         offset,
-        order: currentOrder,
+        order,
         where,
       }),
       this.db.count({ where }),

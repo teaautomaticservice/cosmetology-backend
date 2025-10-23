@@ -1,3 +1,5 @@
+import { FindOptionsOrder } from 'typeorm';
+
 import { CommonEntity } from '@providers/postgresql/repositories/common/common.entity';
 
 export type ID = number;
@@ -25,10 +27,13 @@ export type RecordEntity<T extends CommonEntity> =
     >
   >;
 
-export interface Pagination {
+export type Pagination = {
   page: number;
   pageSize: number;
-}
+};
+export type Sort<KeysEnum extends string> = Record<KeysEnum, -1 | 1 | undefined>;
+
+export type Order<Entity> = FindOptionsOrder<Entity>;
 
 export type FoundAndCounted<Entity> = [Entity[], number];
 

@@ -2,12 +2,14 @@ import { Logger } from 'winston';
 
 import { Resources } from '@constants/resources';
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@domain/constants/errors';
+import { SortAccountsByStorages } from '@domain/providers/cashier/accounts/accounts.type';
 import { AccountsByStoreDto } from '@domain/providers/cashier/accounts/dtos/accountByStore.dto';
 import {
   FoundAndCounted,
   ID,
   Pagination,
   RecordEntity,
+  Sort,
   UpdatedEntity
 } from '@domain/providers/common/common.type';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
@@ -157,12 +159,17 @@ export class CashierService {
     return this.moneyStoragesProvider.deleteById(currentId);
   }
 
-  public async getActualAccountsByMoneyStoragesList(): Promise<FoundAndCounted<AccountsByStoreDto>> {
+  public async getActualAccountsByMoneyStoragesList({
+    order,
+  }: {
+    order?: Sort<SortAccountsByStorages>;
+  } = {}): Promise<FoundAndCounted<AccountsByStoreDto>> {
     const resp = await this.accountsProvider.getAccountsByStorageList({
       pagination: {
         page: 1,
         pageSize: 10,
-      }
+      },
+      order,
     });
 
     return resp;

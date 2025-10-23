@@ -1,10 +1,13 @@
 import { createdMapListFromEntity } from 'src/migrations/utils/createdMapListFromEntity';
 import { In } from 'typeorm';
 
-import { FoundAndCounted, Pagination } from '@domain/providers/common/common.type';
+import { FoundAndCounted, Order, Pagination } from '@domain/providers/common/common.type';
 import { CommonPostgresqlProvider } from '@domain/providers/common/commonPostgresql.provider';
 import { AccountsDb } from '@domain/providers/postgresql/repositories/cashier/accounts/accounts.db';
 import { AccountsEntity } from '@domain/providers/postgresql/repositories/cashier/accounts/accounts.entity';
+import {
+  MoneyStoragesEntity
+} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import {
   MoneyStorageStatus
 } from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
@@ -24,14 +27,17 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
 
   public async getAccountsByStorageList({
     pagination,
+    order,
   }: {
     pagination: Pagination;
+    order?: Order<MoneyStoragesEntity>;
   }): Promise<FoundAndCounted<AccountsByStoreDto>> {
     const [rawMoneyStorages, moneyStorageCount] = await this.moneyStoragesProvider.findAndCount({
       pagination,
       filter: {
         status: [MoneyStorageStatus.ACTIVE, MoneyStorageStatus.FREEZED],
-      }
+      },
+      order,
     });
 
     const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
@@ -39,8 +45,8 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
     const [rawAccountsList] = await super.findAndCount({
       pagination,
       where: {
-        moneyStorageId: In(moneyStoragesIds)
-      }
+        moneyStorageId: In(moneyStoragesIds),
+      },
     });
 
     const accountMappedByMoneyStorages = createdMapListFromEntity(rawAccountsList, 'moneyStorageId');

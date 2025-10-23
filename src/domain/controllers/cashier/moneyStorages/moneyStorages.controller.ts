@@ -51,7 +51,7 @@ export class MoneyStoragesController {
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
     @Query('sort', ParseString) sort?: string,
-    @Query('order', ParseSortOrderPipe) order?: 1 | -1
+    @Query('order', ParseSortOrderPipe) order?: 1 | -1,
   ): Promise<MoneyStoragePaginatedDto> {
     sort;
     order;

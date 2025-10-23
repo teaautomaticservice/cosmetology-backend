@@ -7,6 +7,7 @@ import { MoneyStorageDto } from '../../moneyStorages/dtos/moneyStorage.dto';
 export class GetAccountsByStoreDto extends MoneyStorageDto {
   @ApiProperty({
     isArray: true,
+    type: AccountDto,
     required: true,
   })
   public accounts: AccountDto[];
