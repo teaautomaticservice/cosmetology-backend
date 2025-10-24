@@ -31,7 +31,7 @@ export type Pagination = {
   page: number;
   pageSize: number;
 };
-export type Sort<KeysEnum extends string> = Record<KeysEnum, -1 | 1 | undefined>;
+export type Sort<KeysEnum extends string> = Partial<Record<KeysEnum, -1 | 1 | undefined>>;
 
 export type Order<Entity> = FindOptionsOrder<Entity>;
 

@@ -66,6 +66,7 @@ export class CashierService {
     pagination,
   }: {
     pagination: Pagination;
+    order?: Sort<keyof MoneyStoragesEntity>;
   }): Promise<[MoneyStoragesEntity[], number]> {
     return await this.moneyStoragesProvider.findAndCount({
       pagination,

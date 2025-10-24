@@ -22,7 +22,7 @@ export class AccountsController {
   ) { }
 
   @UseGuards(AuthGuard)
-  @Get('/list')
+  @Get('/accounts-by-money-storages-list')
   @ApiQueryPagination()
   @ApiQuerySortOrder(['status'] satisfies SortAccountsByStorages[])
   @ApiOkResponse({

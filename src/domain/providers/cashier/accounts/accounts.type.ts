@@ -1,1 +1,1 @@
-export type SortAccountsByStorages = 'status';
+export type SortAccountsByStorages = 'status' | 'name';

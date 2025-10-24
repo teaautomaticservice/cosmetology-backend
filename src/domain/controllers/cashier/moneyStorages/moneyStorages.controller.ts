@@ -42,7 +42,7 @@ export class MoneyStoragesController {
   @UseGuards(AuthGuard)
   @Get('/list')
   @ApiQueryPagination()
-  @ApiQuerySortOrder()
+  @ApiQuerySortOrder(['name', 'code'] satisfies (keyof MoneyStorageDto)[])
   @ApiOkResponse({
     description: 'List of money storages successful has been got',
     type: MoneyStoragePaginatedDto,
@@ -50,16 +50,19 @@ export class MoneyStoragesController {
   public async getList(
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
-    @Query('sort', ParseString) sort?: string,
+    @Query('sort', ParseString) sort?: keyof MoneyStorageDto,
     @Query('order', ParseSortOrderPipe) order?: 1 | -1,
   ): Promise<MoneyStoragePaginatedDto> {
-    sort;
-    order;
     const [data, count] = await this.cashierService.getMoneyStoragesList({
       pagination: {
         page,
         pageSize,
-      }
+      },
+      ...(sort && {
+        order: {
+          [sort]: order ?? 1,
+        },
+      }),
     });
 
     return {
