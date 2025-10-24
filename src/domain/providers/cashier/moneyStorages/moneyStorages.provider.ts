@@ -1,4 +1,4 @@
-import { FindOptionsOrder, Not } from 'typeorm';
+import { FindOptionsOrder, In, Not } from 'typeorm';
 
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR } from '@domain/constants/errors';
 import { FoundAndCounted, ID, Pagination, RecordEntity } from '@domain/providers/common/common.type';
@@ -13,6 +13,7 @@ import {
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 
 import { OBLIGATION_ACCOUNT_CODE } from './moneyStorages.constants';
+import { MoneyStoragesFilter } from './moneyStorages.types';
 
 @Injectable()
 export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStoragesEntity> {
@@ -40,16 +41,23 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
 
   public async findAndCount({
     pagination,
+    filter = {},
     order,
   }: {
     pagination: Pagination;
-    order?: FindOptionsOrder<MoneyStoragesEntity> | undefined;
+    filter?: MoneyStoragesFilter;
+    order?: FindOptionsOrder<MoneyStoragesEntity>;
   }): Promise<FoundAndCounted<MoneyStoragesEntity>> {
+    const {
+      status,
+    } = filter;
+
     return super.findAndCount({
       pagination,
       order,
       where: {
         code: Not(OBLIGATION_ACCOUNT_CODE),
+        ...(status && Boolean(status?.length) && { status: In(status) }),
       }
     });
   }

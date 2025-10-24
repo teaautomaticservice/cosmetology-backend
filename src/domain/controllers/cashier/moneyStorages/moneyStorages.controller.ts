@@ -1,5 +1,9 @@
+import { ParseSortOrderPipe } from 'src/ambient/parsers/parseSortOrder';
+import { ParseString } from 'src/ambient/parsers/parseString';
 import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 
+import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
+import { ApiQuerySortOrder } from '@decorators/apiQuerySortOrder';
 import { QueryInt } from '@decorators/queryInt';
 import { AuthGuard } from '@domain/controllers/common/guards/auth.guard';
 import { ID } from '@domain/providers/common/common.type';
@@ -12,13 +16,13 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards
 } from '@nestjs/common';
 import {
   ApiBody,
   ApiOkResponse,
   ApiParam,
-  ApiQuery,
   ApiTags
 } from '@nestjs/swagger';
 
@@ -37,8 +41,8 @@ export class MoneyStoragesController {
 
   @UseGuards(AuthGuard)
   @Get('/list')
-  @ApiQuery({ name: 'page', required: false })
-  @ApiQuery({ name: 'pageSize', required: false })
+  @ApiQueryPagination()
+  @ApiQuerySortOrder(['name', 'code'] satisfies (keyof MoneyStorageDto)[])
   @ApiOkResponse({
     description: 'List of money storages successful has been got',
     type: MoneyStoragePaginatedDto,
@@ -46,12 +50,19 @@ export class MoneyStoragesController {
   public async getList(
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
+    @Query('sort', ParseString) sort?: keyof MoneyStorageDto,
+    @Query('order', ParseSortOrderPipe) order?: 1 | -1,
   ): Promise<MoneyStoragePaginatedDto> {
     const [data, count] = await this.cashierService.getMoneyStoragesList({
       pagination: {
         page,
         pageSize,
-      }
+      },
+      ...(sort && {
+        order: {
+          [sort]: order ?? 1,
+        },
+      }),
     });
 
     return {

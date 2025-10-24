@@ -2,26 +2,37 @@ import { Logger } from 'winston';
 
 import { Resources } from '@constants/resources';
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@domain/constants/errors';
-import { CurrenciesProvider } from '@domain/providers/cashier/currencies/currencies.provider';
-import { OBLIGATION_ACCOUNT_CODE } from '@domain/providers/cashier/moneyStorages/moneyStorages.constants';
-import { MoneyStoragesProvider } from '@domain/providers/cashier/moneyStorages/moneyStorages.provider';
-import { ID, Pagination, RecordEntity, UpdatedEntity } from '@domain/providers/common/common.type';
-import { CurrencyEntity } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.entity';
-import { CurrencyStatus } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.types';
+import { SortAccountsByStorages } from '@domain/providers/cashier/accounts/accounts.type';
+import { AccountsByStoreDto } from '@domain/providers/cashier/accounts/dtos/accountByStore.dto';
+import {
+  FoundAndCounted,
+  ID,
+  Pagination,
+  RecordEntity,
+  Sort,
+  UpdatedEntity
+} from '@domain/providers/common/common.type';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
+import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
+import { OBLIGATION_ACCOUNT_CODE } from '@providers/cashier/moneyStorages/moneyStorages.constants';
+import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
+import { CurrencyEntity } from '@providers/postgresql/repositories/cashier/currencies/currencies.entity';
+import { CurrencyStatus } from '@providers/postgresql/repositories/cashier/currencies/currencies.types';
 import {
   MoneyStoragesEntity
-} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
+} from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import {
   MoneyStorageStatus
-} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
-import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+} from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
 @Injectable()
 export class CashierService {
   constructor(
+    @Inject(Resources.LOGGER) protected readonly logger: Logger,
     private readonly currenciesProvider: CurrenciesProvider,
     private readonly moneyStoragesProvider: MoneyStoragesProvider,
-    @Inject(Resources.LOGGER) protected readonly logger: Logger,
+    private readonly accountsProvider: AccountsProvider,
   ) { }
 
   public async getCurrenciesList(params: { pagination: Pagination }): Promise<[CurrencyEntity[], number]> {
@@ -55,6 +66,7 @@ export class CashierService {
     pagination,
   }: {
     pagination: Pagination;
+    order?: Sort<keyof MoneyStoragesEntity>;
   }): Promise<[MoneyStoragesEntity[], number]> {
     return await this.moneyStoragesProvider.findAndCount({
       pagination,
@@ -146,5 +158,21 @@ export class CashierService {
     });
 
     return this.moneyStoragesProvider.deleteById(currentId);
+  }
+
+  public async getActualAccountsByMoneyStoragesList({
+    order,
+  }: {
+    order?: Sort<SortAccountsByStorages>;
+  } = {}): Promise<FoundAndCounted<AccountsByStoreDto>> {
+    const resp = await this.accountsProvider.getAccountsByStorageList({
+      pagination: {
+        page: 1,
+        pageSize: 10,
+      },
+      order,
+    });
+
+    return resp;
   }
 }

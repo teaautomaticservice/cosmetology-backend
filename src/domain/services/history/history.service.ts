@@ -1,12 +1,9 @@
-import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity';
-
+import { HistoryWithUsersDto } from '@domain/providers/histories/dto/historyWithUsers.dto';
 import { HistoriesProvider } from '@domain/providers/histories/histories.provider';
 import { UsersProvider } from '@domain/providers/users/users.provider';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import { ID, Pagination } from '@providers/common/common.type';
+import { Injectable } from '@nestjs/common';
+import { Pagination } from '@providers/common/common.type';
 import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
-
-import { HistoryWithUsersDto } from './dto/historyWithUsers.dto';
 
 @Injectable()
 export class HistoryService {
@@ -16,44 +13,7 @@ export class HistoryService {
   ) { }
 
   public async getHistoryList(params: { pagination: Pagination }): Promise<[HistoryWithUsersDto[], number]> {
-    const [rawHistoryList, count] = await this.historiesProvider.findAndCount(params);
-
-    const uniqIdsForUsersCreated: Set<ID> = new Set();
-
-    rawHistoryList.forEach(({
-      createdBy,
-      updatedBy,
-    }) => {
-      if (createdBy) {
-        uniqIdsForUsersCreated.add(createdBy);
-      }
-      if (updatedBy) {
-        uniqIdsForUsersCreated.add(updatedBy);
-      }
-    });
-
-    const usersIds = Array.from(uniqIdsForUsersCreated);
-
-    const usersList = await this.usersProvider.findByIds(usersIds);
-
-    if (!usersList) {
-      throw new InternalServerErrorException('Failed find relation');
-    }
-
-    const usersMap = createdMapFromEntity(usersList);
-
-    const historyWithUsers: HistoryWithUsersDto[] = rawHistoryList.map((messageEntity) =>
-      new HistoryWithUsersDto({
-        messageEntity,
-        ...(messageEntity.createdBy && {
-          createdByUser: usersMap[messageEntity.createdBy],
-        }),
-        ...(messageEntity.updatedBy && {
-          updatedByUser: usersMap[messageEntity.updatedBy],
-        })
-      }));
-
-    return [historyWithUsers, count];
+    return await this.historiesProvider.getHistoryListWithUsers(params);
   }
 
   public async addHistory(
