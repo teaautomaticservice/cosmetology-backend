@@ -1,3 +1,4 @@
+import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity';
 import { createdMapListFromEntity } from 'src/migrations/utils/createdMapListFromEntity';
 import { In } from 'typeorm';
 
@@ -8,12 +9,10 @@ import { AccountsEntity } from '@domain/providers/postgresql/repositories/cashie
 import {
   MoneyStoragesEntity
 } from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
-import {
-  MoneyStorageStatus
-} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 import { Injectable } from '@nestjs/common';
 
 import { AccountsByStoreDto } from './dtos/accountByStore.dto';
+import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';
 import { MoneyStoragesProvider } from '../moneyStorages/moneyStorages.provider';
 
 @Injectable()
@@ -25,18 +24,15 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
     super(accountsDb);
   }
 
-  public async getAccountsByStorageList({
+  public async getActualAccountsByStorageList({
     pagination,
     order,
   }: {
     pagination: Pagination;
     order?: Order<MoneyStoragesEntity>;
   }): Promise<FoundAndCounted<AccountsByStoreDto>> {
-    const [rawMoneyStorages, moneyStorageCount] = await this.moneyStoragesProvider.findAndCount({
+    const [rawMoneyStorages, moneyStorageCount] = await this.moneyStoragesProvider.getActualMoneyStorage({
       pagination,
-      filter: {
-        status: [MoneyStorageStatus.ACTIVE, MoneyStorageStatus.FREEZED],
-      },
       order,
     });
 
@@ -60,5 +56,36 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
     });
 
     return [accountByStore, moneyStorageCount];
+  }
+
+  public async getActualAccountsWithStorage({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: Order<AccountsEntity>;
+  }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
+    const [rawMoneyStorages] = await this.moneyStoragesProvider.getActualMoneyStorage();
+
+    const accountMappedByMoneyStorages = createdMapFromEntity(rawMoneyStorages);
+    const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
+
+    const [rawAccountsList, accountListCount] = await super.findAndCount({
+      pagination,
+      where: {
+        moneyStorageId: In(moneyStoragesIds),
+      },
+      order,
+    });
+
+    const accountsWithMoneyStorage = rawAccountsList.map((account) => {
+      const moneyStorage = accountMappedByMoneyStorages[account.moneyStorageId] ?? null;
+      return new AccountWithMoneyStorageDto({
+        account,
+        moneyStorage,
+      });
+    });
+
+    return [accountsWithMoneyStorage, accountListCount];
   }
 }

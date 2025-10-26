@@ -11,7 +11,9 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { AccountsByStorePaginated } from './dtos/accountsByStorePaginated.dto';
+import { AccountsWithStoragePaginatedDto } from './dtos/accountsWithStoragePaginated.dto';
 import { GetAccountsByStoreDto } from './dtos/getAccountsByStore.dto';
+import { GetAccountWithStorageDto } from './dtos/getAccountWithStorage.dto';
 import { CASHIER_ACCOUNTS_PATH } from '../cashier.paths';
 
 @ApiTags('Cashier')
@@ -26,7 +28,7 @@ export class AccountsController {
   @ApiQueryPagination()
   @ApiQuerySortOrder(['status'] satisfies SortAccountsByStorages[])
   @ApiOkResponse({
-    description: 'List of accounts by money storages successful has been got',
+    description: 'List of accounts by money storages successful',
     type: AccountsByStorePaginated,
   })
   public async getAccountsByMoneyStoragesList(
@@ -36,6 +38,10 @@ export class AccountsController {
     @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
   ): Promise<AccountsByStorePaginated> {
     const [accountsByStore, count] = await this.cashierService.getActualAccountsByMoneyStoragesList({
+      pagination: {
+        page,
+        pageSize,
+      },
       ...(sort && {
         order: {
           [sort]: order ?? 1,
@@ -45,6 +51,49 @@ export class AccountsController {
 
     return {
       data: accountsByStore.map((data) => new GetAccountsByStoreDto(data)),
+      meta: {
+        count,
+        currentPage: page,
+        itemsPerPage: pageSize,
+      },
+    };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('/list')
+  @ApiQueryPagination()
+  @ApiQuerySortOrder([
+    'status',
+    'available',
+    'balance',
+    'name',
+    'createdAt',
+    'updatedAt',
+  ] satisfies (keyof GetAccountWithStorageDto)[])
+  @ApiOkResponse({
+    description: 'List of accounts with money storages',
+    type: AccountsWithStoragePaginatedDto,
+  })
+  public async getList(
+    @QueryInt('page', 1) page: number,
+    @QueryInt('pageSize', 10) pageSize: number,
+    @Query('sort', ParseString) sort?: SortAccountsByStorages,
+    @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
+  ): Promise<AccountsWithStoragePaginatedDto> {
+    const [accountsByStore, count] = await this.cashierService.getActualAccountsList({
+      pagination: {
+        page,
+        pageSize,
+      },
+      ...(sort && {
+        order: {
+          [sort]: order ?? 1,
+        },
+      }),
+    });
+
+    return {
+      data: accountsByStore.map((data) => new GetAccountWithStorageDto(data)),
       meta: {
         count,
         currentPage: page,
