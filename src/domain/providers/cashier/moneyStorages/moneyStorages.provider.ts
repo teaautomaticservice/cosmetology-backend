@@ -1,7 +1,13 @@
 import { FindOptionsOrder, In, Not } from 'typeorm';
 
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR } from '@domain/constants/errors';
-import { FoundAndCounted, ID, Pagination, RecordEntity } from '@domain/providers/common/common.type';
+import {
+  FoundAndCounted,
+  ID,
+  Order,
+  Pagination,
+  RecordEntity
+} from '@domain/providers/common/common.type';
 import {
   MoneyStorageStatus
 } from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
@@ -88,5 +94,24 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
   public async deleteById(currentId: ID): Promise<boolean> {
     await this.moneyStoragesDb.deleteById(currentId);
     return true;
+  }
+
+  public async getActualMoneyStorage({
+    pagination,
+    order,
+  }: {
+    pagination?: Pagination;
+    order?: Order<MoneyStoragesEntity>;
+  } = {}): Promise<FoundAndCounted<MoneyStoragesEntity>> {
+    return this.findAndCount({
+      pagination: {
+        page: pagination?.page ?? 1,
+        pageSize: pagination?.pageSize ?? 1000000,
+      },
+      filter: {
+        status: [MoneyStorageStatus.ACTIVE, MoneyStorageStatus.FREEZED],
+      },
+      order,
+    });
   }
 }

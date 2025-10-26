@@ -4,6 +4,7 @@ import { Resources } from '@constants/resources';
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@domain/constants/errors';
 import { SortAccountsByStorages } from '@domain/providers/cashier/accounts/accounts.type';
 import { AccountsByStoreDto } from '@domain/providers/cashier/accounts/dtos/accountByStore.dto';
+import { AccountWithMoneyStorageDto } from '@domain/providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
 import {
   FoundAndCounted,
   ID,
@@ -12,6 +13,7 @@ import {
   Sort,
   UpdatedEntity
 } from '@domain/providers/common/common.type';
+import { AccountsEntity } from '@domain/providers/postgresql/repositories/cashier/accounts/accounts.entity';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
@@ -161,15 +163,29 @@ export class CashierService {
   }
 
   public async getActualAccountsByMoneyStoragesList({
+    pagination,
     order,
   }: {
+    pagination: Pagination;
     order?: Sort<SortAccountsByStorages>;
-  } = {}): Promise<FoundAndCounted<AccountsByStoreDto>> {
-    const resp = await this.accountsProvider.getAccountsByStorageList({
-      pagination: {
-        page: 1,
-        pageSize: 10,
-      },
+  }): Promise<FoundAndCounted<AccountsByStoreDto>> {
+    const resp = await this.accountsProvider.getActualAccountsByStorageList({
+      pagination,
+      order,
+    });
+
+    return resp;
+  }
+
+  public async getActualAccountsList({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: Sort<keyof AccountsEntity>;
+  }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
+    const resp = await this.accountsProvider.getActualAccountsWithStorage({
+      pagination,
       order,
     });
 

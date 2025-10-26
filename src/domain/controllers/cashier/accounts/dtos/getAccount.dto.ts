@@ -3,7 +3,7 @@ import { ID } from '@providers/common/common.type';
 import { AccountsEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
 import { AccountStatus } from '@providers/postgresql/repositories/cashier/accounts/accounts.types';
 
-export class AccountDto {
+export class GetAccountDto {
   @ApiProperty({
     type: 'number',
     required: true,
