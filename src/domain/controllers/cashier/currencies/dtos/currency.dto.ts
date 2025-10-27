@@ -1,7 +1,7 @@
-import { CurrencyEntity } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.entity';
-import { CurrencyStatus } from '@domain/providers/postgresql/repositories/cashier/currencies/currencies.types';
 import { ApiProperty } from '@nestjs/swagger';
 import { ID } from '@providers/common/common.type';
+import { CurrencyEntity } from '@providers/postgresql/repositories/cashier/currencies/currencies.entity';
+import { CurrencyStatus } from '@providers/postgresql/repositories/cashier/currencies/currencies.types';
 
 export class CurrencyDto {
   @ApiProperty({

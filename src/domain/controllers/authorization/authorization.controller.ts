@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 
 import { CurrentUser } from '@decorators/currentUser';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
-import { UserStatus } from '@domain/types/users.types';
 import {
   BadRequestException,
   Body,
@@ -19,7 +17,9 @@ import {
   ApiQuery,
   ApiTags
 } from '@nestjs/swagger';
+import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
 import { AuthorizationService } from '@services/authorization/authorization.service';
+import { UserStatus } from '@typings/users.types';
 import { cookieUtils } from '@utils/cookieUtils';
 
 import { LoginFormDto } from './dtos/loginForm.dto';

@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { UserStatus, UserType } from '@domain/types/users.types';
+import { UserStatus, UserType } from '@typings/users.types';
 
 import { USERS_ENTITY } from '../../constants/entities';
 import { CommonEntity } from '../common/common.entity';

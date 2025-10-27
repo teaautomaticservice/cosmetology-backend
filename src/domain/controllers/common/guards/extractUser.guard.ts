@@ -1,5 +1,5 @@
-import { AuthorizationService } from '@domain/services/authorization/authorization.service';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { AuthorizationService } from '@services/authorization/authorization.service';
 
 import { AuthorizationCookieDto } from '../dtos/authorizationCookie.dto';
 

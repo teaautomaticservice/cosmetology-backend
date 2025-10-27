@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-import { USERS_ENTITY } from '@domain/providers/postgresql/constants/entities';
-import { UserType } from '@domain/types/users.types';
+import { USERS_ENTITY } from '@providers/postgresql/constants/entities';
+import { UserType } from '@typings/users.types';
 
 import { generateUser } from '../utils/generateUser';
 

@@ -1,11 +1,11 @@
-import {
-  MoneyStoragesEntity
-} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
-import {
-  MoneyStorageStatus
-} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 import { ApiProperty } from '@nestjs/swagger';
 import { ID } from '@providers/common/common.type';
+import {
+  MoneyStoragesEntity
+} from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
+import {
+  MoneyStorageStatus
+} from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
 export class MoneyStorageDto {
   @ApiProperty({

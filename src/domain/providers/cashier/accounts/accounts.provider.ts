@@ -2,14 +2,14 @@ import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity'
 import { createdMapListFromEntity } from 'src/migrations/utils/createdMapListFromEntity';
 import { In } from 'typeorm';
 
-import { FoundAndCounted, Order, Pagination } from '@domain/providers/common/common.type';
-import { CommonPostgresqlProvider } from '@domain/providers/common/commonPostgresql.provider';
-import { AccountsDb } from '@domain/providers/postgresql/repositories/cashier/accounts/accounts.db';
-import { AccountsEntity } from '@domain/providers/postgresql/repositories/cashier/accounts/accounts.entity';
+import { Injectable } from '@nestjs/common';
+import { FoundAndCounted, Order, Pagination } from '@providers/common/common.type';
+import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
+import { AccountsDb } from '@providers/postgresql/repositories/cashier/accounts/accounts.db';
+import { AccountsEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
 import {
   MoneyStoragesEntity
-} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
-import { Injectable } from '@nestjs/common';
+} from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 
 import { AccountsByStoreDto } from './dtos/accountByStore.dto';
 import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';

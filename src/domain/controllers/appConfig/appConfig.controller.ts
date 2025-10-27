@@ -1,7 +1,7 @@
 import { CurrentUser } from '@decorators/currentUser';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
 
 import { AppConfigDto } from './dtos/appConfigDto.dto';
 

@@ -1,6 +1,6 @@
-import { HistoriesProviderModule } from '@domain/providers/histories/historiesProvider.module';
-import { UsersProviderModule } from '@domain/providers/users/usersProvider.module';
 import { Module } from '@nestjs/common';
+import { HistoriesProviderModule } from '@providers/histories/historiesProvider.module';
+import { UsersProviderModule } from '@providers/users/usersProvider.module';
 
 import { HistoryService } from './history.service';
 

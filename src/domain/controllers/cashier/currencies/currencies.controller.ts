@@ -1,6 +1,5 @@
+import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { QueryInt } from '@decorators/queryInt';
-import { AuthGuard } from '@domain/controllers/common/guards/auth.guard';
-import { CashierService } from '@domain/services/cashier/cashier.service';
 import {
   Body,
   Controller,
@@ -9,6 +8,7 @@ import {
   UseGuards
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { CashierService } from '@services/cashier/cashier.service';
 
 import { CreateCurrencyDto } from './dtos/createCurrency.dto';
 import { CurrencyDto } from './dtos/currency.dto';

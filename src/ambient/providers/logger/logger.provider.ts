@@ -1,11 +1,11 @@
 import * as winston from 'winston';
 
+import { LoggerTypes } from '@commonConstants/loggerTypes';
+import { Resources } from '@commonConstants/resources';
 import { AppConfigService, Configuration } from '@config/config.types';
-import { LoggerTypes } from '@constants/loggerTypes';
-import { Resources } from '@constants/resources';
-import { LOGS_ENTITY } from '@domain/providers/postgresql/constants/entities';
 import { PostgresTransport } from '@innova2/winston-pg';
 import { ConfigService } from '@nestjs/config';
+import { LOGS_ENTITY } from '@providers/postgresql/constants/entities';
 import { LogEntity } from '@providers/postgresql/repositories/logs/log.entity';
 import { AsyncContext } from '@utils/asyncContext';
 

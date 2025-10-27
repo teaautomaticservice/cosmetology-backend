@@ -1,11 +1,11 @@
-import { ExtractUserGuard } from '@domain/controllers/common/guards/extractUser.guard';
-import { SessionsProviderModule } from '@domain/providers/sessions/sessionsProvider.module';
-import {
-  TokensCreatedUsersProviderModule
-} from '@domain/providers/tokensCreatedUsers/tokensCreatedUsersProvider.module';
-import { UsersProviderModule } from '@domain/providers/users/usersProvider.module';
+import { ExtractUserGuard } from '@controllers/common/guards/extractUser.guard';
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
+import { SessionsProviderModule } from '@providers/sessions/sessionsProvider.module';
+import {
+  TokensCreatedUsersProviderModule
+} from '@providers/tokensCreatedUsers/tokensCreatedUsersProvider.module';
+import { UsersProviderModule } from '@providers/users/usersProvider.module';
 
 import { AuthorizationService } from './authorization.service';
 

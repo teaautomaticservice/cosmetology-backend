@@ -1,13 +1,13 @@
 import { v4 as uuid } from 'uuid';
 
-import { SessionEntity } from '@domain/providers/postgresql/repositories/sessions/session.entity';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
-import { SessionsProvider } from '@domain/providers/sessions/sessions.provider';
-import { TokensCreatedUsersProvider } from '@domain/providers/tokensCreatedUsers/tokensCreatedUsers.provider';
-import { UsersProvider } from '@domain/providers/users/users.provider';
-import { AuthorizationCookies } from '@domain/types/cookies.types';
-import { UserStatus } from '@domain/types/users.types';
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { SessionEntity } from '@providers/postgresql/repositories/sessions/session.entity';
+import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
+import { SessionsProvider } from '@providers/sessions/sessions.provider';
+import { TokensCreatedUsersProvider } from '@providers/tokensCreatedUsers/tokensCreatedUsers.provider';
+import { UsersProvider } from '@providers/users/users.provider';
+import { AuthorizationCookies } from '@typings/cookies.types';
+import { UserStatus } from '@typings/users.types';
 import { cryptoUtils } from '@utils/cryptoUtils';
 import { dateUtils } from '@utils/dateUtils';
 

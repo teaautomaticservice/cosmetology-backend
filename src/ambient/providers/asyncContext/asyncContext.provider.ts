@@ -1,4 +1,4 @@
-import { Resources } from '@constants/resources';
+import { Resources } from '@commonConstants/resources';
 import { Provider } from '@nestjs/common';
 import { AsyncContext } from '@utils/asyncContext';
 

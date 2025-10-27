@@ -1,4 +1,4 @@
-import { LoggerTypes } from '@constants/loggerTypes';
+import { LoggerTypes } from '@commonConstants/loggerTypes';
 
 export interface SpecifiedLogsClear {
   types?: {

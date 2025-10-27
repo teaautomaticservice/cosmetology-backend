@@ -1,7 +1,7 @@
 import { Logger } from 'winston';
 
-import { APP_NAME } from '@constants/env';
-import { Resources } from '@constants/resources';
+import { APP_NAME } from '@commonConstants/env';
+import { Resources } from '@commonConstants/resources';
 import { Inject, Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 

@@ -1,6 +1,6 @@
-import { CurrentUserDto } from '@domain/controllers/common/dtos/currentUser.dto';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
+import { CurrentUserDto } from '@controllers/common/dtos/currentUser.dto';
 import { ApiProperty } from '@nestjs/swagger';
+import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
 
 export class AppConfigDto {
   @ApiProperty({

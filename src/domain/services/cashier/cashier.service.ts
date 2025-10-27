@@ -1,10 +1,15 @@
 import { Logger } from 'winston';
 
-import { Resources } from '@constants/resources';
-import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@domain/constants/errors';
-import { SortAccountsByStorages } from '@domain/providers/cashier/accounts/accounts.type';
-import { AccountsByStoreDto } from '@domain/providers/cashier/accounts/dtos/accountByStore.dto';
-import { AccountWithMoneyStorageDto } from '@domain/providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
+import { Resources } from '@commonConstants/resources';
+import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@constants/errors';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
+import { SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
+import { AccountsByStoreDto } from '@providers/cashier/accounts/dtos/accountByStore.dto';
+import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
+import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
+import { OBLIGATION_ACCOUNT_CODE } from '@providers/cashier/moneyStorages/moneyStorages.constants';
+import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
 import {
   FoundAndCounted,
   ID,
@@ -12,13 +17,8 @@ import {
   RecordEntity,
   Sort,
   UpdatedEntity
-} from '@domain/providers/common/common.type';
-import { AccountsEntity } from '@domain/providers/postgresql/repositories/cashier/accounts/accounts.entity';
-import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
-import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
-import { OBLIGATION_ACCOUNT_CODE } from '@providers/cashier/moneyStorages/moneyStorages.constants';
-import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
+} from '@providers/common/common.type';
+import { AccountsEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
 import { CurrencyEntity } from '@providers/postgresql/repositories/cashier/currencies/currencies.entity';
 import { CurrencyStatus } from '@providers/postgresql/repositories/cashier/currencies/currencies.types';
 import {

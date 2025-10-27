@@ -1,6 +1,6 @@
 import { Logger } from 'winston';
 
-import { Resources } from '@constants/resources';
+import { Resources } from '@commonConstants/resources';
 import { Inject, Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { LogsService } from '@services/logs/logs.service';

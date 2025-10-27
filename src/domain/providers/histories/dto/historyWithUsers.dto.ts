@@ -1,6 +1,6 @@
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { ID } from '@providers/common/common.type';
 import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
+import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
 
 export class HistoryWithUsersDto {
   public readonly id: ID;

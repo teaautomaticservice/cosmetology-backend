@@ -1,7 +1,7 @@
 import { createClient } from 'redis';
 import { Logger } from 'winston';
 
-import { Resources } from '@constants/resources';
+import { Resources } from '@commonConstants/resources';
 import { Inject, InternalServerErrorException } from '@nestjs/common';
 
 export class CommonRedisProvider<ValueType extends string = string> {

@@ -1,5 +1,5 @@
-import { DEFAULT_PORT } from '@constants/app';
-import { ADMIN_ORIGIN, CLIENT_ORIGIN, ENV_PORT, IS_PRODUCTION } from '@constants/env';
+import { DEFAULT_PORT } from '@commonConstants/app';
+import { ADMIN_ORIGIN, CLIENT_ORIGIN, ENV_PORT, IS_PRODUCTION } from '@commonConstants/env';
 
 import { getDatabaseConfig } from './database/database';
 import { getMailerConfig } from './mailer/mailer';

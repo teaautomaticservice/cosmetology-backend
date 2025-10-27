@@ -1,9 +1,9 @@
-import { HistoryWithUsersDto } from '@domain/providers/histories/dto/historyWithUsers.dto';
-import { HistoriesProvider } from '@domain/providers/histories/histories.provider';
-import { UsersProvider } from '@domain/providers/users/users.provider';
 import { Injectable } from '@nestjs/common';
 import { Pagination } from '@providers/common/common.type';
+import { HistoryWithUsersDto } from '@providers/histories/dto/historyWithUsers.dto';
+import { HistoriesProvider } from '@providers/histories/histories.provider';
 import { MessageEntity } from '@providers/postgresql/repositories/history/message.entity';
+import { UsersProvider } from '@providers/users/users.provider';
 
 @Injectable()
 export class HistoryService {

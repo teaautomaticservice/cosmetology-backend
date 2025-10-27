@@ -19,16 +19,17 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@utils/*": ["src/ambient/utils/*"],
-      "@constants/*": ["src/ambient/constants/*"],
+      "@commonConstants/*": ["src/ambient/constants/*"],
       "@decorators/*": ["src/ambient/decorators/*"],
       "@ambientProviders/*": ["src/ambient/providers/*"],
       "@config/*": ["src/ambient/config/*"],
-      "@domain/*": ["src/domain/*"],
+      "@constants/*": ["src/domain/constants/*"],
       "@controllers/*": ["src/domain/controllers/*"],
+      "@postgresql/*": ["src/domain/providers/postgresql/*"],
       "@providers/*": ["src/domain/providers/*"],
       "@services/*": ["src/domain/services/*"],
       "@sheduler/*": ["src/domain/sheduler/*"],
-      "@postgres/*": ["src/domain/providers/postgresql/*"]
+      "@typings/*": ["src/domain/typings/*"]
     }
   }
 }

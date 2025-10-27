@@ -1,6 +1,6 @@
 import { finalize, Observable } from 'rxjs';
 
-import { Resources } from '@constants/resources';
+import { Resources } from '@commonConstants/resources';
 import {
   CallHandler,
   ExecutionContext,

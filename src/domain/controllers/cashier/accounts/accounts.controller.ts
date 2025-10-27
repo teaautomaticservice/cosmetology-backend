@@ -1,14 +1,14 @@
 import { ParseSortOrderPipe } from 'src/ambient/parsers/parseSortOrder';
 import { ParseString } from 'src/ambient/parsers/parseString';
 
+import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
 import { ApiQuerySortOrder } from '@decorators/apiQuerySortOrder';
 import { QueryInt } from '@decorators/queryInt';
-import { AuthGuard } from '@domain/controllers/common/guards/auth.guard';
-import { SortAccountsByStorages } from '@domain/providers/cashier/accounts/accounts.type';
-import { CashierService } from '@domain/services/cashier/cashier.service';
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
+import { CashierService } from '@services/cashier/cashier.service';
 
 import { AccountsByStorePaginated } from './dtos/accountsByStorePaginated.dto';
 import { AccountsWithStoragePaginatedDto } from './dtos/accountsWithStoragePaginated.dto';

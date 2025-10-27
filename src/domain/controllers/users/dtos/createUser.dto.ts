@@ -1,5 +1,5 @@
-import { UserType } from '@domain/types/users.types';
 import { ApiProperty } from '@nestjs/swagger';
+import { UserType } from '@typings/users.types';
 
 export class CreateUserDto {
   @ApiProperty({

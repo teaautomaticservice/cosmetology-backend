@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-import { MESSAGES_ENTITY } from '@domain/providers/postgresql/constants/entities';
+import { MESSAGES_ENTITY } from '@providers/postgresql/constants/entities';
 
 const OLD_MESSAGE_ENTITY = 'message_entity';
 

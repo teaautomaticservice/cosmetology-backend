@@ -1,7 +1,7 @@
-import { ID } from '@domain/providers/common/common.type';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
-import { UserStatus, UserType } from '@domain/types/users.types';
 import { ApiProperty } from '@nestjs/swagger';
+import { ID } from '@providers/common/common.type';
+import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
+import { UserStatus, UserType } from '@typings/users.types';
 
 export class UsersDto {
   @ApiProperty({

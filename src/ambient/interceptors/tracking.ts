@@ -2,9 +2,8 @@ import { Response } from 'express';
 import { Observable, tap } from 'rxjs';
 import { v4 as uuid } from 'uuid';
 
-import { HTTP_HEADER_X_TRACE_ID } from '@constants/common';
-import { Resources } from '@constants/resources';
-import { RequestApp } from '@domain/types/request.types';
+import { HTTP_HEADER_X_TRACE_ID } from '@commonConstants/common';
+import { Resources } from '@commonConstants/resources';
 import {
   CallHandler,
   ExecutionContext,
@@ -12,6 +11,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { RequestApp } from '@typings/request.types';
 import { AsyncContext } from '@utils/asyncContext';
 
 @Injectable()
