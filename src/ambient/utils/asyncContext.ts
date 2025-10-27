@@ -1,5 +1,5 @@
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
 import { AsyncContext as AsyncContextBase } from '@nestjs-steroids/async-context';
+import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
 
 const KEY_TRACE_ID = 'traceId';
 const KEY_USER = 'user';

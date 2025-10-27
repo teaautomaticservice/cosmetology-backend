@@ -1,8 +1,8 @@
 import { DeleteResult, Repository } from 'typeorm';
 
-import { ID } from '@domain/providers/common/common.type';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ID } from '@providers/common/common.type';
 
 import { MoneyStoragesEntity } from './moneyStorages.entity';
 import { CommonDb } from '../../common/common.db';

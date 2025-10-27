@@ -1,6 +1,6 @@
-import { RequestApp } from '@domain/types/request.types';
-import { UserStatus } from '@domain/types/users.types';
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { RequestApp } from '@typings/request.types';
+import { UserStatus } from '@typings/users.types';
 
 @Injectable()
 export class AuthGuard implements CanActivate {

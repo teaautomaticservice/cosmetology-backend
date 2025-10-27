@@ -1,22 +1,22 @@
 import { FindOptionsOrder, In, Not } from 'typeorm';
 
-import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR } from '@domain/constants/errors';
+import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR } from '@constants/errors';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import {
   FoundAndCounted,
   ID,
   Order,
   Pagination,
   RecordEntity
-} from '@domain/providers/common/common.type';
-import {
-  MoneyStorageStatus
-} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+} from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { MoneyStoragesDb } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.db';
 import {
   MoneyStoragesEntity
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
+import {
+  MoneyStorageStatus
+} from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
 import { OBLIGATION_ACCOUNT_CODE } from './moneyStorages.constants';
 import { MoneyStoragesFilter } from './moneyStorages.types';

@@ -1,4 +1,4 @@
-import { APP_NAME } from '@constants/env';
+import { APP_NAME } from '@commonConstants/env';
 
 import { commonTemplate } from './common';
 

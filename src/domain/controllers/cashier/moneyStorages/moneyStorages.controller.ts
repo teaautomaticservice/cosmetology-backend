@@ -2,12 +2,10 @@ import { ParseSortOrderPipe } from 'src/ambient/parsers/parseSortOrder';
 import { ParseString } from 'src/ambient/parsers/parseString';
 import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 
+import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
 import { ApiQuerySortOrder } from '@decorators/apiQuerySortOrder';
 import { QueryInt } from '@decorators/queryInt';
-import { AuthGuard } from '@domain/controllers/common/guards/auth.guard';
-import { ID } from '@domain/providers/common/common.type';
-import { CashierService } from '@domain/services/cashier/cashier.service';
 import {
   Body,
   Controller,
@@ -25,6 +23,8 @@ import {
   ApiParam,
   ApiTags
 } from '@nestjs/swagger';
+import { ID } from '@providers/common/common.type';
+import { CashierService } from '@services/cashier/cashier.service';
 
 import { CreateMoneyStorageDto } from './dtos/createMoneyStorage.dto';
 import { MoneyStorageDto } from './dtos/moneyStorage.dto';

@@ -1,6 +1,6 @@
 import { LoggerProviderModule } from '@ambientProviders/logger/loggerProvider.module';
-import { AuthorizationServiceModule } from '@domain/services/authorization/authorizationService.module';
 import { Module } from '@nestjs/common';
+import { AuthorizationServiceModule } from '@services/authorization/authorizationService.module';
 
 import { authorizationClearExpiredShedulerProvider } from './authorizationClearExpired.provider';
 

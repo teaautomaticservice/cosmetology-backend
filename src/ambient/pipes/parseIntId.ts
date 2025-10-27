@@ -1,5 +1,3 @@
-import { ID } from '@domain/providers/common/common.type';
-import { RequestApp } from '@domain/types/request.types';
 import {
   ArgumentMetadata,
   BadRequestException,
@@ -10,6 +8,8 @@ import {
   Scope
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
+import { ID } from '@providers/common/common.type';
+import { RequestApp } from '@typings/request.types';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ParseObjectIdPipe implements PipeTransform<string, ID | undefined> {

@@ -1,4 +1,4 @@
-import { clientCompleteRegistration } from '@domain/constants/urls';
+import { clientCompleteRegistration } from '@constants/urls';
 
 import { commonTemplate } from './common';
 

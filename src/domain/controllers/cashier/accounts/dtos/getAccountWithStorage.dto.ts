@@ -1,7 +1,7 @@
-import { AccountWithMoneyStorageDto } from '@domain/providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
-import { ID } from '@domain/providers/common/common.type';
 import { ApiProperty } from '@nestjs/swagger';
-import { AccountStatus } from '@postgres/repositories/cashier/accounts/accounts.types';
+import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
+import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
+import { ID } from '@providers/common/common.type';
 
 import { MoneyStorageDto } from '../../moneyStorages/dtos/moneyStorage.dto';
 

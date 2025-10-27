@@ -1,5 +1,5 @@
-import { ID } from '@domain/providers/common/common.type';
 import { ApiProperty } from '@nestjs/swagger';
+import { ID } from '@providers/common/common.type';
 
 export class InitiateHardResetPasswordDto {
   @ApiProperty({

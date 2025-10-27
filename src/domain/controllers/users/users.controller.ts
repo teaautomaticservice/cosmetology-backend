@@ -1,8 +1,6 @@
 import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 
 import { QueryInt } from '@decorators/queryInt';
-import { ID, Pagination } from '@domain/providers/common/common.type';
-import { UserService } from '@domain/services/user/user.service';
 import {
   BadRequestException,
   Body,
@@ -20,6 +18,8 @@ import {
   ApiQuery,
   ApiTags
 } from '@nestjs/swagger';
+import { ID, Pagination } from '@providers/common/common.type';
+import { UserService } from '@services/user/user.service';
 
 import { CreateUserDto } from './dtos/createUser.dto';
 import { InitiateHardResetPasswordDto } from './dtos/initiateHardResetPassword.dto';

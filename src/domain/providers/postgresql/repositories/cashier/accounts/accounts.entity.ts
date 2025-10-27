@@ -1,6 +1,6 @@
 import { Column, Entity, Index } from 'typeorm';
 
-import { ACCOUNTS_ENTITY } from '@postgres/constants/entities';
+import { ACCOUNTS_ENTITY } from '@postgresql/constants/entities';
 
 import { AccountStatus } from './accounts.types';
 import { CommonEntity } from '../../common/common.entity';

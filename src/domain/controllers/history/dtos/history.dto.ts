@@ -1,6 +1,6 @@
-import { HistoryWithUsersDto } from '@domain/providers/histories/dto/historyWithUsers.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { ID } from '@providers/common/common.type';
+import { HistoryWithUsersDto } from '@providers/histories/dto/historyWithUsers.dto';
 import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
 
 export class HistoryDto {

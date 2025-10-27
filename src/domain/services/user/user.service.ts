@@ -1,13 +1,13 @@
 import { Logger } from 'winston';
 
-import { Resources } from '@constants/resources';
-import { EMAIL_ERROR, entityNotFound, VALIDATION_ERROR } from '@domain/constants/errors';
-import { FoundAndCounted, ID, Pagination } from '@domain/providers/common/common.type';
-import { UserEntity } from '@domain/providers/postgresql/repositories/users/user.entity';
-import { TokensCreatedUsersProvider } from '@domain/providers/tokensCreatedUsers/tokensCreatedUsers.provider';
-import { UsersProvider } from '@domain/providers/users/users.provider';
-import { UserStatus } from '@domain/types/users.types';
+import { Resources } from '@commonConstants/resources';
+import { EMAIL_ERROR, entityNotFound, VALIDATION_ERROR } from '@constants/errors';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { FoundAndCounted, ID, Pagination } from '@providers/common/common.type';
+import { UserEntity } from '@providers/postgresql/repositories/users/user.entity';
+import { TokensCreatedUsersProvider } from '@providers/tokensCreatedUsers/tokensCreatedUsers.provider';
+import { UsersProvider } from '@providers/users/users.provider';
+import { UserStatus } from '@typings/users.types';
 import { cryptoUtils } from '@utils/cryptoUtils';
 import { generateRandomString } from '@utils/generateRandomString';
 

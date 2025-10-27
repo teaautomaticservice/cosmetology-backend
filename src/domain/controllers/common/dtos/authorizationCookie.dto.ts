@@ -1,6 +1,6 @@
 import { Request } from 'express';
 
-import { AuthorizationCookies } from '@domain/types/cookies.types';
+import { AuthorizationCookies } from '@typings/cookies.types';
 
 export class AuthorizationCookieDto implements AuthorizationCookies {
   public session: string | null;

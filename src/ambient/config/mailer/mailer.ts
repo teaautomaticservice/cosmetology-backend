@@ -1,4 +1,4 @@
-import { IS_PRODUCTION } from '@constants/env';
+import { IS_PRODUCTION } from '@commonConstants/env';
 import { MailerOptions } from '@nestjs-modules/mailer';
 
 export const getMailerConfig = (): MailerOptions => {

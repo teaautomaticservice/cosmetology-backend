@@ -1,7 +1,6 @@
 import { Observable } from 'rxjs';
 
-import { Resources } from '@constants/resources';
-import { RequestApp } from '@domain/types/request.types';
+import { Resources } from '@commonConstants/resources';
 import {
   CallHandler,
   ExecutionContext,
@@ -9,6 +8,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { RequestApp } from '@typings/request.types';
 import { AsyncContext } from '@utils/asyncContext';
 
 @Injectable()

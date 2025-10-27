@@ -1,8 +1,8 @@
 import { Logger } from 'winston';
 
-import { Resources } from '@constants/resources';
-import { AuthorizationService } from '@domain/services/authorization/authorization.service';
+import { Resources } from '@commonConstants/resources';
 import { Provider } from '@nestjs/common';
+import { AuthorizationService } from '@services/authorization/authorization.service';
 
 import { AuthorizationClearExpiredSheduler } from './authorizationClearExpired.sheduler';
 

@@ -1,7 +1,6 @@
 import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 
 import { QueryInt } from '@decorators/queryInt';
-import { ID } from '@domain/providers/common/common.type';
 import {
   Body,
   Controller,
@@ -20,6 +19,7 @@ import {
   ApiQuery,
   ApiTags
 } from '@nestjs/swagger';
+import { ID } from '@providers/common/common.type';
 import { HistoryService } from '@services/history/history.service';
 
 import { HistoryDto } from './dtos/history.dto';

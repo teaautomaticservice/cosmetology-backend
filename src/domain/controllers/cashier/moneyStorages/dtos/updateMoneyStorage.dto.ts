@@ -1,7 +1,7 @@
+import { ApiProperty } from '@nestjs/swagger';
 import {
   MoneyStorageStatus
-} from '@domain/providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
-import { ApiProperty } from '@nestjs/swagger';
+} from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
 export class UpdateMoneyStorageDto {
   @ApiProperty({

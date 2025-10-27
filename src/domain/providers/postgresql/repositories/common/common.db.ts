@@ -7,7 +7,7 @@ import {
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { Logger } from 'winston';
 
-import { Resources } from '@constants/resources';
+import { Resources } from '@commonConstants/resources';
 import { Inject } from '@nestjs/common';
 import { AsyncContext } from '@utils/asyncContext';
 

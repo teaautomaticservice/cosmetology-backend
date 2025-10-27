@@ -1,6 +1,6 @@
 import { Column, Entity } from 'typeorm';
 
-import { MONEY_STORAGE_ENTITY } from '@domain/providers/postgresql/constants/entities';
+import { MONEY_STORAGE_ENTITY } from '@providers/postgresql/constants/entities';
 
 import { MoneyStorageStatus } from './moneyStorages.types';
 import { CommonEntity } from '../../common/common.entity';

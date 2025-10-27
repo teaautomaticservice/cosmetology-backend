@@ -1,6 +1,6 @@
 import { Column, Entity } from 'typeorm';
 
-import { CURRENCIES_ENTITY } from '@domain/providers/postgresql/constants/entities';
+import { CURRENCIES_ENTITY } from '@providers/postgresql/constants/entities';
 
 import { CurrencyStatus } from './currencies.types';
 import { CommonEntity } from '../../common/common.entity';

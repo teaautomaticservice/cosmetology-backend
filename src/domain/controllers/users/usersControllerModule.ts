@@ -1,6 +1,6 @@
-import { AuthorizationServiceModule } from '@domain/services/authorization/authorizationService.module';
-import { UserServiceModule } from '@domain/services/user/userService.module';
 import { Module } from '@nestjs/common';
+import { AuthorizationServiceModule } from '@services/authorization/authorizationService.module';
+import { UserServiceModule } from '@services/user/userService.module';
 
 import { UsersController } from './users.controller';
 

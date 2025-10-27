@@ -1,5 +1,5 @@
-import { CashierServiceModule } from '@domain/services/cashier/cashierService.module';
 import { Module } from '@nestjs/common';
+import { CashierServiceModule } from '@services/cashier/cashierService.module';
 
 import { AccountsController } from './accounts.controller';
 

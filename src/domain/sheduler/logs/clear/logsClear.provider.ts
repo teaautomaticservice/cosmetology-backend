@@ -1,6 +1,6 @@
 import { Logger } from 'winston';
 
-import { Resources } from '@constants/resources';
+import { Resources } from '@commonConstants/resources';
 import { Provider } from '@nestjs/common';
 import { LogsService } from '@services/logs/logs.service';
 
