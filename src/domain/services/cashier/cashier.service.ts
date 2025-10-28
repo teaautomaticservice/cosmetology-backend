@@ -3,6 +3,7 @@ import { Logger } from 'winston';
 import { Resources } from '@commonConstants/resources';
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@constants/errors';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import { SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
 import { AccountsByStoreDto } from '@providers/cashier/accounts/dtos/accountByStore.dto';
@@ -190,5 +191,38 @@ export class CashierService {
     });
 
     return resp;
+  }
+
+  public async removeCurrency(currentId: ID): Promise<boolean> {
+    const entity = await this.currenciesProvider.findById(currentId);
+
+    if (!entity) {
+      throw new BadRequestException(`Incorrect ID: '${currentId}' for currency`);
+    }
+
+    if (entity.status !== CurrencyStatus.DISABLED) {
+      throw new BadRequestException(
+        'Delete currency possible only for disabled status'
+      );
+    }
+
+    const [_, count] = await this.accountsProvider.gatRawAccountsList({
+      filter: {
+        currenciesIds: [entity.id],
+        status: [AccountStatus.ACTIVE, AccountStatus.FREEZED],
+      },
+      pagination: {
+        page: 1,
+        pageSize: 10,
+      },
+    });
+
+    if (count > 0) {
+      throw new BadRequestException(
+        'Delete currency not possible for active or freezed accounts'
+      );
+    }
+
+    return this.currenciesProvider.deleteById(currentId);
   }
 }

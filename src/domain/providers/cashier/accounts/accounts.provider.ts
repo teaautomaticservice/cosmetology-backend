@@ -13,6 +13,7 @@ import {
 
 import { AccountsByStoreDto } from './dtos/accountByStore.dto';
 import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';
+import { AccountsWithStorageFilter } from './accounts.type';
 import { MoneyStoragesProvider } from '../moneyStorages/moneyStorages.provider';
 
 @Injectable()
@@ -61,21 +62,24 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
   public async getActualAccountsWithStorage({
     pagination,
     order,
+    filter,
   }: {
     pagination: Pagination;
     order?: Order<AccountsEntity>;
+    filter?: AccountsWithStorageFilter;
   }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
     const [rawMoneyStorages] = await this.moneyStoragesProvider.getActualMoneyStorage();
 
     const accountMappedByMoneyStorages = createdMapFromEntity(rawMoneyStorages);
     const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
 
-    const [rawAccountsList, accountListCount] = await super.findAndCount({
+    const [rawAccountsList, accountListCount] = await this.gatRawAccountsList({
       pagination,
-      where: {
-        moneyStorageId: In(moneyStoragesIds),
-      },
       order,
+      filter: {
+        moneyStoragesIds,
+        ...filter,
+      }
     });
 
     const accountsWithMoneyStorage = rawAccountsList.map((account) => {
@@ -87,5 +91,25 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
     });
 
     return [accountsWithMoneyStorage, accountListCount];
+  }
+
+  public async gatRawAccountsList({
+    pagination,
+    order,
+    filter,
+  }: {
+    pagination: Pagination;
+    order?: Order<AccountsEntity>;
+    filter?: AccountsWithStorageFilter;
+  }): Promise<FoundAndCounted<AccountsEntity>> {
+    return super.findAndCount({
+      pagination,
+      where: {
+        ...(filter?.moneyStoragesIds && { currencyId: In(filter.moneyStoragesIds) }),
+        ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
+        ...(filter?.status && { currencyId: In(filter.status) }),
+      },
+      order,
+    });
   }
 }
