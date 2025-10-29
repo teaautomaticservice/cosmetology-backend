@@ -229,4 +229,50 @@ export class CashierService {
 
     return this.currenciesProvider.deleteById(currentId);
   }
+
+  public async updateCurrency({
+    currentId,
+    newData,
+  }: UpdatedEntity<CurrencyEntity>): Promise<CurrencyEntity> {
+    const entity = await this.currenciesProvider.findById(currentId);
+
+    if (!entity) {
+      throw new BadRequestException(`Incorrect ID: '${currentId}' for currency`);
+    }
+
+    if (newData.status === CurrencyStatus.DISABLED) {
+      const [_, countAccounts] = await this.accountsProvider.gatRawAccountsList({
+        pagination: {
+          page: 1,
+          pageSize: 10,
+        },
+        filter: {
+          currenciesIds: [entity.id],
+          notStatus: [AccountStatus.DEACTIVATED],
+        },
+      });
+
+      if (countAccounts > 0) {
+        throw new BadRequestException(
+          'Deactivate currency possible only for disabled accounts'
+        );
+      }
+    }
+    const result = await this.currenciesProvider.updateById(currentId, newData);
+    const updatedEntity = await this.currenciesProvider.findById(currentId);
+
+    if (!result || !updatedEntity) {
+      this.logger.error('currency update error', {
+        currentId,
+        newData,
+      });
+      throw new InternalServerErrorException(`Currency update error`);
+    }
+
+    this.logger.warn('currency update by user', {
+      currentId,
+      newData,
+    });
+    return updatedEntity;
+  }
 }

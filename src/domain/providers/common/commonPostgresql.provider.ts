@@ -13,7 +13,7 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     this.db = db;
   }
 
-  public async findById(id: Entity['id']): Promise<Entity | null> {
+  protected async findById(id: Entity['id']): Promise<Entity | null> {
     const where = {
       id,
     } as FindOptionsWhere<Entity>;
@@ -22,7 +22,7 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     });
   }
 
-  public async findByIds(ids: Entity['id'][]): Promise<Entity[] | null> {
+  protected async findByIds(ids: Entity['id'][]): Promise<Entity[] | null> {
     const where = {
       id: In(ids),
     } as FindOptionsWhere<Entity>;
@@ -31,7 +31,7 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     });
   }
 
-  public async findAndCount({
+  protected async findAndCount({
     pagination,
     order,
     where,
@@ -52,11 +52,11 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     ]);
   }
 
-  public async create(data: RecordEntity<Entity>): Promise<Entity> {
+  protected async create(data: RecordEntity<Entity>): Promise<Entity> {
     return this.db.create(data as DeepPartial<Entity>);
   }
 
-  public async updateById(id: Entity['id'], data: Partial<RecordEntity<Entity>>): Promise<boolean> {
+  protected async updateById(id: Entity['id'], data: Partial<RecordEntity<Entity>>): Promise<boolean> {
     const { affected } = await this.db.updateById(id, data as QueryDeepPartialEntity<Entity>);
     return affected != null && affected > 0;
   }

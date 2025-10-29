@@ -1,6 +1,7 @@
 import { LessThan } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
+import { RecordEntity } from '@providers/common/common.type';
 
 import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
 import { SessionEntity } from '../postgresql/repositories/sessions/session.entity';
@@ -28,4 +29,7 @@ export class SessionsProvider extends CommonPostgresqlProvider<SessionEntity> {
     return { count: affected ?? 0 };
   }
 
+  public async create(data: RecordEntity<SessionEntity>): Promise<SessionEntity> {
+    return super.create(data);
+  }
 }

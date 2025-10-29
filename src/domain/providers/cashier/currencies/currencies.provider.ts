@@ -1,5 +1,7 @@
+import { FindOptionsOrder } from 'typeorm';
+
 import { Injectable } from '@nestjs/common';
-import { ID, RecordEntity } from '@providers/common/common.type';
+import { FoundAndCounted, ID, Pagination, RecordEntity } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { CurrenciesDb } from '@providers/postgresql/repositories/cashier/currencies/currencies.db';
 import { CurrencyEntity } from '@providers/postgresql/repositories/cashier/currencies/currencies.entity';
@@ -30,5 +32,31 @@ export class CurrenciesProvider extends CommonPostgresqlProvider<CurrencyEntity>
   public async deleteById(currentId: ID): Promise<boolean> {
     await this.currenciesDb.deleteById(currentId);
     return true;
+  }
+
+  public async findById(id: number): Promise<CurrencyEntity | null> {
+    return super.findById(id);
+  }
+
+  public async findAndCount({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: FindOptionsOrder<CurrencyEntity>;
+  }): Promise<FoundAndCounted<CurrencyEntity>> {
+    return super.findAndCount({
+      pagination,
+      order,
+    });
+  }
+
+  public updateById(id: number, data: Partial<RecordEntity<CurrencyEntity>>): Promise<boolean> {
+    const formattedCode = data.code && data.code.toUpperCase();
+
+    return super.updateById(id, {
+      ...data,
+      code: formattedCode,
+    });
   }
 }
