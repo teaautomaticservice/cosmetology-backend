@@ -114,4 +114,8 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
       order,
     });
   }
+
+  public async findById(id: number): Promise<MoneyStoragesEntity | null> {
+    return super.findById(id);
+  }
 }

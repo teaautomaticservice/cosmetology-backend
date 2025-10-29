@@ -4,7 +4,7 @@ import { FindOptionsOrder } from 'typeorm';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 
 import { HistoryWithUsersDto } from './dto/historyWithUsers.dto';
-import { FoundAndCounted, ID, Pagination } from '../common/common.type';
+import { FoundAndCounted, ID, Pagination, RecordEntity } from '../common/common.type';
 import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
 import { Where } from '../postgresql/repositories/common/common.types';
 import { HistoryDb } from '../postgresql/repositories/history/history.db';
@@ -76,5 +76,34 @@ export class HistoriesProvider extends CommonPostgresqlProvider<MessageEntity> {
   public async deleteById(currentId: MessageEntity['id']): Promise<boolean> {
     await this.historyDb.deleteById(currentId);
     return true;
+  }
+
+  public async findById(id: number): Promise<MessageEntity | null> {
+    return super.findById(id);
+  }
+
+  public async findAndCount({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: FindOptionsOrder<MessageEntity>;
+  }): Promise<FoundAndCounted<MessageEntity>> {
+    return super.findAndCount({
+      pagination,
+      order,
+    });
+  }
+
+  public async findByIds(ids: number[]): Promise<MessageEntity[] | null> {
+    return super.findByIds(ids);
+  }
+
+  public async create(data: RecordEntity<MessageEntity>): Promise<MessageEntity> {
+    return super.create(data);
+  }
+
+  public updateById(id: number, data: Partial<RecordEntity<MessageEntity>>): Promise<boolean> {
+    return super.updateById(id, data);
   }
 }

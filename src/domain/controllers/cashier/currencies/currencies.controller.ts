@@ -8,6 +8,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards
 } from '@nestjs/common';
@@ -24,6 +25,7 @@ import { CashierService } from '@services/cashier/cashier.service';
 import { CreateCurrencyDto } from './dtos/createCurrency.dto';
 import { CurrencyDto } from './dtos/currency.dto';
 import { CurrencyPaginatedDto } from './dtos/currencyPaginated.dto';
+import { UpdateCurrencyDto } from './dtos/updateCurrency.dto';
 import { CASHIER_CURRENCIES_PATH } from '../cashier.paths';
 
 @ApiTags('Cashier')
@@ -93,6 +95,28 @@ export class CurrenciesController {
         itemsPerPage: pageSize,
       },
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch('/:id')
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({
+    description: 'Currency body',
+    type: UpdateCurrencyDto,
+  })
+  @ApiOkResponse({
+    description: 'Currency update',
+    type: CurrencyDto,
+  })
+  public async updateItem(
+    @Param('id', ParseObjectIdPipe) currentId: ID,
+    @Body() currencyReq: UpdateCurrencyDto,
+  ): Promise<CurrencyDto> {
+    const resp = await this.cashierService.updateCurrency({
+      currentId,
+      newData: currencyReq,
+    });
+    return new CurrencyDto(resp);
   }
 
   @UseGuards(AuthGuard)

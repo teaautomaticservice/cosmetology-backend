@@ -1,6 +1,7 @@
-import { LessThan } from 'typeorm';
+import { FindOptionsOrder, LessThan } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
+import { FoundAndCounted, Pagination } from '@providers/common/common.type';
 
 import { CommonPostgresqlProvider } from '../common/commonPostgresql.provider';
 import { Where } from '../postgresql/repositories/common/common.types';
@@ -35,5 +36,22 @@ export class LogsProvider extends CommonPostgresqlProvider<LogEntity> {
     }
 
     return { count: entities.length };
+  }
+
+  public async findById(id: number): Promise<LogEntity | null> {
+    return super.findById(id);
+  }
+
+  public async findAndCount({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: FindOptionsOrder<LogEntity>;
+  }): Promise<FoundAndCounted<LogEntity>> {
+    return super.findAndCount({
+      pagination,
+      order,
+    });
   }
 }

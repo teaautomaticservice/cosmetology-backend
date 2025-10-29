@@ -5,6 +5,7 @@ export type SortAccountsByStorages = 'status' | 'name';
 
 export type AccountsWithStorageFilter = {
   status?: AccountsEntity['status'][];
+  notStatus?: AccountsEntity['status'][];
   currenciesIds?: ID[];
   moneyStoragesIds?: ID[];
 }

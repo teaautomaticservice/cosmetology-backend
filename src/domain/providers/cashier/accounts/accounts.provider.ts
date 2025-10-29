@@ -1,6 +1,6 @@
 import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity';
 import { createdMapListFromEntity } from 'src/migrations/utils/createdMapListFromEntity';
-import { In } from 'typeorm';
+import { In, Not } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
 import { FoundAndCounted, Order, Pagination } from '@providers/common/common.type';
@@ -105,11 +105,16 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
     return super.findAndCount({
       pagination,
       where: {
-        ...(filter?.moneyStoragesIds && { currencyId: In(filter.moneyStoragesIds) }),
+        ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
         ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
-        ...(filter?.status && { currencyId: In(filter.status) }),
+        ...(filter?.status && { status: In(filter.status) }),
+        ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
       },
       order,
     });
+  }
+
+  public async findById(id: number): Promise<AccountsEntity | null> {
+    return super.findById(id);
   }
 }
