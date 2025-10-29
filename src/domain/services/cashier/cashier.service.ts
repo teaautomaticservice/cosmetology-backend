@@ -223,6 +223,10 @@ export class CashierService {
       );
     }
 
+    this.logger.warn('currency deleted bu user', {
+      entity,
+    });
+
     return this.currenciesProvider.deleteById(currentId);
   }
 }
