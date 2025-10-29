@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { RecordEntity } from '@providers/common/common.type';
+import { ID, RecordEntity } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { CurrenciesDb } from '@providers/postgresql/repositories/cashier/currencies/currencies.db';
 import { CurrencyEntity } from '@providers/postgresql/repositories/cashier/currencies/currencies.entity';
@@ -25,5 +25,10 @@ export class CurrenciesProvider extends CommonPostgresqlProvider<CurrencyEntity>
         code: formattedCode,
       },
     });
+  }
+
+  public async deleteById(currentId: ID): Promise<boolean> {
+    await this.currenciesDb.deleteById(currentId);
+    return true;
   }
 }

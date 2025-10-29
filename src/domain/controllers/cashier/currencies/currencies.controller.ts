@@ -1,13 +1,24 @@
+import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
+
 import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { QueryInt } from '@decorators/queryInt';
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiParam,
+  ApiQuery,
+  ApiTags
+} from '@nestjs/swagger';
+import { ID } from '@providers/common/common.type';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { CreateCurrencyDto } from './dtos/createCurrency.dto';
@@ -27,7 +38,7 @@ export class CurrenciesController {
   @ApiQuery({ name: 'page', required: false })
   @ApiQuery({ name: 'pageSize', required: false })
   @ApiOkResponse({
-    description: 'List of currencies successful has been got',
+    description: 'List of currencies',
     type: CurrencyPaginatedDto,
   })
   public async getList(
@@ -55,7 +66,7 @@ export class CurrenciesController {
   @Post('/create')
   @ApiQuery({ name: 'pageSize', required: false })
   @ApiBody({
-    description: 'Create currency body',
+    description: 'Create currency',
     type: CreateCurrencyDto,
   })
   @ApiOkResponse({
@@ -82,5 +93,17 @@ export class CurrenciesController {
         itemsPerPage: pageSize,
       },
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('/:id')
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({
+    description: 'Currency deleted',
+  })
+  public async removeItem(
+    @Param('id', ParseObjectIdPipe) currentId: ID,
+  ): Promise<void> {
+    await this.cashierService.removeCurrency(currentId);
   }
 }
