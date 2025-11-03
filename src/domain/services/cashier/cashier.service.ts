@@ -76,8 +76,8 @@ export class CashierService {
     });
   }
 
-  public async getObligationAccount(): Promise<MoneyStoragesEntity> {
-    const result = await this.moneyStoragesProvider.findObligationAccount();
+  public async getObligationStorage(): Promise<MoneyStoragesEntity> {
+    const result = await this.moneyStoragesProvider.findObligationStorage();
     if (!result) {
       throw new InternalServerErrorException('Obligation account hasn\'t find.');
     }
@@ -191,6 +191,63 @@ export class CashierService {
     });
 
     return resp;
+  }
+
+  public async createAccountsForStorages({
+    data,
+  }: {
+    data: Pick<RecordEntity<AccountsEntity>, 'name' | 'description' | 'currencyId'> & { moneyStorageIds: ID[] };
+  }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
+    const currency = await this.currenciesProvider.findById(data.currencyId);
+
+    if (!currency || currency.status === CurrencyStatus.DISABLED) {
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          currencyId: [`Currency shout be is active`],
+        },
+      });
+    }
+
+    const moneyStorages = await this.moneyStoragesProvider.findByIdsWithFilter(
+      data.moneyStorageIds,
+      {
+        filter: {
+          status: [MoneyStorageStatus.FREEZED, MoneyStorageStatus.DEACTIVATED],
+        }
+      }
+    );
+
+    if (Boolean(moneyStorages?.length)) {
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          moneyStorageIds: [`Money storage can't be a freezed or deactivated`],
+        },
+      });
+    }
+
+    const promises = data.moneyStorageIds.map((moneyStorageId) => {
+      return this.accountsProvider.createAccount({
+        currencyId: data.currencyId,
+        description: data.description,
+        name: data.name,
+        moneyStorageId,
+      });
+    });
+
+    const createdRawAccounts = await Promise.all(promises);
+
+    return this.accountsProvider.getActualAccountsWithStorage({
+      pagination: {
+        page: 1,
+        pageSize: 10,
+      },
+      order: {
+        status: 1,
+      },
+      filter: {
+        ids: createdRawAccounts.map(({ id }) => id),
+      }
+    });;
   }
 
   public async removeCurrency(currentId: ID): Promise<boolean> {

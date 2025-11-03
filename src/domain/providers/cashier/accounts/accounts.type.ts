@@ -4,6 +4,7 @@ import { ID } from '@providers/common/common.type';
 export type SortAccountsByStorages = 'status' | 'name';
 
 export type AccountsWithStorageFilter = {
+  ids?: ID[];
   status?: AccountsEntity['status'][];
   notStatus?: AccountsEntity['status'][];
   currenciesIds?: ID[];

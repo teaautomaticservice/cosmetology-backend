@@ -3,7 +3,8 @@ import { createdMapListFromEntity } from 'src/migrations/utils/createdMapListFro
 import { In, Not } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
-import { FoundAndCounted, Order, Pagination } from '@providers/common/common.type';
+import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
+import { FoundAndCounted, Order, Pagination, RecordEntity } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { AccountsDb } from '@providers/postgresql/repositories/cashier/accounts/accounts.db';
 import { AccountsEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
@@ -109,6 +110,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
         ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
         ...(filter?.status && { status: In(filter.status) }),
         ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
+        ...(filter?.ids && { id: In(filter.ids) }),
       },
       order,
     });
@@ -116,5 +118,14 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
 
   public async findById(id: number): Promise<AccountsEntity | null> {
     return super.findById(id);
+  }
+
+  public async createAccount(data: Omit<RecordEntity<AccountsEntity>, 'balance' | 'available' | 'status'>): Promise<AccountsEntity> {
+    return super.create({
+      ...data,
+      balance: 0,
+      available: 0,
+      status: AccountStatus.CREATED,
+    });
   }
 }

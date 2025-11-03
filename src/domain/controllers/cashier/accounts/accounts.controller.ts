@@ -5,13 +5,21 @@ import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
 import { ApiQuerySortOrder } from '@decorators/apiQuerySortOrder';
 import { QueryInt } from '@decorators/queryInt';
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards
+} from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { AccountsByStorePaginated } from './dtos/accountsByStorePaginated.dto';
 import { AccountsWithStoragePaginatedDto } from './dtos/accountsWithStoragePaginated.dto';
+import { CreateAccountDto } from './dtos/createAccount.dto';
 import { GetAccountsByStoreDto } from './dtos/getAccountsByStore.dto';
 import { GetAccountWithStorageDto } from './dtos/getAccountWithStorage.dto';
 import { CASHIER_ACCOUNTS_PATH } from '../cashier.paths';
@@ -80,7 +88,7 @@ export class AccountsController {
     @Query('sort', ParseString) sort?: SortAccountsByStorages,
     @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
   ): Promise<AccountsWithStoragePaginatedDto> {
-    const [accountsByStore, count] = await this.cashierService.getActualAccountsList({
+    const [accountsWithStore, count] = await this.cashierService.getActualAccountsList({
       pagination: {
         page,
         pageSize,
@@ -93,11 +101,37 @@ export class AccountsController {
     });
 
     return {
-      data: accountsByStore.map((data) => new GetAccountWithStorageDto(data)),
+      data: accountsWithStore.map((data) => new GetAccountWithStorageDto(data)),
       meta: {
         count,
         currentPage: page,
         itemsPerPage: pageSize,
+      },
+    };
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/create')
+  @ApiBody({
+    description: 'Create account',
+    type: CreateAccountDto,
+  })
+  @ApiOkResponse({
+    description: 'New currency successful created',
+    type: GetAccountWithStorageDto,
+  })
+  public async createAccount(
+    @Body() accountReq: CreateAccountDto,
+  ): Promise<AccountsWithStoragePaginatedDto> {
+    const [accountsWithStore, count] = await this.cashierService.createAccountsForStorages({
+      data: accountReq,
+    });
+    return {
+      data: accountsWithStore.map((data) => new GetAccountWithStorageDto(data)),
+      meta: {
+        count,
+        currentPage: 1,
+        itemsPerPage: 10,
       },
     };
   }
