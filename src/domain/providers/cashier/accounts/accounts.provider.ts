@@ -80,7 +80,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
       filter: {
         moneyStoragesIds,
         ...filter,
-      }
+      },
     });
 
     const accountsWithMoneyStorage = rawAccountsList.map((account) => {
@@ -92,6 +92,18 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
     });
 
     return [accountsWithMoneyStorage, accountListCount];
+  }
+
+  public async test(): Promise<undefined[] | Pick<AccountsEntity, 'moneyStorageId' | 'name' | 'status' | 'currencyId'>[]> {
+    const resp = await this.accountsDb.aggregate({
+      where: {
+        status: In([AccountStatus.ACTIVE, AccountStatus.CREATED, AccountStatus.FREEZED]),
+      },
+      groupBy: ['moneyStorageId', 'name', 'status', 'currencyId'],
+      select: ['moneyStorageId', 'name', 'status', 'currencyId'],
+    });
+
+    return resp;
   }
 
   public async gatRawAccountsList({

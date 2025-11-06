@@ -190,6 +190,8 @@ export class CashierService {
       order,
     });
 
+    await this.accountsProvider.test();
+
     return resp;
   }
 

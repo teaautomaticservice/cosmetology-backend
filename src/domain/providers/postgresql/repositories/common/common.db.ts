@@ -12,7 +12,7 @@ import { Inject } from '@nestjs/common';
 import { AsyncContext } from '@utils/asyncContext';
 
 import { CommonEntity } from './common.entity';
-import { Where } from './common.types';
+import { AggregatedEntity, Where } from './common.types';
 
 export abstract class CommonDb<Entity extends CommonEntity> {
   @Inject(Resources.AsyncContext) public readonly asyncContext: AsyncContext;
@@ -88,5 +88,69 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       ...data,
     };
     return this.dbRepository.update(id, fullData);
+  }
+
+  public aggregate<
+    GroupBy extends (keyof Entity)[] | undefined = undefined,
+    Select extends (
+      GroupBy extends (keyof Entity)[] ?
+      GroupBy[number][] :
+      (keyof Entity)[]
+    ) | undefined = undefined
+  >({
+    where,
+    order = {},
+    offset,
+    groupBy,
+    select,
+  }: {
+    where?: Where<Entity>;
+    order?: FindOptionsOrder<Entity>;
+    offset?: { skip: number; take: number };
+    groupBy?: GroupBy;
+    select?: Select;
+  } = {}): Promise<AggregatedEntity<Entity, Select>> {
+    const alias = this.dbRepository.metadata.tableName;
+
+    const currentOrder = {
+      ...order,
+      createdAt: order.createdAt ?? -1,
+    } as FindOptionsOrder<Entity>;
+
+    const queryBuilder = this.dbRepository.createQueryBuilder(alias);
+    queryBuilder.select([]);
+
+    if (where) {
+      queryBuilder.andWhere(where);
+    }
+
+    if (Array.isArray(groupBy)) {
+      groupBy.forEach((field) => queryBuilder.addGroupBy(`${alias}.${field as string}`));
+    }
+
+    if (Array.isArray(select)) {
+      select.forEach(field => queryBuilder.addSelect(`${alias}.${field as string}`, field as string));
+    }
+
+    if (groupBy && Array.isArray(groupBy)) {
+      Object.entries(currentOrder).forEach(([key, value]) => {
+        if (groupBy.includes(key as keyof Entity)) {
+          queryBuilder.addOrderBy(`${alias}.${key}`, value === 1 ? 'ASC' : 'DESC');
+        }
+      });
+    } else {
+      Object.entries(currentOrder).forEach(([key, value]) => {
+        queryBuilder.addOrderBy(`${alias}.${key}`, value === 1 ? 'ASC' : 'DESC');
+      });
+    }
+
+    if (offset?.skip) {
+      queryBuilder.skip(offset.skip);
+    }
+    if (offset?.take) {
+      queryBuilder.take(offset.take);
+    }
+
+    return queryBuilder.getRawMany() as Promise<AggregatedEntity<Entity, Select>>;
   }
 }
