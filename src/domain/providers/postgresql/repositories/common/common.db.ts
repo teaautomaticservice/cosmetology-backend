@@ -12,7 +12,7 @@ import { Inject } from '@nestjs/common';
 import { AsyncContext } from '@utils/asyncContext';
 
 import { CommonEntity } from './common.entity';
-import { AggregatedEntity, Where } from './common.types';
+import { AggregatedEntity, AggregateRecord, Where } from './common.types';
 
 export abstract class CommonDb<Entity extends CommonEntity> {
   @Inject(Resources.AsyncContext) public readonly asyncContext: AsyncContext;
@@ -96,20 +96,23 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       GroupBy extends (keyof Entity)[] ?
       GroupBy[number][] :
       (keyof Entity)[]
-    ) | undefined = undefined
+    ) | undefined = undefined,
+    Aggregates extends AggregateRecord<Entity> | undefined = undefined,
   >({
     where,
     order = {},
     offset,
     groupBy,
     select,
+    aggregates,
   }: {
     where?: Where<Entity>;
     order?: FindOptionsOrder<Entity>;
     offset?: { skip: number; take: number };
     groupBy?: GroupBy;
     select?: Select;
-  } = {}): Promise<AggregatedEntity<Entity, Select>> {
+    aggregates?: Aggregates;
+  } = {}): Promise<AggregatedEntity<Entity, Select, Aggregates>> {
     const alias = this.dbRepository.metadata.tableName;
 
     const currentOrder = {
@@ -132,6 +135,15 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       select.forEach(field => queryBuilder.addSelect(`${alias}.${field as string}`, field as string));
     }
 
+    if (aggregates) {
+      Object.entries(aggregates).forEach(([currentAlias, { fn, field }]) => {
+        queryBuilder.addSelect(
+          `${fn}(${this.dbRepository.metadata.tableName}.${String(field)})`,
+          currentAlias
+        );
+      });
+    }
+
     if (groupBy && Array.isArray(groupBy)) {
       Object.entries(currentOrder).forEach(([key, value]) => {
         if (groupBy.includes(key as keyof Entity)) {
@@ -151,6 +163,6 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       queryBuilder.take(offset.take);
     }
 
-    return queryBuilder.getRawMany() as Promise<AggregatedEntity<Entity, Select>>;
+    return queryBuilder.getRawMany() as Promise<AggregatedEntity<Entity, Select, Aggregates>>;
   }
 }

@@ -94,13 +94,33 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
     return [accountsWithMoneyStorage, accountListCount];
   }
 
-  public async test(): Promise<undefined[] | Pick<AccountsEntity, 'moneyStorageId' | 'name' | 'status' | 'currencyId'>[]> {
+  public async test(): Promise<
+    (
+      (
+        Pick<AccountsEntity, 'moneyStorageId' | 'name' | 'status' | 'currencyId'> |
+        {
+          balance?: AccountsEntity['balance'];
+          available?: AccountsEntity['available'];
+        }
+      ) | undefined
+    )[]
+    > {
     const resp = await this.accountsDb.aggregate({
       where: {
         status: In([AccountStatus.ACTIVE, AccountStatus.CREATED, AccountStatus.FREEZED]),
       },
       groupBy: ['moneyStorageId', 'name', 'status', 'currencyId'],
       select: ['moneyStorageId', 'name', 'status', 'currencyId'],
+      aggregates: {
+        balance: {
+          field: 'balance',
+          fn: 'SUM',
+        },
+        available: {
+          field: 'available',
+          fn: 'SUM',
+        },
+      }
     });
 
     return resp;
