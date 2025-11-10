@@ -69,7 +69,7 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     return affected != null && affected > 0;
   }
 
-  private getOffset({ pageSize, page }: Pagination): {
+  protected getOffset({ pageSize, page }: Pagination): {
     skip: number;
     take: number;
   } {

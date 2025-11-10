@@ -8,7 +8,7 @@ export type SelectKEys<
 > = GroupBy extends undefined ? (keyof Entity)[] :
   GroupBy extends [] ? [number][] : never;
 
-export type AggregationFn = 'SUM' | 'COUNT' | 'AVG' | 'MIN' | 'MAX';
+export type AggregationFn = 'SUM' | 'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'ARRAY_AGG';
 
 export type AggregateRecord<Entity extends object> = Record<string, { fn: AggregationFn; field: keyof Entity }>;
 
@@ -21,7 +21,7 @@ export type AggregatedEntity<
   // eslint-disable-next-line @typescript-eslint/ban-types
   {} :
   Select extends (keyof Entity)[] ?
-  Pick<Entity, Select[number]> | undefined :
+  Pick<Entity, Select[number]> :
   // eslint-disable-next-line @typescript-eslint/ban-types
   {}
 ) & (
@@ -29,7 +29,12 @@ export type AggregatedEntity<
     // eslint-disable-next-line @typescript-eslint/ban-types
     {} :
     Aggregates extends AggregateRecord<Entity> ?
-    { [K in keyof Aggregates]: Entity[Aggregates[K]['field']] } :
+    {
+      [K in keyof Aggregates]:
+      Aggregates[K]['fn'] extends 'ARRAY_AGG'
+      ? Entity[Aggregates[K]['field']][]
+      : Entity[Aggregates[K]['field']]
+    } :
     // eslint-disable-next-line @typescript-eslint/ban-types
     {}
-  )) | undefined>
+  ))>

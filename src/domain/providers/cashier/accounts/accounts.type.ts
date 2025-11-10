@@ -10,3 +10,10 @@ export type AccountsWithStorageFilter = {
   currenciesIds?: ID[];
   moneyStoragesIds?: ID[];
 }
+
+export type AccountsAggregatedWithStorage = Pick<AccountsEntity, 'name' | 'status' | 'currencyId'> &
+{
+  balance?: AccountsEntity['balance'];
+  available?: AccountsEntity['available'];
+  moneyStorageIds?: (AccountsEntity['moneyStorageId'] | undefined)[];
+}

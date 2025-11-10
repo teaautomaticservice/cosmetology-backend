@@ -107,18 +107,24 @@ export abstract class CommonDb<Entity extends CommonEntity> {
     aggregates,
   }: {
     where?: Where<Entity>;
-    order?: FindOptionsOrder<Entity>;
+    order?: Partial<Record<
+      (
+        Select extends (keyof Entity)[]
+        ? Select[number]
+        : keyof Entity
+      ) | (
+        Aggregates extends AggregateRecord<Entity>
+        ? keyof Aggregates
+        : never
+      ),
+      1 | -1 | 'ASC' | 'DESC'
+    >>;
     offset?: { skip: number; take: number };
     groupBy?: GroupBy;
     select?: Select;
     aggregates?: Aggregates;
   } = {}): Promise<AggregatedEntity<Entity, Select, Aggregates>> {
     const alias = this.dbRepository.metadata.tableName;
-
-    const currentOrder = {
-      ...order,
-      createdAt: order.createdAt ?? -1,
-    } as FindOptionsOrder<Entity>;
 
     const queryBuilder = this.dbRepository.createQueryBuilder(alias);
     queryBuilder.select([]);
@@ -145,13 +151,13 @@ export abstract class CommonDb<Entity extends CommonEntity> {
     }
 
     if (groupBy && Array.isArray(groupBy)) {
-      Object.entries(currentOrder).forEach(([key, value]) => {
+      Object.entries(order).forEach(([key, value]) => {
         if (groupBy.includes(key as keyof Entity)) {
           queryBuilder.addOrderBy(`${alias}.${key}`, value === 1 ? 'ASC' : 'DESC');
         }
       });
     } else {
-      Object.entries(currentOrder).forEach(([key, value]) => {
+      Object.entries(order).forEach(([key, value]) => {
         queryBuilder.addOrderBy(`${alias}.${key}`, value === 1 ? 'ASC' : 'DESC');
       });
     }
@@ -164,5 +170,36 @@ export abstract class CommonDb<Entity extends CommonEntity> {
     }
 
     return queryBuilder.getRawMany() as Promise<AggregatedEntity<Entity, Select, Aggregates>>;
+  }
+
+  public async aggregateCount<
+    GroupBy extends (keyof Entity)[] | undefined = undefined,
+  >({
+    where,
+    groupBy,
+  }: {
+    where?: Where<Entity>;
+    groupBy?: GroupBy;
+  } = {}): Promise<number> {
+    const alias = this.dbRepository.metadata.tableName;
+    const queryBuilder = this.dbRepository.createQueryBuilder(alias);
+    queryBuilder.select('1');
+
+    if (where) {
+      queryBuilder.andWhere(where);
+    }
+
+    if (Array.isArray(groupBy) && groupBy.length > 0) {
+      groupBy.forEach((field) => queryBuilder.addGroupBy(`${alias}.${field as string}`));
+    }
+
+    const result = await this.dbRepository.manager
+      .createQueryBuilder()
+      .select('COUNT(*)', 'count')
+      .from(`(${queryBuilder.getQuery()})`, 'subquery')
+      .setParameters(queryBuilder.getParameters())
+      .getRawOne();
+
+    return parseInt(result?.count || '0', 10);
   }
 }

@@ -7,6 +7,7 @@ import { AccountStatus } from '@postgresql/repositories/cashier/accounts/account
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import { SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
 import { AccountsByStoreDto } from '@providers/cashier/accounts/dtos/accountByStore.dto';
+import { AccountAggregatedWithStorageDto } from '@providers/cashier/accounts/dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
 import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
 import { OBLIGATION_ACCOUNT_CODE } from '@providers/cashier/moneyStorages/moneyStorages.constants';
@@ -180,19 +181,13 @@ export class CashierService {
 
   public async getActualAccountsList({
     pagination,
-    order,
   }: {
     pagination: Pagination;
     order?: Sort<keyof AccountsEntity>;
-  }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
-    const resp = await this.accountsProvider.getActualAccountsWithStorage({
+  }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
+    return this.accountsProvider.getAccountsAggregatedWithStorage({
       pagination,
-      order,
     });
-
-    await this.accountsProvider.test();
-
-    return resp;
   }
 
   public async createAccountsForStorages({
