@@ -14,14 +14,13 @@ import {
   UseGuards
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
+import { AccountsAggregatedWithStorage, SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { AccountsAggregatedWithStoragePaginated } from './dtos/accountsAggregatedWithStoragePaginated.dto';
 import { AccountsByStorePaginated } from './dtos/accountsByStorePaginated.dto';
 import { AccountsWithStoragePaginatedDto } from './dtos/accountsWithStoragePaginated.dto';
 import { CreateAccountDto } from './dtos/createAccount.dto';
-import { GetAccountAggregatedWithStorage } from './dtos/GetAccountAggregatedWithStorage.dto';
 import { GetAccountsByStoreDto } from './dtos/getAccountsByStore.dto';
 import { GetAccountWithStorageDto } from './dtos/getAccountWithStorage.dto';
 import { CASHIER_ACCOUNTS_PATH } from '../cashier.paths';
@@ -70,25 +69,25 @@ export class AccountsController {
   }
 
   @UseGuards(AuthGuard)
-  @Get('/list')
+  @Get('/accounts-aggregated-with-storage-list')
   @ApiQueryPagination()
   @ApiQuerySortOrder([
     'status',
     'available',
     'balance',
     'name',
-  ] satisfies (keyof GetAccountAggregatedWithStorage)[])
+  ] satisfies (keyof AccountsAggregatedWithStorage)[])
   @ApiOkResponse({
     description: 'List of accounts with money storages',
     type: AccountsAggregatedWithStoragePaginated,
   })
-  public async getList(
+  public async getAccountsAggregatedWithStorageList(
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
-    @Query('sort', ParseString) sort?: SortAccountsByStorages,
+    @Query('sort', ParseString) sort?: keyof AccountsAggregatedWithStorage,
     @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
   ): Promise<AccountsAggregatedWithStoragePaginated> {
-    const [accountsWithStore, count] = await this.cashierService.getActualAccountsList({
+    const [accountsWithStore, count] = await this.cashierService.getAccountAggregatedWithStorageList({
       pagination: {
         page,
         pageSize,
@@ -102,6 +101,45 @@ export class AccountsController {
 
     return {
       data: accountsWithStore,
+      meta: {
+        count,
+        currentPage: page,
+        itemsPerPage: pageSize,
+      },
+    };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('/list')
+  @ApiQueryPagination()
+  @ApiQuerySortOrder([
+    'status',
+    'name',
+  ] satisfies SortAccountsByStorages[])
+  @ApiOkResponse({
+    description: 'List of accounts with money storages',
+    type: AccountsWithStoragePaginatedDto,
+  })
+  public async getList(
+    @QueryInt('page', 1) page: number,
+    @QueryInt('pageSize', 10) pageSize: number,
+    @Query('sort', ParseString) sort?: SortAccountsByStorages,
+    @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
+  ): Promise<AccountsWithStoragePaginatedDto> {
+    const [accountsWithStore, count] = await this.cashierService.getActualAccountsList({
+      pagination: {
+        page,
+        pageSize,
+      },
+      ...(sort && {
+        order: {
+          [sort]: order ?? 1,
+        },
+      }),
+    });
+
+    return {
+      data: accountsWithStore.map((data) => new GetAccountWithStorageDto(data)),
       meta: {
         count,
         currentPage: page,

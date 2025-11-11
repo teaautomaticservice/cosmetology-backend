@@ -9,7 +9,8 @@ import {
   ID,
   Order,
   Pagination,
-  RecordEntity
+  RecordEntity,
+  Sort
 } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { AccountsDb } from '@providers/postgresql/repositories/cashier/accounts/accounts.db';
@@ -21,7 +22,7 @@ import {
 import { AccountsByStoreDto } from './dtos/accountByStore.dto';
 import { AccountAggregatedWithStorageDto } from './dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';
-import { AccountsWithStorageFilter } from './accounts.type';
+import { AccountsAggregatedWithStorage, AccountsWithStorageFilter } from './accounts.type';
 import { CurrenciesProvider } from '../currencies/currencies.provider';
 import { MoneyStoragesProvider } from '../moneyStorages/moneyStorages.provider';
 
@@ -105,17 +106,17 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
 
   public async getAccountsAggregatedWithStorage({
     pagination,
+    order,
   }: {
     pagination: Pagination;
+    order?: Sort<keyof AccountsAggregatedWithStorage>;
   }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
     const groupBy: (keyof AccountsEntity)[] = ['name', 'status', 'currencyId'];
 
     const [rawAggregatedAccount, count] = await Promise.all([
       this.accountsDb.aggregate({
         ...this.getOffset(pagination),
-        order: {
-          status: 1,
-        },
+        order,
         groupBy,
         select: ['name', 'status', 'currencyId'],
         aggregates: {

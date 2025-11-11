@@ -19,8 +19,8 @@ export class GetAccountAggregatedWithStorage {
   public status: AccountStatus;
 
   @ApiProperty({
-    isArray: true,
-    type: CurrencyDto,
+    isArray: false,
+    type: () => CurrencyDto,
     required: true,
   })
   public currency: CurrencyDto;
