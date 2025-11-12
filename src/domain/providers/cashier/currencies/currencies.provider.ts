@@ -59,4 +59,8 @@ export class CurrenciesProvider extends CommonPostgresqlProvider<CurrencyEntity>
       code: formattedCode,
     });
   }
+
+  public async findByIds(ids: number[]): Promise<CurrencyEntity[] | null> {
+    return super.findByIds(ids);
+  }
 }

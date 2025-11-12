@@ -68,7 +68,7 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
     });
   }
 
-  public async findObligationAccount(): Promise<MoneyStoragesEntity | null> {
+  public async findObligationStorage(): Promise<MoneyStoragesEntity | null> {
     return this.findByCode(OBLIGATION_ACCOUNT_CODE);
   }
 
@@ -117,5 +117,19 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
 
   public async findById(id: number): Promise<MoneyStoragesEntity | null> {
     return super.findById(id);
+  }
+
+  public async findByIdsWithFilter(ids: number[], {
+    filter,
+  }: {
+    filter?: MoneyStoragesFilter;
+  } = {}): Promise<MoneyStoragesEntity[] | null> {
+    return super.findByIds(ids, {
+      where: {
+        ...(filter?.status && Array.isArray(filter.status) && {
+          status: In(filter.status),
+        }),
+      },
+    });
   }
 }

@@ -22,12 +22,20 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     });
   }
 
-  protected async findByIds(ids: Entity['id'][]): Promise<Entity[] | null> {
-    const where = {
+  protected async findByIds(
+    ids: Entity['id'][],
+    {
+      where,
+    }: {
+      where?: Where<Entity>;
+    } = {}
+  ): Promise<Entity[] | null> {
+    const currentWhere = {
+      ...where,
       id: In(ids),
     } as FindOptionsWhere<Entity>;
     return this.db.find({
-      where,
+      where: currentWhere,
     });
   }
 
@@ -61,7 +69,7 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     return affected != null && affected > 0;
   }
 
-  private getOffset({ pageSize, page }: Pagination): {
+  protected getOffset({ pageSize, page }: Pagination): {
     skip: number;
     take: number;
   } {

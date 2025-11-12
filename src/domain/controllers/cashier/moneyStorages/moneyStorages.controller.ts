@@ -82,7 +82,7 @@ export class MoneyStoragesController {
     type: MoneyStorageDto,
   })
   public async getObligationAccount(): Promise<MoneyStorageDto> {
-    const result = await this.cashierService.getObligationAccount();
+    const result = await this.cashierService.getObligationStorage();
 
     return new MoneyStorageDto(result);
   }

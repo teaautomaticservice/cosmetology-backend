@@ -12,7 +12,7 @@ import { Inject } from '@nestjs/common';
 import { AsyncContext } from '@utils/asyncContext';
 
 import { CommonEntity } from './common.entity';
-import { Where } from './common.types';
+import { AggregatedEntity, AggregateRecord, Where } from './common.types';
 
 export abstract class CommonDb<Entity extends CommonEntity> {
   @Inject(Resources.AsyncContext) public readonly asyncContext: AsyncContext;
@@ -88,5 +88,118 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       ...data,
     };
     return this.dbRepository.update(id, fullData);
+  }
+
+  public aggregate<
+    GroupBy extends (keyof Entity)[] | undefined = undefined,
+    Select extends (
+      GroupBy extends (keyof Entity)[] ?
+      GroupBy[number][] :
+      (keyof Entity)[]
+    ) | undefined = undefined,
+    Aggregates extends AggregateRecord<Entity> | undefined = undefined,
+  >({
+    where,
+    order = {},
+    offset,
+    groupBy,
+    select,
+    aggregates,
+  }: {
+    where?: Where<Entity>;
+    order?: Partial<Record<
+      (
+        Select extends (keyof Entity)[]
+        ? Select[number]
+        : keyof Entity
+      ) | (
+        Aggregates extends AggregateRecord<Entity>
+        ? keyof Aggregates
+        : never
+      ),
+      1 | -1 | 'ASC' | 'DESC'
+    >>;
+    offset?: { skip: number; take: number };
+    groupBy?: GroupBy;
+    select?: Select;
+    aggregates?: Aggregates;
+  } = {}): Promise<AggregatedEntity<Entity, Select, Aggregates>> {
+    const alias = this.dbRepository.metadata.tableName;
+
+    const queryBuilder = this.dbRepository.createQueryBuilder(alias);
+    queryBuilder.select([]);
+
+    if (where) {
+      queryBuilder.andWhere(where);
+    }
+
+    if (Array.isArray(groupBy)) {
+      groupBy.forEach((field) => queryBuilder.addGroupBy(`${alias}.${field as string}`));
+    }
+
+    if (Array.isArray(select)) {
+      select.forEach(field => queryBuilder.addSelect(`${alias}.${field as string}`, field as string));
+    }
+
+    if (aggregates) {
+      Object.entries(aggregates).forEach(([currentAlias, { fn, field }]) => {
+        queryBuilder.addSelect(
+          `${fn}(${this.dbRepository.metadata.tableName}.${String(field)})`,
+          currentAlias
+        );
+      });
+    }
+
+    if (groupBy && Array.isArray(groupBy)) {
+      Object.entries(order).forEach(([key, value]) => {
+        if (groupBy.includes(key as keyof Entity)) {
+          queryBuilder.addOrderBy(`${alias}.${key}`, value === 1 ? 'ASC' : 'DESC');
+        }
+      });
+    } else {
+      Object.entries(order).forEach(([key, value]) => {
+        queryBuilder.addOrderBy(`${alias}.${key}`, value === 1 ? 'ASC' : 'DESC');
+      });
+    }
+
+    if (offset?.skip) {
+      queryBuilder.skip(offset.skip);
+    }
+    if (offset?.take) {
+      queryBuilder.take(offset.take);
+    }
+
+    return queryBuilder.getRawMany() as Promise<AggregatedEntity<Entity, Select, Aggregates>>;
+  }
+
+  public async aggregateCount<
+    GroupBy extends (keyof Entity)[] | undefined = undefined,
+  >({
+    where,
+    groupBy,
+  }: {
+    where?: Where<Entity>;
+    groupBy?: GroupBy;
+  } = {}): Promise<number> {
+    const alias = this.dbRepository.metadata.tableName;
+    const queryBuilder = this.dbRepository.createQueryBuilder(alias);
+    queryBuilder.select('1');
+
+    if (where) {
+      queryBuilder.andWhere(where);
+    }
+
+    if (Array.isArray(groupBy) && groupBy.length > 0) {
+      groupBy.forEach((field) => queryBuilder.addGroupBy(`${alias}.${field as string}`));
+    }
+
+    const result = await this.dbRepository.manager
+      .createQueryBuilder()
+      .select('COUNT(*)', 'count')
+      .from(`(${queryBuilder.getQuery()})`, 'subquery')
+      .setParameters(queryBuilder.getParameters())
+      .getRawOne();
+
+    return parseInt(result?.count || '0', 10);
   }
 }
