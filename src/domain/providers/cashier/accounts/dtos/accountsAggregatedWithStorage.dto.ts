@@ -1,3 +1,4 @@
+import { InternalServerErrorException } from '@nestjs/common';
 import { AccountsEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
 import { CurrencyEntity } from '@postgresql/repositories/cashier/currencies/currencies.entity';
 import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
@@ -18,9 +19,13 @@ export class AccountAggregatedWithStorageDto {
     moneyStorages,
   }: {
     account: AccountsAggregatedWithStorage;
-    currency: CurrencyEntity;
-    moneyStorages: MoneyStoragesEntity[];
+    currency?: CurrencyEntity;
+    moneyStorages?: MoneyStoragesEntity[];
   }) {
+    if (!currency || !moneyStorages) {
+      throw new InternalServerErrorException('AccountsAggregatedWithStorage error aggregation');
+    }
+
     this.name = account.name;
     this.status = account.status;
     this.currency = currency;

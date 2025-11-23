@@ -1,5 +1,6 @@
 import { ParseSortOrderPipe } from 'src/ambient/parsers/parseSortOrder';
 import { ParseString } from 'src/ambient/parsers/parseString';
+import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 
 import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
@@ -8,13 +9,16 @@ import { QueryInt } from '@decorators/queryInt';
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   Query,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AccountsAggregatedWithStorage, SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
+import { ID } from '@providers/common/common.type';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { AccountsAggregatedWithStoragePaginated } from './dtos/accountsAggregatedWithStoragePaginated.dto';
@@ -172,5 +176,17 @@ export class AccountsController {
         itemsPerPage: 10,
       },
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('/:id')
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({
+    description: 'Account deleted',
+  })
+  public async removeItem(
+    @Param('id', ParseObjectIdPipe) currentId: ID,
+  ): Promise<void> {
+    await this.cashierService.removeAccount(currentId);
   }
 }

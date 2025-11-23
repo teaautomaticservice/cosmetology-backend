@@ -22,7 +22,7 @@ import {
 import { AccountsByStoreDto } from './dtos/accountByStore.dto';
 import { AccountAggregatedWithStorageDto } from './dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';
-import { AccountsAggregatedWithStorage, AccountsWithStorageFilter } from './accounts.type';
+import { AccountsAggregatedWithStorage, AccountsWithStorageFilter, EnrichedAccountData } from './accounts.type';
 import { CurrenciesProvider } from '../currencies/currencies.provider';
 import { MoneyStoragesProvider } from '../moneyStorages/moneyStorages.provider';
 
@@ -81,7 +81,6 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
   }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
     const [rawMoneyStorages] = await this.moneyStoragesProvider.getActualMoneyStorage();
 
-    const accountMappedByMoneyStorages = createdMapFromEntity(rawMoneyStorages);
     const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
 
     const [rawAccountsList, accountListCount] = await this.gatRawAccountsList({
@@ -93,11 +92,15 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
       },
     });
 
-    const accountsWithMoneyStorage = rawAccountsList.map((account) => {
-      const moneyStorage = accountMappedByMoneyStorages[account.moneyStorageId] ?? null;
+    const enrichedAccounts = await this.accountsEnrichment(rawAccountsList);
+
+    const accountsWithMoneyStorage = enrichedAccounts.map((account) => {
+      const moneyStorage = account.moneyStorage ?? null;
+      const currency = account.currency;
       return new AccountWithMoneyStorageDto({
         account,
         moneyStorage,
+        currency,
       });
     });
 
@@ -139,43 +142,20 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
       }),
     ]);
 
-    const uniqIdsMoneyStorages: Set<ID> = new Set();
-    const uniqIdsCurrencies: Set<ID> = new Set();
+    const enrichedAccounts = await this.accountsEnrichment(rawAggregatedAccount);
 
-    rawAggregatedAccount.forEach(({ currencyId, moneyStorageIds }) => {
-      uniqIdsCurrencies.add(currencyId);
-      moneyStorageIds.forEach((moneyStorageId) => {
-        uniqIdsMoneyStorages.add(moneyStorageId);
-      });
-    });
+    const resp = enrichedAccounts.map((account) => {
+      const currency = account.currency;
+      const moneyStorages = account.moneyStorages;
 
-    const [
-      rawMoneyStorages,
-      rawCurrencies,
-    ] = await Promise.all([
-      this.moneyStoragesProvider.findByIdsWithFilter(Array.from(uniqIdsMoneyStorages)),
-      this.currenciesProvider.findByIds(Array.from(uniqIdsCurrencies)),
-    ]);
-
-    if (!rawMoneyStorages || !rawCurrencies) {
-      throw new InternalServerErrorException('AccountsAggregatedWithStorage error aggregation');
-    }
-
-    const mappedMoneyStorages = createdMapFromEntity(rawMoneyStorages);
-    const mappedCurrencies = createdMapFromEntity(rawCurrencies);
-
-    const resp = rawAggregatedAccount.map((account) => {
-      const currency = mappedCurrencies[account.currencyId];
-      const moneyStorages = account.moneyStorageIds.map((id) => mappedMoneyStorages[id]);
-
-      if (!currency || moneyStorages.includes(undefined)) {
+      if (!currency || !moneyStorages || (moneyStorages && moneyStorages.length === 0)) {
         throw new InternalServerErrorException('AccountsAggregatedWithStorage error data enrichment');
       }
 
       return new AccountAggregatedWithStorageDto({
         account,
         currency,
-        moneyStorages: moneyStorages as MoneyStoragesEntity[],
+        moneyStorages: moneyStorages,
       });
     });
 
@@ -215,5 +195,66 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountsEntity> {
       available: 0,
       status: AccountStatus.CREATED,
     });
+  }
+
+  public async deleteById(currentId: ID): Promise<boolean> {
+    await this.accountsDb.deleteById(currentId);
+    return true;
+  }
+
+  private async accountsEnrichment<T extends {
+    moneyStorageId?: ID;
+    moneyStorageIds?: ID[];
+    currencyId?: ID;
+  }>(rawAccounts: T[]): Promise<(EnrichedAccountData<T>)[]> {
+    const uniqIdsMoneyStorages: Set<ID> = new Set();
+    const uniqIdsCurrencies: Set<ID> = new Set();
+
+    rawAccounts.forEach((rawAccount) => {
+      if (rawAccount.moneyStorageId) {
+        uniqIdsMoneyStorages.add(rawAccount.moneyStorageId);
+      }
+
+      if (rawAccount.moneyStorageIds) {
+        rawAccount.moneyStorageIds.forEach((id) => uniqIdsMoneyStorages.add(id));
+      }
+
+      if (rawAccount.currencyId) {
+        uniqIdsCurrencies.add(rawAccount.currencyId);
+      }
+    });
+
+    const [
+      rawMoneyStorages,
+      rawCurrencies,
+    ] = await Promise.all([
+      this.moneyStoragesProvider.findByIdsWithFilter(Array.from(uniqIdsMoneyStorages)),
+      this.currenciesProvider.findByIds(Array.from(uniqIdsCurrencies)),
+    ]);
+
+    const mappedMoneyStorages = createdMapFromEntity(rawMoneyStorages ?? []);
+    const mappedCurrencies = createdMapFromEntity(rawCurrencies ?? []);
+
+    const enrichmentAccounts = rawAccounts.map((rawAccount) => {
+      const newData: EnrichedAccountData<T> = {
+        ...rawAccount,
+      };
+
+      newData.moneyStorage = rawAccount.moneyStorageId ?
+        mappedMoneyStorages[rawAccount.moneyStorageId] :
+        undefined;
+      newData.currency = rawAccount.currencyId ?
+        mappedCurrencies[rawAccount.currencyId] :
+        undefined;
+      newData.moneyStorages = rawAccount.moneyStorageIds ?
+        rawAccount.moneyStorageIds
+          .map((id) => mappedMoneyStorages[id])
+          .filter((el) => Boolean(el)) as MoneyStoragesEntity[] :
+        undefined;
+
+      return newData;
+    });
+
+    return enrichmentAccounts;
   }
 }

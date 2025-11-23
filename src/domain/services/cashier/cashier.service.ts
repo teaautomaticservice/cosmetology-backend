@@ -264,6 +264,32 @@ export class CashierService {
     });;
   }
 
+  public async removeAccount(accountId: ID): Promise<boolean> {
+    const entity = await this.accountsProvider.findById(accountId);
+
+    if (!entity) {
+      throw new BadRequestException(`Incorrect ID: '${accountId}' for currency`);
+    }
+
+    if (!(entity.status === AccountStatus.CREATED || entity.status === AccountStatus.DEACTIVATED)) {
+      throw new BadRequestException(
+        'Delete account possible only for disabled or created status'
+      );
+    }
+
+    if (entity.balance > 0 || entity.available > 0) {
+      throw new BadRequestException(
+        'Delete account possible only for empty balance and available'
+      );
+    }
+
+    this.logger.warn('account deleted bu user', {
+      entity,
+    });
+
+    return this.accountsProvider.deleteById(accountId);
+  }
+
   public async removeCurrency(currentId: ID): Promise<boolean> {
     const entity = await this.currenciesProvider.findById(currentId);
 

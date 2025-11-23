@@ -1,4 +1,6 @@
 import { AccountsEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
+import { CurrencyEntity } from '@postgresql/repositories/cashier/currencies/currencies.entity';
+import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import { ID } from '@providers/common/common.type';
 
 export type SortAccountsByStorages = 'status' | 'name';
@@ -17,3 +19,12 @@ export type AccountsAggregatedWithStorage = Pick<AccountsEntity, 'name' | 'statu
   available?: AccountsEntity['available'];
   moneyStorageIds?: (AccountsEntity['moneyStorageId'] | undefined)[];
 }
+
+export type EnrichedAccountData<T extends {
+    moneyStorageId?: ID;
+    currencyId?: ID;
+  }> = T & {
+    moneyStorage?: MoneyStoragesEntity;
+    moneyStorages?: MoneyStoragesEntity[];
+    currency?: CurrencyEntity;
+  };
