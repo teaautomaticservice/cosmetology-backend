@@ -1,15 +1,16 @@
-import { AccountsEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
+import { InternalServerErrorException } from '@nestjs/common';
+import { AccountEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
 import { CurrencyEntity } from '@postgresql/repositories/cashier/currencies/currencies.entity';
 import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 
 import { AccountsAggregatedWithStorage } from '../accounts.type';
 
 export class AccountAggregatedWithStorageDto {
-  public name: AccountsEntity['name'];
-  public status: AccountsEntity['status'];
+  public name: AccountEntity['name'];
+  public status: AccountEntity['status'];
   public currency: CurrencyEntity;
-  public balance: AccountsEntity['balance'];
-  public available: AccountsEntity['available'];
+  public balance: AccountEntity['balance'];
+  public available: AccountEntity['available'];
   public moneyStorages: MoneyStoragesEntity[];
 
   constructor({
@@ -18,9 +19,13 @@ export class AccountAggregatedWithStorageDto {
     moneyStorages,
   }: {
     account: AccountsAggregatedWithStorage;
-    currency: CurrencyEntity;
-    moneyStorages: MoneyStoragesEntity[];
+    currency?: CurrencyEntity;
+    moneyStorages?: MoneyStoragesEntity[];
   }) {
+    if (!currency || !moneyStorages) {
+      throw new InternalServerErrorException('AccountsAggregatedWithStorage error aggregation');
+    }
+
     this.name = account.name;
     this.status = account.status;
     this.currency = currency;

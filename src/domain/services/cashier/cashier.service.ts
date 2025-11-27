@@ -20,7 +20,7 @@ import {
   Sort,
   UpdatedEntity
 } from '@providers/common/common.type';
-import { AccountsEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
+import { AccountEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
 import { CurrencyEntity } from '@providers/postgresql/repositories/cashier/currencies/currencies.entity';
 import { CurrencyStatus } from '@providers/postgresql/repositories/cashier/currencies/currencies.types';
 import {
@@ -197,7 +197,7 @@ export class CashierService {
     order,
   }: {
     pagination: Pagination;
-    order?: Sort<keyof AccountsEntity>;
+    order?: Sort<keyof AccountEntity>;
   }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
     const resp = await this.accountsProvider.getActualAccountsWithStorage({
       pagination,
@@ -210,7 +210,7 @@ export class CashierService {
   public async createAccountsForStorages({
     data,
   }: {
-    data: Pick<RecordEntity<AccountsEntity>, 'name' | 'description' | 'currencyId'> & { moneyStorageIds: ID[] };
+    data: Pick<RecordEntity<AccountEntity>, 'name' | 'description' | 'currencyId'> & { moneyStorageIds: ID[] };
   }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
     const currency = await this.currenciesProvider.findById(data.currencyId);
 
@@ -264,6 +264,54 @@ export class CashierService {
     });;
   }
 
+  public async updateAccount({
+    currentId,
+    newData,
+  }: UpdatedEntity<AccountEntity>): Promise<AccountWithMoneyStorageDto> {
+    const result = await this.accountsProvider.updateById(currentId, newData);
+    const updatedEntity = await this.accountsProvider.findByIdEnrichmentData(currentId);
+
+    if (!result || !updatedEntity) {
+      this.logger.error('account update error', {
+        currentId,
+        newData,
+      });
+      throw new InternalServerErrorException(`Account update error`);
+    }
+
+    this.logger.warn('account update by user', {
+      currentId,
+      newData,
+    });
+    return updatedEntity;
+  }
+
+  public async removeAccount(accountId: ID): Promise<boolean> {
+    const entity = await this.accountsProvider.findById(accountId);
+
+    if (!entity) {
+      throw new BadRequestException(`Incorrect ID: '${accountId}' for currency`);
+    }
+
+    if (!(entity.status === AccountStatus.CREATED || entity.status === AccountStatus.DEACTIVATED)) {
+      throw new BadRequestException(
+        'Delete account possible only for disabled or created status'
+      );
+    }
+
+    if (entity.balance > 0 || entity.available > 0) {
+      throw new BadRequestException(
+        'Delete account possible only for empty balance and available'
+      );
+    }
+
+    this.logger.warn('account deleted bu user', {
+      entity,
+    });
+
+    return this.accountsProvider.deleteById(accountId);
+  }
+
   public async removeCurrency(currentId: ID): Promise<boolean> {
     const entity = await this.currenciesProvider.findById(currentId);
 
@@ -277,7 +325,7 @@ export class CashierService {
       );
     }
 
-    const [_, count] = await this.accountsProvider.gatRawAccountsList({
+    const [_, count] = await this.accountsProvider.getRawAccountsList({
       filter: {
         currenciesIds: [entity.id],
         status: [AccountStatus.ACTIVE, AccountStatus.FREEZED],
@@ -312,7 +360,7 @@ export class CashierService {
     }
 
     if (newData.status === CurrencyStatus.DISABLED) {
-      const [_, countAccounts] = await this.accountsProvider.gatRawAccountsList({
+      const [_, countAccounts] = await this.accountsProvider.getRawAccountsList({
         pagination: {
           page: 1,
           pageSize: 10,

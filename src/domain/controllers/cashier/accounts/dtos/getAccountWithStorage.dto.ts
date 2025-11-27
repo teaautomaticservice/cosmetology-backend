@@ -1,3 +1,4 @@
+import { CurrencyDto } from '@controllers/cashier/currencies/dtos/currency.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
@@ -65,11 +66,32 @@ export class GetAccountWithStorageDto {
   public description: string | null;
 
   @ApiProperty({
+    type: 'number',
+    required: true,
+    nullable: false,
+  })
+  public moneyStorageId: ID;
+
+  @ApiProperty({
     type: () => MoneyStorageDto,
     required: true,
     nullable: true,
   })
   public moneyStorage: MoneyStorageDto | null;
+
+  @ApiProperty({
+    type: 'number',
+    required: true,
+    nullable: false,
+  })
+  public currencyId: ID;
+
+  @ApiProperty({
+    isArray: false,
+    type: () => CurrencyDto,
+    required: true,
+  })
+  public currency: CurrencyDto;
 
   constructor({
     id,
@@ -81,6 +103,9 @@ export class GetAccountWithStorageDto {
     status,
     description,
     moneyStorage,
+    currencyId,
+    moneyStorageId,
+    currency,
   }: AccountWithMoneyStorageDto) {
     Object.assign(this, {
       id,
@@ -91,7 +116,10 @@ export class GetAccountWithStorageDto {
       name,
       status,
       description,
+      moneyStorageId,
       moneyStorage,
+      currencyId,
+      currency,
     });
   }
 }

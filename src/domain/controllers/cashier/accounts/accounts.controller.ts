@@ -1,5 +1,6 @@
 import { ParseSortOrderPipe } from 'src/ambient/parsers/parseSortOrder';
 import { ParseString } from 'src/ambient/parsers/parseString';
+import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
 
 import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
@@ -8,13 +9,17 @@ import { QueryInt } from '@decorators/queryInt';
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
+  Patch,
   Post,
   Query,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
 import { AccountsAggregatedWithStorage, SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
+import { ID } from '@providers/common/common.type';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { AccountsAggregatedWithStoragePaginated } from './dtos/accountsAggregatedWithStoragePaginated.dto';
@@ -23,6 +28,7 @@ import { AccountsWithStoragePaginatedDto } from './dtos/accountsWithStoragePagin
 import { CreateAccountDto } from './dtos/createAccount.dto';
 import { GetAccountsByStoreDto } from './dtos/getAccountsByStore.dto';
 import { GetAccountWithStorageDto } from './dtos/getAccountWithStorage.dto';
+import { UpdateAccountDto } from './dtos/updateAccount.dto';
 import { CASHIER_ACCOUNTS_PATH } from '../cashier.paths';
 
 @ApiTags('Cashier')
@@ -172,5 +178,39 @@ export class AccountsController {
         itemsPerPage: 10,
       },
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch('/:id')
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({
+    description: 'Currency body',
+    type: UpdateAccountDto,
+  })
+  @ApiOkResponse({
+    description: 'Currency update',
+    type: GetAccountWithStorageDto,
+  })
+  public async updateItem(
+    @Param('id', ParseObjectIdPipe) currentId: ID,
+    @Body() accountReq: UpdateAccountDto,
+  ): Promise<GetAccountWithStorageDto> {
+    const resp = await this.cashierService.updateAccount({
+      currentId,
+      newData: accountReq,
+    });
+    return new GetAccountWithStorageDto(resp);
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('/:id')
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiOkResponse({
+    description: 'Account deleted',
+  })
+  public async removeItem(
+    @Param('id', ParseObjectIdPipe) currentId: ID,
+  ): Promise<void> {
+    await this.cashierService.removeAccount(currentId);
   }
 }

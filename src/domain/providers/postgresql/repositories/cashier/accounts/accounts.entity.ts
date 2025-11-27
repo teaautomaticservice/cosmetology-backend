@@ -6,7 +6,7 @@ import { AccountStatus } from './accounts.types';
 import { CommonEntity } from '../../common/common.entity';
 
 @Entity(ACCOUNTS_ENTITY)
-export class AccountsEntity extends CommonEntity {
+export class AccountEntity extends CommonEntity {
   @Column({
     type: 'varchar',
     nullable: false,
