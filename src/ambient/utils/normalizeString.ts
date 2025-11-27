@@ -1,0 +1,1 @@
+export const normalizeString = (val: string): string =>  val.trim().replace(/\s+/g, ' ');

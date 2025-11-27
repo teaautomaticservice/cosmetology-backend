@@ -66,11 +66,25 @@ export class GetAccountWithStorageDto {
   public description: string | null;
 
   @ApiProperty({
+    type: 'number',
+    required: true,
+    nullable: false,
+  })
+  public moneyStorageId: ID;
+
+  @ApiProperty({
     type: () => MoneyStorageDto,
     required: true,
     nullable: true,
   })
   public moneyStorage: MoneyStorageDto | null;
+
+  @ApiProperty({
+    type: 'number',
+    required: true,
+    nullable: false,
+  })
+  public currencyId: ID;
 
   @ApiProperty({
     isArray: false,
@@ -89,6 +103,8 @@ export class GetAccountWithStorageDto {
     status,
     description,
     moneyStorage,
+    currencyId,
+    moneyStorageId,
     currency,
   }: AccountWithMoneyStorageDto) {
     Object.assign(this, {
@@ -100,7 +116,9 @@ export class GetAccountWithStorageDto {
       name,
       status,
       description,
+      moneyStorageId,
       moneyStorage,
+      currencyId,
       currency,
     });
   }

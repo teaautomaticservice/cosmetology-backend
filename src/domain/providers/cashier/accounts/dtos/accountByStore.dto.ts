@@ -1,15 +1,17 @@
-import { AccountsEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
+import { AccountEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
 import { MoneyStoragesEntity } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 
+import { EnrichedAccountData } from '../accounts.type';
+
 export class AccountsByStoreDto extends MoneyStoragesEntity {
-  public accounts: AccountsEntity[];
+  public accounts: EnrichedAccountData<AccountEntity>[];
 
   constructor({
     moneyStorage,
     accounts,
   }: {
     moneyStorage: MoneyStoragesEntity;
-    accounts: AccountsEntity[];
+    accounts: EnrichedAccountData<AccountEntity>[];
   }) {
     super();
 

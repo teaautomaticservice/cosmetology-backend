@@ -1,4 +1,4 @@
-import { AccountsEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
+import { AccountEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
 import { CurrencyEntity } from '@postgresql/repositories/cashier/currencies/currencies.entity';
 import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import { ID } from '@providers/common/common.type';
@@ -7,17 +7,18 @@ export type SortAccountsByStorages = 'status' | 'name';
 
 export type AccountsWithStorageFilter = {
   ids?: ID[];
-  status?: AccountsEntity['status'][];
-  notStatus?: AccountsEntity['status'][];
+  name?: AccountEntity['name'];
+  status?: AccountEntity['status'][];
+  notStatus?: AccountEntity['status'][];
   currenciesIds?: ID[];
   moneyStoragesIds?: ID[];
 }
 
-export type AccountsAggregatedWithStorage = Pick<AccountsEntity, 'name' | 'status' | 'currencyId'> &
+export type AccountsAggregatedWithStorage = Pick<AccountEntity, 'name' | 'status' | 'currencyId'> &
 {
-  balance?: AccountsEntity['balance'];
-  available?: AccountsEntity['available'];
-  moneyStorageIds?: (AccountsEntity['moneyStorageId'] | undefined)[];
+  balance?: AccountEntity['balance'];
+  available?: AccountEntity['available'];
+  moneyStorageIds?: (AccountEntity['moneyStorageId'] | undefined)[];
 }
 
 export type EnrichedAccountData<T extends {

@@ -1,6 +1,9 @@
+import { CurrencyDto } from '@controllers/cashier/currencies/dtos/currency.dto';
+import { MoneyStorageDto } from '@controllers/cashier/moneyStorages/dtos/moneyStorage.dto';
 import { ApiProperty } from '@nestjs/swagger';
+import { EnrichedAccountData } from '@providers/cashier/accounts/accounts.type';
 import { ID } from '@providers/common/common.type';
-import { AccountsEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
+import { AccountEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
 import { AccountStatus } from '@providers/postgresql/repositories/cashier/accounts/accounts.types';
 
 export class GetAccountDto {
@@ -40,6 +43,13 @@ export class GetAccountDto {
   public currencyId: number;
 
   @ApiProperty({
+    isArray: false,
+    type: () => CurrencyDto,
+    required: true,
+  })
+  public currency: CurrencyDto;
+
+  @ApiProperty({
     type: 'number',
     required: true,
     nullable: false,
@@ -60,16 +70,25 @@ export class GetAccountDto {
   })
   public description: string | null;
 
+  @ApiProperty({
+    type: () => MoneyStorageDto,
+    required: true,
+    nullable: true,
+  })
+  public moneyStorage: MoneyStorageDto | null;
+
   constructor({
     id,
     name,
     moneyStorageId,
     status,
+    currency,
     currencyId,
     balance,
     available,
     description,
-  }: AccountsEntity) {
+    moneyStorage,
+  }: EnrichedAccountData<AccountEntity>) {
     Object.assign(this, {
       id,
       name,
@@ -79,6 +98,8 @@ export class GetAccountDto {
       balance,
       available,
       description,
+      moneyStorage: moneyStorage ? new MoneyStorageDto(moneyStorage) : null,
+      currency: currency ? new CurrencyDto(currency) : null,
     });
   }
 }

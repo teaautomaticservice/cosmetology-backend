@@ -12,6 +12,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards
@@ -27,6 +28,7 @@ import { AccountsWithStoragePaginatedDto } from './dtos/accountsWithStoragePagin
 import { CreateAccountDto } from './dtos/createAccount.dto';
 import { GetAccountsByStoreDto } from './dtos/getAccountsByStore.dto';
 import { GetAccountWithStorageDto } from './dtos/getAccountWithStorage.dto';
+import { UpdateAccountDto } from './dtos/updateAccount.dto';
 import { CASHIER_ACCOUNTS_PATH } from '../cashier.paths';
 
 @ApiTags('Cashier')
@@ -176,6 +178,28 @@ export class AccountsController {
         itemsPerPage: 10,
       },
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Patch('/:id')
+  @ApiParam({ name: 'id', type: 'string' })
+  @ApiBody({
+    description: 'Currency body',
+    type: UpdateAccountDto,
+  })
+  @ApiOkResponse({
+    description: 'Currency update',
+    type: GetAccountWithStorageDto,
+  })
+  public async updateItem(
+    @Param('id', ParseObjectIdPipe) currentId: ID,
+    @Body() accountReq: UpdateAccountDto,
+  ): Promise<GetAccountWithStorageDto> {
+    const resp = await this.cashierService.updateAccount({
+      currentId,
+      newData: accountReq,
+    });
+    return new GetAccountWithStorageDto(resp);
   }
 
   @UseGuards(AuthGuard)
