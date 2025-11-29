@@ -69,6 +69,11 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     return affected != null && affected > 0;
   }
 
+  protected async updateByIds(ids: Entity['id'][], data: Partial<RecordEntity<Entity>>): Promise<boolean> {
+    const { affected } = await this.db.updateByIds(ids, data as QueryDeepPartialEntity<Entity>);
+    return affected != null && affected > 0;
+  }
+
   protected getOffset({ pageSize, page }: Pagination): {
     skip: number;
     take: number;

@@ -29,6 +29,7 @@ import { CreateAccountDto } from './dtos/createAccount.dto';
 import { GetAccountsByStoreDto } from './dtos/getAccountsByStore.dto';
 import { GetAccountWithStorageDto } from './dtos/getAccountWithStorage.dto';
 import { UpdateAccountDto } from './dtos/updateAccount.dto';
+import { UpdateAccountListDto } from './dtos/updateAccountList.dto';
 import { CASHIER_ACCOUNTS_PATH } from '../cashier.paths';
 
 @ApiTags('Cashier')
@@ -181,6 +182,23 @@ export class AccountsController {
   }
 
   @UseGuards(AuthGuard)
+  @Patch('/update-items')
+  @ApiBody({
+    description: 'Update account list body',
+    type: UpdateAccountListDto,
+  })
+  @ApiOkResponse({
+    description: 'Currency update',
+    type: 'boolean',
+  })
+  public async updateItems(
+    @Body() accountReq: UpdateAccountListDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.multiplyUpdateAccounts(accountReq);
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
   @Patch('/:id')
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({
@@ -188,7 +206,7 @@ export class AccountsController {
     type: UpdateAccountDto,
   })
   @ApiOkResponse({
-    description: 'Currency update',
+    description: 'Update account body',
     type: GetAccountWithStorageDto,
   })
   public async updateItem(

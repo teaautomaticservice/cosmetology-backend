@@ -90,6 +90,19 @@ export abstract class CommonDb<Entity extends CommonEntity> {
     return this.dbRepository.update(id, fullData);
   }
 
+  public async updateByIds(
+    ids: Entity['id'][],
+    data: QueryDeepPartialEntity<Entity>
+  ): Promise<UpdateResult> {
+    const currentUser = await this.asyncContext.getUser();
+    const fullData: QueryDeepPartialEntity<Entity> = {
+      updatedAt: new Date(),
+      updatedBy: currentUser?.id ?? null,
+      ...data,
+    };
+    return this.dbRepository.update(ids, fullData);
+  }
+
   public aggregate<
     GroupBy extends (keyof Entity)[] | undefined = undefined,
     Select extends (
