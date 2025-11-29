@@ -23,7 +23,12 @@ import { normalizeString } from '@utils/normalizeString';
 import { AccountsByStoreDto } from './dtos/accountByStore.dto';
 import { AccountAggregatedWithStorageDto } from './dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';
-import { AccountsAggregatedWithStorage, AccountsWithStorageFilter, EnrichedAccountData } from './accounts.type';
+import {
+  AccountsAggregatedWithStorage,
+  AccountsWithStorageFilter,
+  EnrichedAccountData,
+  UpdateAccountsByIdsData
+} from './accounts.type';
 import { CurrenciesProvider } from '../currencies/currencies.provider';
 import { MoneyStoragesProvider } from '../moneyStorages/moneyStorages.provider';
 
@@ -126,6 +131,10 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
         groupBy,
         select: ['name', 'status', 'currencyId'],
         aggregates: {
+          ids: {
+            field: 'id',
+            fn: 'ARRAY_AGG',
+          },
           balance: {
             field: 'balance',
             fn: 'SUM',
@@ -247,6 +256,10 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     });
 
     return super.updateById(id, formattedData);
+  }
+
+  public async updateByIds(ids: ID[], data: UpdateAccountsByIdsData): Promise<boolean> {
+    return super.updateByIds(ids, data);
   }
 
   private async accountsEnrichment<T extends {

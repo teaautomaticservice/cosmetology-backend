@@ -5,7 +5,11 @@ import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } fro
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
-import { AccountsAggregatedWithStorage, SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
+import {
+  AccountsAggregatedWithStorage,
+  SortAccountsByStorages,
+  UpdateAccountsByIdsData
+} from '@providers/cashier/accounts/accounts.type';
 import { AccountsByStoreDto } from '@providers/cashier/accounts/dtos/accountByStore.dto';
 import { AccountAggregatedWithStorageDto } from '@providers/cashier/accounts/dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
@@ -284,6 +288,13 @@ export class CashierService {
       newData,
     });
     return updatedEntity;
+  }
+
+  public async multiplyUpdateAccounts({
+    ids,
+    ...data
+  }: UpdateAccountsByIdsData & { ids: ID[] }): Promise<boolean> {
+    return this.accountsProvider.updateByIds(ids, data);
   }
 
   public async removeAccount(accountId: ID): Promise<boolean> {
