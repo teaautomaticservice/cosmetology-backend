@@ -21,7 +21,7 @@ export class CurrencyEntity extends CommonEntity {
 
   @Column({
     type: 'varchar',
-    nullable: true,
+    nullable: false,
     unique: true,
   })
   public code: string;
