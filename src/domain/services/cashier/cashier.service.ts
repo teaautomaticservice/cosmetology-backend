@@ -310,7 +310,7 @@ export class CashierService {
       );
     }
 
-    if (entity.balance > 0 || entity.available > 0) {
+    if (Number(entity.balance) > 0 || Number(entity.available) > 0) {
       throw new BadRequestException(
         'Delete account possible only for empty balance and available'
       );

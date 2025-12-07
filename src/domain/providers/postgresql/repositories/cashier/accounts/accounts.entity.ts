@@ -34,16 +34,16 @@ export class AccountEntity extends CommonEntity {
   public currencyId: number;
 
   @Column({
-    type: 'int',
+    type: 'bigint',
     nullable: false,
   })
-  public balance: number;
+  public balance: string;
 
   @Column({
-    type: 'int',
+    type: 'bigint',
     nullable: false,
   })
-  public available: number;
+  public available: string;
 
   @Column({
     type: 'text',

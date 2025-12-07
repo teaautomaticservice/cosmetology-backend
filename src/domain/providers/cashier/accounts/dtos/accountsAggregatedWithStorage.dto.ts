@@ -32,8 +32,8 @@ export class AccountAggregatedWithStorageDto {
     this.name = account.name;
     this.status = account.status;
     this.currency = currency;
-    this.balance = account.balance ?? 0;
-    this.available = account.available ?? 0;
+    this.balance = account.balance ?? '0';
+    this.available = account.available ?? '0';
     this.moneyStorages = moneyStorages;
   }
 }

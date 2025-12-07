@@ -26,6 +26,7 @@ import { AccountsAggregatedWithStoragePaginated } from './dtos/accountsAggregate
 import { AccountsByStorePaginated } from './dtos/accountsByStorePaginated.dto';
 import { AccountsWithStoragePaginatedDto } from './dtos/accountsWithStoragePaginated.dto';
 import { CreateAccountDto } from './dtos/createAccount.dto';
+import { GetAccountAggregatedWithStorage } from './dtos/getAccountAggregatedWithStorage.dto';
 import { GetAccountsByStoreDto } from './dtos/getAccountsByStore.dto';
 import { GetAccountWithStorageDto } from './dtos/getAccountWithStorage.dto';
 import { UpdateAccountDto } from './dtos/updateAccount.dto';
@@ -107,7 +108,7 @@ export class AccountsController {
     });
 
     return {
-      data: accountsWithStore,
+      data: accountsWithStore.map((data) => new GetAccountAggregatedWithStorage(data)),
       meta: {
         count,
         currentPage: page,

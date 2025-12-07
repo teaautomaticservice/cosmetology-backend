@@ -46,6 +46,10 @@ export class CreateTransactions1765146157036 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
+            ALTER TABLE "transaction" 
+            DROP CONSTRAINT IF EXISTS "CHK_amount_positive"
+    `);
+    await queryRunner.query(`
             DROP INDEX "public"."IDX_254e53a84f245fe78d7312e49d"
         `);
     await queryRunner.query(`
@@ -67,5 +71,4 @@ export class CreateTransactions1765146157036 implements MigrationInterface {
             DROP TABLE "transaction"
         `);
   }
-
 }

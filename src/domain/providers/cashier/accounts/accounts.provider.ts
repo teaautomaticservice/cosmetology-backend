@@ -227,8 +227,8 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
 
     return super.create({
       ...formattedData,
-      balance: 0,
-      available: 0,
+      balance: '0',
+      available: '0',
       status: AccountStatus.CREATED,
     });
   }
