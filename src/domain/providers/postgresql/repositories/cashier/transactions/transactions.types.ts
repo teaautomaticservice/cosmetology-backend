@@ -1,9 +1,11 @@
 export enum TransactionStatus {
-  CREATED = 'created',
-  SCHEDULED = 'scheduled',
+  DRAFT = 'draft',
   PENDING = 'pending',
-  EXECUTED = 'executed',
+  AUTHORIZED = 'authorized',
   CANCELED = 'canceled',
+  FAILED = 'failed',
+  COMPLETED = 'completed',
+  REVERSED = 'reversed',
 };
 
 export enum OperationType {

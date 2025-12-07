@@ -1,29 +1,49 @@
-import { Column, CreateDateColumn, Entity } from 'typeorm';
+import { Column, Entity, Index } from 'typeorm';
 
+import { ID } from '@providers/common/common.type';
 import { TRANSACTION } from '@providers/postgresql/constants/entities';
 
 import { OperationType, TransactionStatus } from './transactions.types';
 import { CommonEntity } from '../../common/common.entity';
 
 @Entity(TRANSACTION)
-export class CurrencyEntity extends CommonEntity {
+@Index(['parentTransactionId'])
+@Index(['debitId', 'createdAt'])
+@Index(['creditId', 'createdAt'])
+@Index(['status'])
+@Index(['operationType'])
+@Index(['executionDate'])
+export class TransactionEntity extends CommonEntity {
   @Column({
-    type: 'int',
+    type: 'varchar',
+    unique: true,
     nullable: false,
   })
-  public value: number;
+  public transactionId: string;
 
   @Column({
     type: 'int',
+    nullable: true,
+  })
+  public parentTransactionId: ID | null;
+
+  @Column({
+    type: 'bigint',
     nullable: false,
   })
-  public debitId: number;
+  public amount: string;
 
   @Column({
     type: 'int',
-    nullable: false,
+    nullable: true,
   })
-  public creditId: number;
+  public debitId: ID | null;
+
+  @Column({
+    type: 'int',
+    nullable: true,
+  })
+  public creditId: ID | null;
 
   @Column({
     type: 'varchar',
@@ -37,11 +57,11 @@ export class CurrencyEntity extends CommonEntity {
   })
   public operationType: OperationType;
 
-  @CreateDateColumn({ type: 'timestamptz' })
-  public executionDate: Date;
+  @Column({ type: 'timestamptz', nullable: true })
+  public executionDate: Date | null;
 
-  @CreateDateColumn({ type: 'timestamptz' })
-  public expireDate: Date;
+  @Column({ type: 'timestamptz', nullable: true })
+  public expireDate: Date | null;
 
   @Column({
     type: 'text',
