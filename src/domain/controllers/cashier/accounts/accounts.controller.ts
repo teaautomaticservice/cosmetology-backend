@@ -190,7 +190,7 @@ export class AccountsController {
   })
   @ApiOkResponse({
     description: 'Currency update',
-    type: 'boolean',
+    type: Boolean,
   })
   public async updateItems(
     @Body() accountReq: UpdateAccountListDto,

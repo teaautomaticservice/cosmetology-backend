@@ -4,6 +4,7 @@ import { Resources } from '@commonConstants/resources';
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@constants/errors';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
+import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import {
   AccountsAggregatedWithStorage,
@@ -16,6 +17,7 @@ import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/acc
 import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
 import { OBLIGATION_ACCOUNT_CODE } from '@providers/cashier/moneyStorages/moneyStorages.constants';
 import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
+import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
   FoundAndCounted,
   ID,
@@ -41,6 +43,7 @@ export class CashierService {
     private readonly currenciesProvider: CurrenciesProvider,
     private readonly moneyStoragesProvider: MoneyStoragesProvider,
     private readonly accountsProvider: AccountsProvider,
+    private readonly transactionsProvider: TransactionsProvider,
   ) { }
 
   public async getCurrenciesList(params: { pagination: Pagination }): Promise<[CurrencyEntity[], number]> {
@@ -404,5 +407,9 @@ export class CashierService {
       newData,
     });
     return updatedEntity;
+  }
+
+  public async getTransactionsList(): Promise<FoundAndCounted<TransactionEntity>> {
+    return this.transactionsProvider.getList();
   }
 }
