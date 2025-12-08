@@ -59,7 +59,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     const [rawAccountsList] = await super.findAndCount({
       pagination: {
         page: 1,
-        pageSize: 100000,
+        pageSize: (100000 * moneyStorageCount),
       },
       where: {
         moneyStorageId: In(moneyStoragesIds),
