@@ -57,7 +57,10 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
 
     const [rawAccountsList] = await super.findAndCount({
-      pagination,
+      pagination: {
+        page: 1,
+        pageSize: 100000,
+      },
       where: {
         moneyStorageId: In(moneyStoragesIds),
       },
