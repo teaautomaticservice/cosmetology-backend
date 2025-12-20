@@ -1,4 +1,10 @@
-import { DeepPartial, FindOptionsOrder, FindOptionsWhere, In } from 'typeorm';
+import {
+  DeepPartial,
+  FindOneOptions,
+  FindOptionsOrder,
+  FindOptionsWhere,
+  In
+} from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 import { FoundAndCounted, Pagination, RecordEntity } from './common.type';
@@ -43,10 +49,12 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     pagination,
     order,
     where,
+    relations,
   }: {
     pagination: Pagination;
     order?: FindOptionsOrder<Entity>;
     where?: Where<Entity>;
+    relations?: FindOneOptions<Entity>['relations'];
   }): Promise<FoundAndCounted<Entity>> {
     const offset = this.getOffset(pagination);
 
@@ -55,6 +63,7 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
         offset,
         order,
         where,
+        relations,
       }),
       this.db.count({ where }),
     ]);

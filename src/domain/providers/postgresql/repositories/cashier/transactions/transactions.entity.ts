@@ -1,10 +1,17 @@
-import { Column, Entity, Index } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne
+} from 'typeorm';
 
 import { ID } from '@providers/common/common.type';
 import { TRANSACTION } from '@providers/postgresql/constants/entities';
 
 import { OperationType, TransactionStatus } from './transactions.types';
 import { CommonEntity } from '../../common/common.entity';
+import { AccountEntity } from '../accounts/accounts.entity';
 
 @Entity(TRANSACTION)
 @Index(['parentTransactionId'])
@@ -39,11 +46,19 @@ export class TransactionEntity extends CommonEntity {
   })
   public debitId: ID | null;
 
+  @ManyToOne(() => AccountEntity)
+  @JoinColumn({ name: 'debitId' })
+  public debitAccount: AccountEntity | null;
+
   @Column({
     type: 'int',
     nullable: true,
   })
   public creditId: ID | null;
+
+  @ManyToOne(() => AccountEntity)
+  @JoinColumn({ name: 'creditId' })
+  public creditAccount: AccountEntity | null;
 
   @Column({
     type: 'varchar',

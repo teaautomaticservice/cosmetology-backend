@@ -1,3 +1,4 @@
+import { GetAccountDto } from '@controllers/cashier/accounts/dtos/getAccount.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
@@ -41,11 +42,25 @@ export class GetTransactionDto {
   public readonly debitId: ID | null;
 
   @ApiProperty({
+    type: GetAccountDto,
+    required: true,
+    nullable: true,
+  })
+  public readonly debitAccount: GetAccountDto | null;
+
+  @ApiProperty({
     type: 'number',
     required: true,
     nullable: true,
   })
   public readonly creditId: ID | null;
+
+  @ApiProperty({
+    type: GetAccountDto,
+    required: true,
+    nullable: true,
+  })
+  public readonly creditAccount: GetAccountDto | null;
 
   @ApiProperty({
     enum: TransactionStatus,
@@ -90,7 +105,9 @@ export class GetTransactionDto {
     parentTransactionId,
     amount,
     debitId,
+    debitAccount,
     creditId,
+    creditAccount,
     status,
     operationType,
     expireDate,
@@ -103,7 +120,9 @@ export class GetTransactionDto {
       parentTransactionId,
       amount: getNumberFromString(amount),
       debitId,
+      debitAccount: debitAccount ? new GetAccountDto(debitAccount) : null,
       creditId,
+      creditAccount: creditAccount ? new GetAccountDto(creditAccount) : null,
       status,
       operationType,
       expireDate,

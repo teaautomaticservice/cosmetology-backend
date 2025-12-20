@@ -12,12 +12,13 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     super(transactionsDb);
   }
 
-  public async getList(): Promise<FoundAndCounted<TransactionEntity>> {
+  public async getTransactionsList(): Promise<FoundAndCounted<TransactionEntity>> {
     return super.findAndCount({
       pagination: {
         page: 1,
         pageSize: 10,
-      }
+      },
+      relations: ['debitAccount', 'creditAccount']
     });
   }
 }
