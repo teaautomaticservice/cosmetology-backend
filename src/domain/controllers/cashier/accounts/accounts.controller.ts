@@ -1,3 +1,4 @@
+import { ParseArray } from 'src/ambient/parsers/parseArray';
 import { ParseSortOrderPipe } from 'src/ambient/parsers/parseSortOrder';
 import { ParseString } from 'src/ambient/parsers/parseString';
 import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
@@ -17,7 +18,14 @@ import {
   Query,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiParam,
+  ApiQuery,
+  ApiTags
+} from '@nestjs/swagger';
+import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { AccountsAggregatedWithStorage, SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
 import { ID } from '@providers/common/common.type';
 import { CashierService } from '@services/cashier/cashier.service';
@@ -124,6 +132,18 @@ export class AccountsController {
     'status',
     'name',
   ] satisfies SortAccountsByStorages[])
+  @ApiQuery({
+    name: 'moneyStoragesIds',
+    required: false,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: AccountStatus,
+    isArray: true,
+    enumName: 'AccountStatus',
+  })
   @ApiOkResponse({
     description: 'List of accounts with money storages',
     type: AccountsWithStoragePaginatedDto,
@@ -132,7 +152,9 @@ export class AccountsController {
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
     @Query('sort', ParseString) sort?: SortAccountsByStorages,
-    @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
+    @Query('order', ParseSortOrderPipe) order?: 1 | -1,
+    @Query('moneyStoragesIds', ParseArray) moneyStoragesIds?: string[],
+    @Query('status', ParseArray) status?: AccountStatus[],
   ): Promise<AccountsWithStoragePaginatedDto> {
     const [accountsWithStore, count] = await this.cashierService.getActualAccountsList({
       pagination: {
@@ -144,6 +166,10 @@ export class AccountsController {
           [sort]: order ?? 1,
         },
       }),
+      filter: {
+        ...(moneyStoragesIds && { moneyStoragesIds: moneyStoragesIds.map((val) => Number(val)) }),
+        status,
+      },
     });
 
     return {
