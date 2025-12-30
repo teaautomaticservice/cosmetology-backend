@@ -188,14 +188,18 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
   }): Promise<FoundAndCounted<AccountEntity>> {
     return super.findAndCount({
       pagination,
-      where: {
-        ...(filter?.name && { name: filter.name }),
-        ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
-        ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
-        ...(filter?.status && { status: In(filter.status) }),
-        ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
-        ...(filter?.ids && { id: In(filter.ids) }),
-      },
+      where: [
+        ...(filter?.query && AccountEntity.checkLikeId(filter?.query) ? [{ id: Number(filter.query) }] : []),
+        {
+          ...(filter?.name && { name: filter.name }),
+          ...(filter?.query ? { name: ILike(`%${filter.query}%`) } : {}),
+          ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
+          ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
+          ...(filter?.status && { status: In(filter.status) }),
+          ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
+          ...(filter?.ids && { id: In(filter.ids) }),
+        },
+      ],
       order,
     });
   }
@@ -204,7 +208,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     return super.findById(id);
   }
 
-  public async findByIdEnrichmentData(id: number): Promise<AccountWithMoneyStorageDto | null>  {
+  public async findByIdEnrichmentData(id: number): Promise<AccountWithMoneyStorageDto | null> {
     const account = await this.findById(id);
 
     if (!account) {
@@ -321,7 +325,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     return enrichmentAccounts;
   }
 
-  private async checkDuplicate ({
+  private async checkDuplicate({
     id,
     name,
     currencyId,
