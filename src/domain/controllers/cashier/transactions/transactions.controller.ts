@@ -1,11 +1,18 @@
 import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
 import { QueryInt } from '@decorators/queryInt';
-import { Controller, Get, UseGuards } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UseGuards
+} from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { GetTransactionDto } from './dtos/getTransaction.dto';
+import { NewOpeningBalanceDto } from './dtos/newOpeningBalance.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
 import { CASHIER_TRANSACTIONS_PATH } from '../cashier.paths';
 
@@ -43,5 +50,23 @@ export class TransactionsController {
         itemsPerPage: pageSize,
       },
     };
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/opening-balance')
+  @ApiBody({
+    description: 'Create account',
+    type: NewOpeningBalanceDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Open Balance successful created',
+  })
+  public async openBalance(
+    @Body() transactionReq: NewOpeningBalanceDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.openBalanceTransaction({
+      data: transactionReq,
+    });
+    return resp;
   }
 }
