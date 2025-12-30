@@ -1,5 +1,6 @@
 import {
   DeepPartial,
+  FindOneOptions,
   FindOptionsOrder,
   Repository,
   UpdateResult
@@ -36,6 +37,7 @@ export abstract class CommonDb<Entity extends CommonEntity> {
     where,
     order = {},
     offset,
+    relations,
   }: {
     where?: Where<Entity>;
     order?: FindOptionsOrder<Entity>;
@@ -43,6 +45,7 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       skip: number;
       take: number;
     };
+    relations?: FindOneOptions<Entity>['relations'];
   } = {}): Promise<Entity[]> {
     const currentOrder = {
       ...order,
@@ -54,6 +57,7 @@ export abstract class CommonDb<Entity extends CommonEntity> {
       order: currentOrder,
       ...(offset?.skip && { skip: offset.skip }),
       ...(offset?.take && { take: offset.take }),
+      relations,
     });
   }
 

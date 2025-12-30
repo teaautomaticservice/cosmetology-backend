@@ -1,3 +1,4 @@
+import { ParseArray } from 'src/ambient/parsers/parseArray';
 import { ParseSortOrderPipe } from 'src/ambient/parsers/parseSortOrder';
 import { ParseString } from 'src/ambient/parsers/parseString';
 import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
@@ -17,7 +18,14 @@ import {
   Query,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiParam,
+  ApiQuery,
+  ApiTags
+} from '@nestjs/swagger';
+import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { AccountsAggregatedWithStorage, SortAccountsByStorages } from '@providers/cashier/accounts/accounts.type';
 import { ID } from '@providers/common/common.type';
 import { CashierService } from '@services/cashier/cashier.service';
@@ -26,6 +34,7 @@ import { AccountsAggregatedWithStoragePaginated } from './dtos/accountsAggregate
 import { AccountsByStorePaginated } from './dtos/accountsByStorePaginated.dto';
 import { AccountsWithStoragePaginatedDto } from './dtos/accountsWithStoragePaginated.dto';
 import { CreateAccountDto } from './dtos/createAccount.dto';
+import { GetAccountAggregatedWithStorage } from './dtos/getAccountAggregatedWithStorage.dto';
 import { GetAccountsByStoreDto } from './dtos/getAccountsByStore.dto';
 import { GetAccountWithStorageDto } from './dtos/getAccountWithStorage.dto';
 import { UpdateAccountDto } from './dtos/updateAccount.dto';
@@ -107,7 +116,7 @@ export class AccountsController {
     });
 
     return {
-      data: accountsWithStore,
+      data: accountsWithStore.map((data) => new GetAccountAggregatedWithStorage(data)),
       meta: {
         count,
         currentPage: page,
@@ -123,6 +132,23 @@ export class AccountsController {
     'status',
     'name',
   ] satisfies SortAccountsByStorages[])
+  @ApiQuery({
+    name: 'moneyStoragesIds',
+    required: false,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: AccountStatus,
+    isArray: true,
+    enumName: 'AccountStatus',
+  })
+  @ApiQuery({
+    name: 'query',
+    required: false,
+    type: 'string'
+  })
   @ApiOkResponse({
     description: 'List of accounts with money storages',
     type: AccountsWithStoragePaginatedDto,
@@ -131,7 +157,10 @@ export class AccountsController {
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
     @Query('sort', ParseString) sort?: SortAccountsByStorages,
-    @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
+    @Query('order', ParseSortOrderPipe) order?: 1 | -1,
+    @Query('moneyStoragesIds', ParseArray) moneyStoragesIds?: string[],
+    @Query('status', ParseArray) status?: AccountStatus[],
+    @Query('query', ParseString) query?: string,
   ): Promise<AccountsWithStoragePaginatedDto> {
     const [accountsWithStore, count] = await this.cashierService.getActualAccountsList({
       pagination: {
@@ -143,6 +172,11 @@ export class AccountsController {
           [sort]: order ?? 1,
         },
       }),
+      filter: {
+        ...(moneyStoragesIds && { moneyStoragesIds: moneyStoragesIds.map((val) => Number(val)) }),
+        status,
+        query,
+      },
     });
 
     return {
@@ -189,7 +223,7 @@ export class AccountsController {
   })
   @ApiOkResponse({
     description: 'Currency update',
-    type: 'boolean',
+    type: Boolean,
   })
   public async updateItems(
     @Body() accountReq: UpdateAccountListDto,

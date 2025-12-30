@@ -27,4 +27,22 @@ export abstract class CommonEntity {
     nullable: true,
   })
   public updatedBy?: number | null;
+
+  public static checkLikeId(val: string | number): boolean {
+    const formattedVal = Number(val);
+
+    if (Number.isNaN(formattedVal)) {
+      return false;
+    }
+
+    if (!Number.isFinite(formattedVal)) {
+      return false;
+    }
+
+    if (!Number.isSafeInteger(formattedVal)) {
+      return false;
+    }
+
+    return true;
+  }
 }

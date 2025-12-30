@@ -4,9 +4,11 @@ import { Resources } from '@commonConstants/resources';
 import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@constants/errors';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
+import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import {
   AccountsAggregatedWithStorage,
+  AccountsWithStorageFilter,
   SortAccountsByStorages,
   UpdateAccountsByIdsData
 } from '@providers/cashier/accounts/accounts.type';
@@ -16,6 +18,8 @@ import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/acc
 import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
 import { OBLIGATION_ACCOUNT_CODE } from '@providers/cashier/moneyStorages/moneyStorages.constants';
 import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
+import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
+import { CreateTransaction } from '@providers/cashier/transactions/transactions.types';
 import {
   FoundAndCounted,
   ID,
@@ -41,6 +45,7 @@ export class CashierService {
     private readonly currenciesProvider: CurrenciesProvider,
     private readonly moneyStoragesProvider: MoneyStoragesProvider,
     private readonly accountsProvider: AccountsProvider,
+    private readonly transactionsProvider: TransactionsProvider,
   ) { }
 
   public async getCurrenciesList(params: { pagination: Pagination }): Promise<[CurrencyEntity[], number]> {
@@ -199,13 +204,16 @@ export class CashierService {
   public async getActualAccountsList({
     pagination,
     order,
+    filter,
   }: {
     pagination: Pagination;
     order?: Sort<keyof AccountEntity>;
+    filter?: AccountsWithStorageFilter;
   }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
     const resp = await this.accountsProvider.getActualAccountsWithStorage({
       pagination,
       order,
+      filter,
     });
 
     return resp;
@@ -310,7 +318,7 @@ export class CashierService {
       );
     }
 
-    if (entity.balance > 0 || entity.available > 0) {
+    if (Number(entity.balance) > 0 || Number(entity.available) > 0) {
       throw new BadRequestException(
         'Delete account possible only for empty balance and available'
       );
@@ -404,5 +412,35 @@ export class CashierService {
       newData,
     });
     return updatedEntity;
+  }
+
+  // Transactions
+  public async getTransactionsList(): Promise<FoundAndCounted<TransactionEntity>> {
+    const resp = await this.transactionsProvider.getTransactionsList();
+    return resp;
+  }
+
+  public async openBalanceTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
+    const { amount } = data;
+    if (Number.isNaN(amount) && amount < 0) {
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          amount: ['amount should be correct number'],
+        },
+      });
+    }
+    const resp = await this.transactionsProvider.openBalanceTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Open Balance');
+    }
+
+    return true;
   }
 }

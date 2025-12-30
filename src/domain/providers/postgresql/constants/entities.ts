@@ -7,3 +7,4 @@ export const SESSIONS_ENTITY = 'sessions';
 export const CURRENCIES_ENTITY = 'currencies';
 export const MONEY_STORAGE_ENTITY = 'money_storages';
 export const ACCOUNTS_ENTITY = 'accounts';
+export const TRANSACTION = 'transaction';

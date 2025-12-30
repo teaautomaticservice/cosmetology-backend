@@ -2,6 +2,7 @@ import { CurrencyDto } from '@controllers/cashier/currencies/dtos/currency.dto';
 import { MoneyStorageDto } from '@controllers/cashier/moneyStorages/dtos/moneyStorage.dto';
 import { ApiProperty } from '@nestjs/swagger';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
+import { AccountAggregatedWithStorageDto } from '@providers/cashier/accounts/dtos/accountsAggregatedWithStorage.dto';
 import { ID } from '@providers/common/common.type';
 
 export class GetAccountAggregatedWithStorage {
@@ -54,4 +55,24 @@ export class GetAccountAggregatedWithStorage {
     required: true,
   })
   public moneyStorages: MoneyStorageDto[];
+
+  constructor({
+    ids,
+    available,
+    balance,
+    currency,
+    moneyStorages,
+    name,
+    status,
+  }: AccountAggregatedWithStorageDto) {
+    Object.assign(this, {
+      ids,
+      balance: Number(balance),
+      available: Number(available),
+      currency,
+      moneyStorages,
+      name,
+      status,
+    });
+  }
 }

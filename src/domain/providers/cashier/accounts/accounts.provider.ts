@@ -57,7 +57,10 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
 
     const [rawAccountsList] = await super.findAndCount({
-      pagination,
+      pagination: {
+        page: 1,
+        pageSize: (100000 * moneyStorageCount),
+      },
       where: {
         moneyStorageId: In(moneyStoragesIds),
       },
@@ -185,14 +188,18 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
   }): Promise<FoundAndCounted<AccountEntity>> {
     return super.findAndCount({
       pagination,
-      where: {
-        ...(filter?.name && { name: filter.name }),
-        ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
-        ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
-        ...(filter?.status && { status: In(filter.status) }),
-        ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
-        ...(filter?.ids && { id: In(filter.ids) }),
-      },
+      where: [
+        ...(filter?.query && AccountEntity.checkLikeId(filter?.query) ? [{ id: Number(filter.query) }] : []),
+        {
+          ...(filter?.name && { name: filter.name }),
+          ...(filter?.query ? { name: ILike(`%${filter.query}%`) } : {}),
+          ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
+          ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
+          ...(filter?.status && { status: In(filter.status) }),
+          ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
+          ...(filter?.ids && { id: In(filter.ids) }),
+        },
+      ],
       order,
     });
   }
@@ -201,7 +208,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     return super.findById(id);
   }
 
-  public async findByIdEnrichmentData(id: number): Promise<AccountWithMoneyStorageDto | null>  {
+  public async findByIdEnrichmentData(id: number): Promise<AccountWithMoneyStorageDto | null> {
     const account = await this.findById(id);
 
     if (!account) {
@@ -227,8 +234,8 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
 
     return super.create({
       ...formattedData,
-      balance: 0,
-      available: 0,
+      balance: '0',
+      available: '0',
       status: AccountStatus.CREATED,
     });
   }
@@ -318,7 +325,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     return enrichmentAccounts;
   }
 
-  private async checkDuplicate ({
+  private async checkDuplicate({
     id,
     name,
     currencyId,
