@@ -35,7 +35,8 @@ import {
   MoneyStoragesEntity
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import {
-  MoneyStorageStatus
+  MoneyStorageStatus,
+  MoneyStorageType
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
 @Injectable()
@@ -131,7 +132,7 @@ export class CashierService {
   }
 
   public async createMoneyStorage(
-    newData: Omit<RecordEntity<MoneyStoragesEntity>, 'status' | 'updatedBy' | 'createdBy'>,
+    newData: Omit<RecordEntity<MoneyStoragesEntity>, 'status' | 'updatedBy' | 'createdBy' | 'type'>,
   ): Promise<MoneyStoragesEntity> {
     const entity = await this.moneyStoragesProvider.findByCode(newData.code);
 
@@ -143,10 +144,15 @@ export class CashierService {
       });
     }
 
-    const result = await this.moneyStoragesProvider.create(newData);
+    const data = {
+      ...newData,
+      type: MoneyStorageType.COMMON,
+    };
+
+    const result = await this.moneyStoragesProvider.create(data);
 
     this.logger.warn('moneyStorage created bu user', {
-      newData,
+      newData: data,
       result,
     });
 
