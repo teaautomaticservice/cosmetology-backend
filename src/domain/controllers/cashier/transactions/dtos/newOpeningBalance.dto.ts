@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ID } from '@providers/common/common.type';
 
-export class NewOpeningBalanceDto {
+export class NewTransactionDto {
   @ApiProperty({
     type: 'number',
     required: true,
@@ -12,9 +12,9 @@ export class NewOpeningBalanceDto {
   @ApiProperty({
     type: 'number',
     required: true,
-    nullable: false,
+    nullable: true,
   })
-  public readonly debitId: ID;
+  public readonly debitId: ID | null;
 
   @ApiProperty({
     type: 'number',

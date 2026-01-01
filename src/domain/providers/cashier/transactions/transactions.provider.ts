@@ -48,7 +48,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     }
 
     if (!debitId) {
-      throw new InternalServerErrorException(`Open Balance create error. Amount ${debitId} should be exist`);
+      throw new InternalServerErrorException(`Open Balance create error. Account ${debitId} should be exist`);
     }
 
     return this.dataSource.transaction(async (manager: EntityManager) => {
@@ -97,12 +97,12 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           throw new BadRequestException(`Credit account ${creditId} should be active`);
         }
 
-        const creditAvailable = BigInt(creditAccount.available);
-        const creditBalance = BigInt(creditAccount.balance);
-
         if (debitAccount.currencyId !== creditAccount.currencyId) {
           throw new BadRequestException('Accounts must have the same currency');
         }
+
+        const creditAvailable = BigInt(creditAccount.available);
+        const creditBalance = BigInt(creditAccount.balance);
 
         if (creditAvailable < formattedAmount) {
           throw new BadRequestException(
@@ -113,7 +113,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         const newCreditAvailable = creditAvailable - formattedAmount;
         const newCreditBalance = creditBalance - formattedAmount;
 
-        await manager.update(AccountEntity, creditAccount.id, {
+        await manager.update(AccountEntity, creditId, {
           available: newCreditAvailable.toString(),
           balance: newCreditBalance.toString(),
         });
@@ -122,7 +122,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       const newDebitAvailable = debitAvailable + formattedAmount;
       const newDebitBalance = debitBalance + formattedAmount;
 
-      await manager.update(AccountEntity, debitAccount.id, {
+      await manager.update(AccountEntity, debitId, {
         available: newDebitAvailable.toString(),
         balance: newDebitBalance.toString(),
       });
@@ -134,6 +134,100 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         creditId: creditId ?? null,
         status: TransactionStatus.COMPLETED,
         operationType: OperationType.OPENING_BALANCE,
+        executionDate: new Date(),
+        description: description ?? null,
+      });
+
+      await manager.save(transaction);
+
+      return transaction;
+    });
+  }
+
+  public async cashOutTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<TransactionEntity> {
+    const {
+      amount,
+      debitId,
+      creditId,
+      description,
+    } = data;
+
+    if (Number.isNaN(amount) || amount < 0) {
+      throw new InternalServerErrorException(`Cash Out create error. Amount ${amount} isn't correct`);
+    }
+
+    if (!creditId) {
+      throw new InternalServerErrorException(`Cash Out create error. Account ${creditId} should be exist`);
+    }
+
+    return this.dataSource.transaction(async (manager: EntityManager) => {
+      const accounts = await manager
+        .createQueryBuilder(AccountEntity, 'account')
+        .setLock('pessimistic_write')
+        .where('account.id IN (:...ids)', {
+          ids: [debitId, creditId].filter(Boolean)
+        })
+        .getMany();
+
+      const debitAccount = accounts.find(({ id }) => id === debitId) ?? null;
+      const creditAccount = accounts.find(({ id }) => id === creditId) ?? null;
+
+      if (!creditAccount) {
+        throw new BadRequestException(`Credit account ${creditId} not found`);
+      }
+
+      if (creditAccount.status !== AccountStatus.ACTIVE) {
+        throw new BadRequestException(`Credit account ${creditId} should be active`);
+      }
+
+      const formattedAmount = BigInt(amount);
+      const creditAvailable = BigInt(creditAccount.available);
+      const creditBalance = BigInt(creditAccount.balance);
+
+      if (creditAvailable < formattedAmount) {
+        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
+      }
+
+      if (debitAccount) {
+        if (debitAccount.status !== AccountStatus.ACTIVE) {
+          throw new BadRequestException(`Debit account ${debitId} should be active`);
+        }
+
+        if (debitAccount.currencyId !== creditAccount.currencyId) {
+          throw new BadRequestException('Accounts must have the same currency');
+        }
+
+        const debitAvailable = BigInt(debitAccount.available);
+        const debitBalance = BigInt(debitAccount.balance);
+
+        const newDebitAvailable = debitAvailable + formattedAmount;
+        const newDebitBalance = debitBalance + formattedAmount;
+
+        await manager.update(AccountEntity, debitId, {
+          available: newDebitAvailable.toString(),
+          balance: newDebitBalance.toString(),
+        });
+      }
+
+      const newCreditAvailable = creditAvailable - formattedAmount;
+      const newCreditBalance = creditBalance - formattedAmount;
+
+      await manager.update(AccountEntity, creditId, {
+        available: newCreditAvailable.toString(),
+        balance: newCreditBalance.toString(),
+      });
+
+      const transaction = manager.create(TransactionEntity, {
+        transactionId: this.generateTransactionId(),
+        amount: formattedAmount.toString(),
+        debitId: debitId ?? null,
+        creditId: creditId,
+        status: TransactionStatus.COMPLETED,
+        operationType: OperationType.CASH_OUT,
         executionDate: new Date(),
         description: description ?? null,
       });

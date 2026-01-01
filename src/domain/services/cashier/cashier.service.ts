@@ -443,4 +443,28 @@ export class CashierService {
 
     return true;
   }
+
+  public async cashOutTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
+    const { amount } = data;
+    if (Number.isNaN(amount) && amount < 0) {
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          amount: ['amount should be correct number'],
+        },
+      });
+    }
+    const resp = await this.transactionsProvider.cashOutTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Open Balance');
+    }
+
+    return true;
+  }
 }
