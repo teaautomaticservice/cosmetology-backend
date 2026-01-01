@@ -1,7 +1,7 @@
 import { Logger } from 'winston';
 
 import { Resources } from '@commonConstants/resources';
-import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR, VALIDATION_ERROR } from '@constants/errors';
+import { VALIDATION_ERROR } from '@constants/errors';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
@@ -16,7 +16,6 @@ import { AccountsByStoreDto } from '@providers/cashier/accounts/dtos/accountBySt
 import { AccountAggregatedWithStorageDto } from '@providers/cashier/accounts/dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
 import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
-import { OBLIGATION_ACCOUNT_CODE } from '@providers/cashier/moneyStorages/moneyStorages.constants';
 import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import { CreateTransaction } from '@providers/cashier/transactions/transactions.types';
@@ -78,20 +77,25 @@ export class CashierService {
 
   public async getMoneyStoragesList({
     pagination,
+    order,
   }: {
     pagination: Pagination;
     order?: Sort<keyof MoneyStoragesEntity>;
-  }): Promise<[MoneyStoragesEntity[], number]> {
+  }): Promise<FoundAndCounted<MoneyStoragesEntity>> {
     return await this.moneyStoragesProvider.findAndCount({
       pagination,
+      order,
     });
   }
 
-  public async getObligationStorage(): Promise<MoneyStoragesEntity> {
-    const result = await this.moneyStoragesProvider.findObligationStorage();
-    if (!result) {
-      throw new InternalServerErrorException('Obligation account hasn\'t find.');
-    }
+  public async getObligationStorage({
+    pagination,
+  }: {
+    pagination: Pagination;
+  }): Promise<FoundAndCounted<MoneyStoragesEntity>> {
+    const result = await this.moneyStoragesProvider.findObligationStorage({
+      pagination,
+    });
     return result;
   }
 
@@ -103,14 +107,6 @@ export class CashierService {
 
     if (!entity) {
       throw new BadRequestException(`Incorrect ID: '${currentId}' for money storage`);
-    }
-
-    if (newData.code && entity.code === OBLIGATION_ACCOUNT_CODE && entity.code !== newData.code) {
-      throw new BadRequestException(VALIDATION_ERROR, {
-        cause: {
-          code: [RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR],
-        },
-      });
     }
 
     const result = await this.moneyStoragesProvider.updateById(currentId, newData);

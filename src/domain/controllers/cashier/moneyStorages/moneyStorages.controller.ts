@@ -76,15 +76,31 @@ export class MoneyStoragesController {
   }
 
   @UseGuards(AuthGuard)
-  @Get('/obligation-account')
+  @Get('/obligation-accounts')
+  @ApiQueryPagination()
   @ApiOkResponse({
     description: 'Obligation account of money storages successful has been got',
-    type: MoneyStorageDto,
+    type: MoneyStoragePaginatedDto,
   })
-  public async getObligationAccount(): Promise<MoneyStorageDto> {
-    const result = await this.cashierService.getObligationStorage();
+  public async getObligationAccounts(
+    @QueryInt('page', 1) page: number,
+    @QueryInt('pageSize', 10) pageSize: number,
+  ): Promise<MoneyStoragePaginatedDto> {
+    const [data, count] = await this.cashierService.getObligationStorage({
+      pagination: {
+        page,
+        pageSize,
+      }
+    });
 
-    return new MoneyStorageDto(result);
+    return {
+      data: data.map((currency) => new MoneyStorageDto(currency)),
+      meta: {
+        count,
+        currentPage: page,
+        itemsPerPage: pageSize,
+      },
+    };
   }
 
   @UseGuards(AuthGuard)
