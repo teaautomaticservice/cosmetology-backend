@@ -12,7 +12,7 @@ import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { GetTransactionDto } from './dtos/getTransaction.dto';
-import { NewOpeningBalanceDto } from './dtos/newOpeningBalance.dto';
+import { NewTransactionDto } from './dtos/newOpeningBalance.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
 import { CASHIER_TRANSACTIONS_PATH } from '../cashier.paths';
 
@@ -55,16 +55,34 @@ export class TransactionsController {
   @UseGuards(AuthGuard)
   @Post('/opening-balance')
   @ApiBody({
-    description: 'Create account',
-    type: NewOpeningBalanceDto,
+    description: 'Opening balance',
+    type: NewTransactionDto,
   })
   @ApiOkResponse({
     description: 'New transaction Open Balance successful created',
   })
   public async openBalance(
-    @Body() transactionReq: NewOpeningBalanceDto,
+    @Body() transactionReq: NewTransactionDto,
   ): Promise<boolean> {
     const resp = await this.cashierService.openBalanceTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/cash-out')
+  @ApiBody({
+    description: 'Cash out',
+    type: NewTransactionDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Cash Out successful created',
+  })
+  public async cashOut(
+    @Body() transactionReq: NewTransactionDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.cashOutTransaction({
       data: transactionReq,
     });
     return resp;
