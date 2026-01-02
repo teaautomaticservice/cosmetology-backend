@@ -8,6 +8,7 @@ import { TransactionEntity } from '@postgresql/repositories/cashier/transactions
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import {
   AccountsAggregatedWithStorage,
+  AccountsAggregatedWithStorageFilter,
   AccountsWithStorageFilter,
   SortAccountsByStorages,
   UpdateAccountsByIdsData
@@ -221,13 +222,16 @@ export class CashierService {
   public async getAccountAggregatedWithStorageList({
     pagination,
     order,
+    filter,
   }: {
     pagination: Pagination;
     order?: Sort<keyof AccountsAggregatedWithStorage>;
+    filter?: AccountsAggregatedWithStorageFilter;
   }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
     return this.accountsProvider.getAccountsAggregatedWithStorage({
       pagination,
       order,
+      filter,
     });
   }
 

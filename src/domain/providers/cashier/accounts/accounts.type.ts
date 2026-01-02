@@ -25,6 +25,17 @@ export type AccountsAggregatedWithStorage = Pick<AccountEntity, 'name' | 'status
   moneyStorageIds?: (AccountEntity['moneyStorageId'] | undefined)[];
 }
 
+export type AccountsAggregatedWithStorageFilter = {
+  name?: AccountEntity['name'];
+  status?: AccountEntity['status'][];
+  notStatus?: AccountEntity['status'][];
+  currenciesIds?: ID[];
+  moneyStoragesIds?: ID[];
+  query?: string;
+  balanceFrom?: number;
+  balanceTo?: number;
+}
+
 export type EnrichedAccountData<T extends {
     moneyStorageId?: ID;
     currencyId?: ID;

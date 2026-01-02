@@ -93,6 +93,16 @@ export class AccountsController {
     'balance',
     'name',
   ] satisfies (keyof AccountsAggregatedWithStorage)[])
+  @ApiQuery({
+    name: 'balanceFrom',
+    required: false,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'balanceTo',
+    required: false,
+    type: 'number',
+  })
   @ApiOkResponse({
     description: 'List of accounts with money storages',
     type: AccountsAggregatedWithStoragePaginated,
@@ -102,6 +112,8 @@ export class AccountsController {
     @QueryInt('pageSize', 10) pageSize: number,
     @Query('sort', ParseString) sort?: keyof AccountsAggregatedWithStorage,
     @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
+    @QueryInt('balanceFrom') balanceFrom?: number,
+    @QueryInt('balanceTo') balanceTo?: number,
   ): Promise<AccountsAggregatedWithStoragePaginated> {
     const [accountsWithStore, count] = await this.cashierService.getAccountAggregatedWithStorageList({
       pagination: {
@@ -113,6 +125,10 @@ export class AccountsController {
           [sort]: order ?? 1,
         },
       }),
+      filter: {
+        balanceFrom,
+        balanceTo,
+      }
     });
 
     return {

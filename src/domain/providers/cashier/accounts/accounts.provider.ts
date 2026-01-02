@@ -25,6 +25,7 @@ import { AccountAggregatedWithStorageDto } from './dtos/accountsAggregatedWithSt
 import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';
 import {
   AccountsAggregatedWithStorage,
+  AccountsAggregatedWithStorageFilter,
   AccountsWithStorageFilter,
   EnrichedAccountData,
   UpdateAccountsByIdsData
@@ -121,9 +122,11 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
   public async getAccountsAggregatedWithStorage({
     pagination,
     order,
+    filter,
   }: {
     pagination: Pagination;
     order?: Sort<keyof AccountsAggregatedWithStorage>;
+    filter?: AccountsAggregatedWithStorageFilter;
   }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
     const groupBy: (keyof AccountEntity)[] = ['name', 'status', 'currencyId'];
 
@@ -133,6 +136,17 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
         order,
         groupBy,
         select: ['name', 'status', 'currencyId'],
+        where: [
+          ...(filter?.query && AccountEntity.checkLikeId(filter.query) ? [{ id: Number(filter.query) }] : []),
+          {
+            ...(filter?.name && { name: filter.name }),
+            ...(filter?.query ? { name: ILike(`%${filter.query}%`) } : {}),
+            ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
+            ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
+            ...(filter?.status && { status: In(filter.status) }),
+            ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
+          }
+        ],
         aggregates: {
           ids: {
             field: 'id',
@@ -151,6 +165,14 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
             fn: 'ARRAY_AGG',
           },
         },
+        having: [
+          ...((filter?.balanceFrom || filter?.balanceTo) ? [{
+            field: 'balance',
+            fn: 'SUM',
+            from: filter?.balanceFrom,
+            to: filter?.balanceTo,
+          } as const] : []),
+        ],
       }),
       this.accountsDb.aggregateCount({
         groupBy,
