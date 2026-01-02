@@ -67,7 +67,7 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
     });
   }
 
-  public async findObligationStorage({
+  public async findObligationStorages({
     pagination,
     order,
   }: {

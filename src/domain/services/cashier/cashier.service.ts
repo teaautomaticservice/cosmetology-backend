@@ -88,12 +88,12 @@ export class CashierService {
     });
   }
 
-  public async getObligationStorage({
+  public async getObligationStorages({
     pagination,
   }: {
     pagination: Pagination;
   }): Promise<FoundAndCounted<MoneyStoragesEntity>> {
-    const result = await this.moneyStoragesProvider.findObligationStorage({
+    const result = await this.moneyStoragesProvider.findObligationStorages({
       pagination,
     });
     return result;
@@ -163,7 +163,7 @@ export class CashierService {
     if (entity) {
       throw new BadRequestException(VALIDATION_ERROR, {
         cause: {
-          code: ['Money storage with this code already exist'],
+          code: ['Obligation storage with this code already exist'],
         },
       });
     }
@@ -175,7 +175,7 @@ export class CashierService {
 
     const result = await this.moneyStoragesProvider.create(data);
 
-    this.logger.warn('moneyStorage created bu user', {
+    this.logger.warn('obligationStorage created bu user', {
       newData: data,
       result,
     });

@@ -86,7 +86,7 @@ export class MoneyStoragesController {
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
   ): Promise<MoneyStoragePaginatedDto> {
-    const [data, count] = await this.cashierService.getObligationStorage({
+    const [data, count] = await this.cashierService.getObligationStorages({
       pagination: {
         page,
         pageSize,
