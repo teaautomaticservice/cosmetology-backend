@@ -222,7 +222,7 @@ export class CashierService {
     return resp;
   }
 
-  public async getAccountAggregatedWithStorageList({
+  public async getAccountsAggregatedWithStorageList({
     pagination,
     order,
     filter,
@@ -232,6 +232,22 @@ export class CashierService {
     filter?: AccountsAggregatedWithStorageFilter;
   }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
     return this.accountsProvider.getAccountsAggregatedWithStorage({
+      pagination,
+      order,
+      filter,
+    });
+  }
+
+  public async getObligationAccountsAggregatedWithStorageList({
+    pagination,
+    order,
+    filter,
+  }: {
+    pagination: Pagination;
+    order?: Sort<keyof AccountsAggregatedWithStorage>;
+    filter?: AccountsAggregatedWithStorageFilter;
+  }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
+    return this.accountsProvider.getObligationAccountsAggregatedWithStorage({
       pagination,
       order,
       filter,

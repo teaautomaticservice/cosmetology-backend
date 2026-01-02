@@ -115,7 +115,64 @@ export class AccountsController {
     @QueryInt('balanceFrom') balanceFrom?: number,
     @QueryInt('balanceTo') balanceTo?: number,
   ): Promise<AccountsAggregatedWithStoragePaginated> {
-    const [accountsWithStore, count] = await this.cashierService.getAccountAggregatedWithStorageList({
+    const [accountsWithStore, count] = await this.cashierService.getAccountsAggregatedWithStorageList({
+      pagination: {
+        page,
+        pageSize,
+      },
+      ...(sort && {
+        order: {
+          [sort]: order ?? 1,
+        },
+      }),
+      filter: {
+        balanceFrom,
+        balanceTo,
+      }
+    });
+
+    return {
+      data: accountsWithStore.map((data) => new GetAccountAggregatedWithStorage(data)),
+      meta: {
+        count,
+        currentPage: page,
+        itemsPerPage: pageSize,
+      },
+    };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('/obligation-accounts-aggregated-with-storage-list')
+  @ApiQueryPagination()
+  @ApiQuerySortOrder([
+    'status',
+    'available',
+    'balance',
+    'name',
+  ] satisfies (keyof AccountsAggregatedWithStorage)[])
+  @ApiQuery({
+    name: 'balanceFrom',
+    required: false,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'balanceTo',
+    required: false,
+    type: 'number',
+  })
+  @ApiOkResponse({
+    description: 'List of obligation accounts with money storages',
+    type: AccountsAggregatedWithStoragePaginated,
+  })
+  public async getObligationAccountsAggregatedWithStorageList(
+    @QueryInt('page', 1) page: number,
+    @QueryInt('pageSize', 10) pageSize: number,
+    @Query('sort', ParseString) sort?: keyof AccountsAggregatedWithStorage,
+    @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
+    @QueryInt('balanceFrom') balanceFrom?: number,
+    @QueryInt('balanceTo') balanceTo?: number,
+  ): Promise<AccountsAggregatedWithStoragePaginated> {
+    const [accountsWithStore, count] = await this.cashierService.getObligationAccountsAggregatedWithStorageList({
       pagination: {
         page,
         pageSize,
