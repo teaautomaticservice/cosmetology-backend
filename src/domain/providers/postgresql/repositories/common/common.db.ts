@@ -122,6 +122,7 @@ export abstract class CommonDb<Entity extends CommonEntity> {
     groupBy,
     select,
     aggregates,
+    having,
   }: {
     where?: Where<Entity>;
     order?: Partial<Record<
@@ -140,6 +141,12 @@ export abstract class CommonDb<Entity extends CommonEntity> {
     groupBy?: GroupBy;
     select?: Select;
     aggregates?: Aggregates;
+    having?: {
+      field: keyof Aggregates;
+      fn: 'SUM' | 'COUNT' | 'AVG';
+      from?: number;
+      to?: number;
+    }[];
   } = {}): Promise<AggregatedEntity<Entity, Select, Aggregates>> {
     const alias = this.dbRepository.metadata.tableName;
 
@@ -164,6 +171,21 @@ export abstract class CommonDb<Entity extends CommonEntity> {
           `${fn}(${this.dbRepository.metadata.tableName}.${String(field)})`,
           currentAlias
         );
+      });
+    }
+
+    if (having) {
+      having.forEach(({ field, fn, from, to }) => {
+        if (from) {
+          queryBuilder.andHaving(`${fn}(${alias}.${String(field)}) >= :${String(field)}From`, {
+            [`${String(field)}From`]: from
+          });
+        }
+        if (to) {
+          queryBuilder.andHaving(`${fn}(${alias}.${String(field)}) <= :${String(field)}To`, {
+            [`${String(field)}To`]: to
+          });
+        }
       });
     }
 
