@@ -7,3 +7,13 @@ export type CreateTransaction = Pick<RecordEntity<
   'creditId' |
   'description'
 > & { amount: number }
+
+export type CreateOpenBalanceObligationTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'description'
+> & {
+  debitName: string;
+  obligationStorageId: number;
+  currencyId: number;
+  amount: number;
+}

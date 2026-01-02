@@ -12,7 +12,8 @@ import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { GetTransactionDto } from './dtos/getTransaction.dto';
-import { NewTransactionDto } from './dtos/newOpeningBalance.dto';
+import { NewOpenBalanceObligationDto } from './dtos/newOpenBalanceObligationDto';
+import { NewTransactionDto } from './dtos/newTransactionDto.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
 import { CASHIER_TRANSACTIONS_PATH } from '../cashier.paths';
 
@@ -60,11 +61,31 @@ export class TransactionsController {
   })
   @ApiOkResponse({
     description: 'New transaction Open Balance successful created',
+    type: Boolean,
   })
   public async openBalance(
     @Body() transactionReq: NewTransactionDto,
   ): Promise<boolean> {
     const resp = await this.cashierService.openBalanceTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/opening-balance-obligation-account')
+  @ApiBody({
+    description: 'Open balance for obligation account',
+    type: NewOpenBalanceObligationDto,
+  })
+  @ApiOkResponse({
+    description: 'Obligation storage successful created',
+    type: Boolean,
+  })
+  public async createObligationItem(
+    @Body() transactionReq: NewOpenBalanceObligationDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.openBalanceObligationTransaction({
       data: transactionReq,
     });
     return resp;
