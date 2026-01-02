@@ -104,6 +104,26 @@ export class MoneyStoragesController {
   }
 
   @UseGuards(AuthGuard)
+  @Post('/obligation-accounts')
+  @ApiBody({
+    description: 'Create obligation storage body',
+    type: CreateMoneyStorageDto,
+  })
+  @ApiOkResponse({
+    description: 'Obligation storage successful created',
+    type: MoneyStorageDto,
+  })
+  public async createObligationItem(
+    @Body() moneyStorageReq: CreateMoneyStorageDto,
+  ): Promise<MoneyStorageDto> {
+    const resp = await this.cashierService.createObligationStorage({
+      ...moneyStorageReq,
+      description: moneyStorageReq.description ?? null,
+    });
+    return new MoneyStorageDto(resp);
+  }
+
+  @UseGuards(AuthGuard)
   @Patch('/:id')
   @ApiParam({ name: 'id', type: 'string' })
   @ApiBody({

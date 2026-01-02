@@ -155,6 +155,34 @@ export class CashierService {
     return result;
   }
 
+  public async createObligationStorage(
+    newData: Omit<RecordEntity<MoneyStoragesEntity>, 'status' | 'updatedBy' | 'createdBy' | 'type'>,
+  ): Promise<MoneyStoragesEntity> {
+    const entity = await this.moneyStoragesProvider.findByCode(newData.code);
+
+    if (entity) {
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          code: ['Money storage with this code already exist'],
+        },
+      });
+    }
+
+    const data = {
+      ...newData,
+      type: MoneyStorageType.OBLIGATION,
+    };
+
+    const result = await this.moneyStoragesProvider.create(data);
+
+    this.logger.warn('moneyStorage created bu user', {
+      newData: data,
+      result,
+    });
+
+    return result;
+  }
+
   public async removeMoneyStorage(currentId: ID): Promise<boolean> {
     const entity = await this.moneyStoragesProvider.findById(currentId);
 
