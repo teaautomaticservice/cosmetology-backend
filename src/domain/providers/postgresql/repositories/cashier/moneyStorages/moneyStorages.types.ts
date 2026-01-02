@@ -4,3 +4,8 @@ export enum MoneyStorageStatus {
   FREEZED = 'freezed',
   DEACTIVATED = 'deactivated',
 }
+
+export enum MoneyStorageType {
+  COMMON = 'common',
+  OBLIGATION = 'obligation',
+}

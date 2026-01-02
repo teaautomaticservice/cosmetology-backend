@@ -1,6 +1,5 @@
 import { FindOptionsOrder, In, Not } from 'typeorm';
 
-import { RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR } from '@constants/errors';
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import {
   FoundAndCounted,
@@ -15,10 +14,10 @@ import {
   MoneyStoragesEntity
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import {
-  MoneyStorageStatus
+  MoneyStorageStatus,
+  MoneyStorageType
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
-import { OBLIGATION_ACCOUNT_CODE } from './moneyStorages.constants';
 import { MoneyStoragesFilter } from './moneyStorages.types';
 
 @Injectable()
@@ -62,14 +61,26 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
       pagination,
       order,
       where: {
-        code: Not(OBLIGATION_ACCOUNT_CODE),
+        type: Not(MoneyStorageType.OBLIGATION),
         ...(status && Boolean(status?.length) && { status: In(status) }),
       }
     });
   }
 
-  public async findObligationStorage(): Promise<MoneyStoragesEntity | null> {
-    return this.findByCode(OBLIGATION_ACCOUNT_CODE);
+  public async findObligationStorages({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: FindOptionsOrder<MoneyStoragesEntity>;
+  }): Promise<FoundAndCounted<MoneyStoragesEntity>> {
+    return super.findAndCount({
+      pagination,
+      order,
+      where: {
+        type: MoneyStorageType.OBLIGATION,
+      }
+    });
   }
 
   public async updateById(id: number, data: Partial<RecordEntity<MoneyStoragesEntity>>): Promise<boolean> {
@@ -77,10 +88,6 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
 
     if (!entity) {
       throw new InternalServerErrorException(`Incorrect ID: '${id}' for money storage`);
-    }
-
-    if (data.code && entity.code === OBLIGATION_ACCOUNT_CODE && data.code !== OBLIGATION_ACCOUNT_CODE) {
-      throw new InternalServerErrorException(RESTRICTED_OBLIGATION_STORAGE_CODE_CHANGE_ERROR);
     }
 
     const formattedCode = data.code ? data.code.toUpperCase() : undefined;
