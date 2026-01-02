@@ -19,7 +19,10 @@ import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/acc
 import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
 import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
-import { CreateTransaction } from '@providers/cashier/transactions/transactions.types';
+import {
+  CreateOpenBalanceObligationTransaction,
+  CreateTransaction
+} from '@providers/cashier/transactions/transactions.types';
 import {
   FoundAndCounted,
   ID,
@@ -219,7 +222,7 @@ export class CashierService {
     return resp;
   }
 
-  public async getAccountAggregatedWithStorageList({
+  public async getAccountsAggregatedWithStorageList({
     pagination,
     order,
     filter,
@@ -229,6 +232,22 @@ export class CashierService {
     filter?: AccountsAggregatedWithStorageFilter;
   }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
     return this.accountsProvider.getAccountsAggregatedWithStorage({
+      pagination,
+      order,
+      filter,
+    });
+  }
+
+  public async getObligationAccountsAggregatedWithStorageList({
+    pagination,
+    order,
+    filter,
+  }: {
+    pagination: Pagination;
+    order?: Sort<keyof AccountsAggregatedWithStorage>;
+    filter?: AccountsAggregatedWithStorageFilter;
+  }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
+    return this.accountsProvider.getObligationAccountsAggregatedWithStorage({
       pagination,
       order,
       filter,
@@ -468,6 +487,30 @@ export class CashierService {
       });
     }
     const resp = await this.transactionsProvider.openBalanceTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Open Balance');
+    }
+
+    return true;
+  }
+
+  public async openBalanceObligationTransaction({
+    data,
+  }: {
+    data: CreateOpenBalanceObligationTransaction;
+  }): Promise<boolean> {
+    const { amount } = data;
+    if (Number.isNaN(amount) && amount < 0) {
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          amount: ['amount should be correct number'],
+        },
+      });
+    }
+    const resp = await this.transactionsProvider.openBalanceObligationTransaction({
       data,
     });
 

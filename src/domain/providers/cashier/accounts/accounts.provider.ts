@@ -128,6 +128,64 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     order?: Sort<keyof AccountsAggregatedWithStorage>;
     filter?: AccountsAggregatedWithStorageFilter;
   }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
+    const [moneyStorages] = await this.moneyStoragesProvider.findAndCount({
+      pagination: {
+        page: 1,
+        pageSize: 100000,
+      }
+    });
+    const nonObligationStorageIds = moneyStorages.map(({ id }) => id);
+
+    const resp = await this.getAccountAggregatedWithStorage({
+      pagination,
+      filter: {
+        moneyStoragesIds: nonObligationStorageIds,
+        ...filter,
+      },
+      order,
+    });
+
+    return resp;
+  }
+
+  public async getObligationAccountsAggregatedWithStorage({
+    pagination,
+    order,
+    filter,
+  }: {
+    pagination: Pagination;
+    order?: Sort<keyof AccountsAggregatedWithStorage>;
+    filter?: AccountsAggregatedWithStorageFilter;
+  }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
+    const [moneyStorages] = await this.moneyStoragesProvider.findObligationStorages({
+      pagination: {
+        page: 1,
+        pageSize: 100000,
+      }
+    });
+    const nonObligationStorageIds = moneyStorages.map(({ id }) => id);
+
+    const resp = await this.getAccountAggregatedWithStorage({
+      pagination,
+      filter: {
+        moneyStoragesIds: nonObligationStorageIds,
+        ...filter,
+      },
+      order,
+    });
+
+    return resp;
+  }
+
+  public async getAccountAggregatedWithStorage({
+    pagination,
+    order,
+    filter,
+  }: {
+    pagination: Pagination;
+    order?: Sort<keyof AccountsAggregatedWithStorage>;
+    filter?: AccountsAggregatedWithStorageFilter;
+  }): Promise<FoundAndCounted<AccountAggregatedWithStorageDto>> {
     const groupBy: (keyof AccountEntity)[] = ['name', 'status', 'currencyId'];
 
     const [rawAggregatedAccount, count] = await Promise.all([

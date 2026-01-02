@@ -104,7 +104,7 @@ export class MoneyStoragesController {
   }
 
   @UseGuards(AuthGuard)
-  @Post('/obligation-accounts')
+  @Post('/obligation-account')
   @ApiBody({
     description: 'Create obligation storage body',
     type: CreateMoneyStorageDto,

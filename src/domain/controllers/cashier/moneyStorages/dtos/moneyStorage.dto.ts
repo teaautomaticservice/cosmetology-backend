@@ -4,7 +4,8 @@ import {
   MoneyStoragesEntity
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import {
-  MoneyStorageStatus
+  MoneyStorageStatus,
+  MoneyStorageType
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
 export class MoneyStorageDto {
@@ -30,6 +31,13 @@ export class MoneyStorageDto {
   public readonly status: MoneyStorageStatus;
 
   @ApiProperty({
+    enum: MoneyStorageType,
+    required: true,
+    nullable: false,
+  })
+  public readonly type: MoneyStorageType;
+
+  @ApiProperty({
     type: 'string',
     required: true,
     nullable: false,
@@ -43,11 +51,12 @@ export class MoneyStorageDto {
   })
   public readonly description: string | null;
 
-  constructor({ id, name, status, code, description }: MoneyStoragesEntity) {
+  constructor({ id, name, status, code, description, type }: MoneyStoragesEntity) {
     Object.assign(this, {
       id,
       name,
       status,
+      type,
       code,
       description,
     });

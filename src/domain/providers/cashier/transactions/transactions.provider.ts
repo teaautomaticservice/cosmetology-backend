@@ -4,13 +4,15 @@ import { v4 as uuid } from 'uuid';
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
+import { CurrencyEntity } from '@postgresql/repositories/cashier/currencies/currencies.entity';
+import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import { TransactionsDb } from '@postgresql/repositories/cashier/transactions/transactions.db';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
-import { FoundAndCounted } from '@providers/common/common.type';
+import { FoundAndCounted, RecordEntity } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 
-import { CreateTransaction } from './transactions.types';
+import { CreateOpenBalanceObligationTransaction, CreateTransaction } from './transactions.types';
 
 @Injectable()
 export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEntity> {
@@ -132,6 +134,84 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         amount: formattedAmount.toString(),
         debitId: debitId,
         creditId: creditId ?? null,
+        status: TransactionStatus.COMPLETED,
+        operationType: OperationType.OPENING_BALANCE,
+        executionDate: new Date(),
+        description: description ?? null,
+      });
+
+      await manager.save(transaction);
+
+      return transaction;
+    });
+  }
+
+  public async openBalanceObligationTransaction({
+    data,
+  }: {
+    data: CreateOpenBalanceObligationTransaction;
+  }): Promise<TransactionEntity> {
+    const {
+      amount,
+      obligationStorageId,
+      description,
+      debitName,
+      currencyId,
+    } = data;
+
+    if (Number.isNaN(amount) || amount < 0) {
+      throw new InternalServerErrorException(`Open Balance create error. Amount ${amount} isn't correct`);
+    }
+
+    return this.dataSource.transaction(async (manager: EntityManager) => {
+      const obligationStorage = await manager
+        .createQueryBuilder(MoneyStoragesEntity, 'moneyStorage')
+        .where('moneyStorage.id = :id', { id: obligationStorageId })
+        .getOne();
+
+      if (!obligationStorage) {
+        throw new InternalServerErrorException(`Open Balance create error. Obligation storage with id: ${obligationStorageId} not found`);
+      }
+
+      const currency = await manager
+        .createQueryBuilder(CurrencyEntity, 'currency')
+        .where('currency.id = :id', { id: currencyId })
+        .getOne();
+
+      if (!currency) {
+        throw new InternalServerErrorException(`Open Balance create error. Currency with id: ${currencyId} not found`);
+      }
+
+      const obligationAccount = await manager
+        .createQueryBuilder(AccountEntity, 'account')
+        .where('LOWER(account.name) = LOWER(:name)', { name: debitName })
+        .andWhere('account.moneyStorageId = :storageId', { storageId: obligationStorageId })
+        .getOne();
+
+      if (obligationAccount) {
+        throw new BadRequestException(`Debit account ${debitName} already exists`);
+      }
+
+      const formattedAmount = BigInt(amount);
+
+      const newObligationAccountData: RecordEntity<AccountEntity> = {
+        name: debitName,
+        moneyStorageId: obligationStorageId,
+        status: AccountStatus.ACTIVE,
+        balance: formattedAmount.toString(),
+        available: formattedAmount.toString(),
+        currencyId,
+        description: 'Automatic create while opening balance for obligation storage',
+      };
+
+      const newObligationAccount = manager.create(AccountEntity, newObligationAccountData);
+      await manager.save(newObligationAccount);
+
+      const transaction = manager.create(TransactionEntity, {
+        transactionId: this.generateTransactionId(),
+        amount: formattedAmount.toString(),
+        debitId: newObligationAccount.id,
+        creditId: null,
         status: TransactionStatus.COMPLETED,
         operationType: OperationType.OPENING_BALANCE,
         executionDate: new Date(),
