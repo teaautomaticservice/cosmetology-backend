@@ -29,10 +29,10 @@ export class TransactionEntity extends CommonEntity {
   public transactionId: string;
 
   @Column({
-    type: 'int',
+    type: 'varchar',
     nullable: true,
   })
-  public parentTransactionId: ID | null;
+  public parentTransactionId: string | null;
 
   @Column({
     type: 'bigint',

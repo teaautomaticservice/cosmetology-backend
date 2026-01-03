@@ -14,11 +14,11 @@ export class GetTransactionDto {
   public readonly id: ID;
 
   @ApiProperty({
-    type: 'number',
+    type: 'string',
     required: true,
     nullable: true,
   })
-  public readonly parentTransactionId: ID | null;
+  public readonly parentTransactionId: string | null;
 
   @ApiProperty({
     type: 'string',
