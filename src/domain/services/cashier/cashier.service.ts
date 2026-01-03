@@ -21,7 +21,8 @@ import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneySto
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
   CreateOpenBalanceObligationTransaction,
-  CreateTransaction
+  CreateTransaction,
+  LoanTransaction
 } from '@providers/cashier/transactions/transactions.types';
 import {
   FoundAndCounted,
@@ -479,13 +480,8 @@ export class CashierService {
     data: CreateTransaction;
   }): Promise<boolean> {
     const { amount } = data;
-    if (Number.isNaN(amount) && amount < 0) {
-      throw new BadRequestException(VALIDATION_ERROR, {
-        cause: {
-          amount: ['amount should be correct number'],
-        },
-      });
-    }
+    this.checkAmount(amount);
+
     const resp = await this.transactionsProvider.openBalanceTransaction({
       data,
     });
@@ -503,13 +499,8 @@ export class CashierService {
     data: CreateOpenBalanceObligationTransaction;
   }): Promise<boolean> {
     const { amount } = data;
-    if (Number.isNaN(amount) && amount < 0) {
-      throw new BadRequestException(VALIDATION_ERROR, {
-        cause: {
-          amount: ['amount should be correct number'],
-        },
-      });
-    }
+    this.checkAmount(amount);
+
     const resp = await this.transactionsProvider.openBalanceObligationTransaction({
       data,
     });
@@ -527,13 +518,8 @@ export class CashierService {
     data: CreateTransaction;
   }): Promise<boolean> {
     const { amount } = data;
-    if (Number.isNaN(amount) && amount < 0) {
-      throw new BadRequestException(VALIDATION_ERROR, {
-        cause: {
-          amount: ['amount should be correct number'],
-        },
-      });
-    }
+    this.checkAmount(amount);
+
     const resp = await this.transactionsProvider.cashOutTransaction({
       data,
     });
@@ -543,5 +529,53 @@ export class CashierService {
     }
 
     return true;
+  }
+
+  public async loanTransaction({
+    data,
+  }: {
+    data: LoanTransaction;
+  }): Promise<boolean> {
+    const { amount } = data;
+    this.checkAmount(amount);
+
+    const resp = await this.transactionsProvider.loanTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Open Balance');
+    }
+
+    return true;
+  }
+
+  private checkAmount(val: number): void {
+    const amount = Number(val);
+    let notValid = false;
+
+    if (Number.isNaN(amount)) {
+      notValid = true;
+    }
+
+    if (!Number.isFinite(amount)) {
+      notValid = true;
+    }
+
+    if (!Number.isInteger(amount)) {
+      notValid = true;
+    }
+
+    if (amount < 0) {
+      notValid = true;
+    }
+
+    if (notValid) {
+      throw new BadRequestException(VALIDATION_ERROR, {
+        cause: {
+          amount: ['amount should be correct number'],
+        },
+      });
+    }
   }
 }

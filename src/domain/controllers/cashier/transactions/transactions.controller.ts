@@ -12,6 +12,7 @@ import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { GetTransactionDto } from './dtos/getTransaction.dto';
+import { NewLoanDto } from './dtos/newLoanDto';
 import { NewOpenBalanceObligationDto } from './dtos/newOpenBalanceObligationDto';
 import { NewTransactionDto } from './dtos/newTransactionDto.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
@@ -104,6 +105,24 @@ export class TransactionsController {
     @Body() transactionReq: NewTransactionDto,
   ): Promise<boolean> {
     const resp = await this.cashierService.cashOutTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/loan')
+  @ApiBody({
+    description: 'Loan',
+    type: NewLoanDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Loan successful created',
+  })
+  public async loan(
+    @Body() transactionReq: NewLoanDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.loanTransaction({
       data: transactionReq,
     });
     return resp;

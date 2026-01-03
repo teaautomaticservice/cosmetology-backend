@@ -15,6 +15,8 @@ export type AccountsWithStorageFilter = {
   currenciesIds?: ID[];
   moneyStoragesIds?: ID[];
   query?: string;
+  balanceFrom?: number;
+  balanceTo?: number;
 }
 
 export type AccountsAggregatedWithStorage = Pick<AccountEntity, 'name' | 'status' | 'currencyId'> &

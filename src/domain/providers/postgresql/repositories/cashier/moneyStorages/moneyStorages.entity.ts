@@ -29,6 +29,7 @@ export class MoneyStoragesEntity extends CommonEntity {
   @Column({
     type: 'varchar',
     nullable: false,
+    default: MoneyStorageType.COMMON
   })
   public type: MoneyStorageType;
 

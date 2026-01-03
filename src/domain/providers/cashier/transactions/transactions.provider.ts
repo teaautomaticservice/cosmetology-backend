@@ -12,7 +12,7 @@ import { OperationType, TransactionStatus } from '@postgresql/repositories/cashi
 import { FoundAndCounted, RecordEntity } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 
-import { CreateOpenBalanceObligationTransaction, CreateTransaction } from './transactions.types';
+import { CreateOpenBalanceObligationTransaction, CreateTransaction, LoanTransaction } from './transactions.types';
 
 @Injectable()
 export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEntity> {
@@ -315,6 +315,156 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       await manager.save(transaction);
 
       return transaction;
+    });
+  }
+
+  public async loanTransaction({
+    data,
+  }: {
+    data: LoanTransaction;
+  }): Promise<[TransactionEntity, TransactionEntity]> {
+    const {
+      amount,
+      debitId,
+      creditId,
+      obligationStorageId,
+      description,
+    } = data;
+
+    if (Number.isNaN(amount) || amount < 0) {
+      throw new InternalServerErrorException(`Loan create error. Amount ${amount} isn't correct`);
+    }
+
+    if (!debitId || !creditId) {
+      throw new InternalServerErrorException(`Loan create error. debitId and creditId and should be exist`);
+    }
+
+    return this.dataSource.transaction(async (manager: EntityManager) => {
+      const accounts = await manager
+        .createQueryBuilder(AccountEntity, 'account')
+        .setLock('pessimistic_write')
+        .where('account.id IN (:...ids)', {
+          ids: [debitId, creditId].filter(Boolean)
+        })
+        .getMany();
+
+      const debitAccount = accounts.find(({ id }) => id === debitId) ?? null;
+      const creditAccount = accounts.find(({ id }) => id === creditId) ?? null;
+
+      if (!debitAccount || debitAccount.status !== AccountStatus.ACTIVE) {
+        throw new BadRequestException(`Debit account ${debitId} not found or not active`);
+      }
+
+      if (!creditAccount || creditAccount.status !== AccountStatus.ACTIVE) {
+        throw new BadRequestException(`Credit account ${creditId} not found or not active`);
+      }
+
+      if (debitAccount.currencyId !== creditAccount.currencyId) {
+        throw new BadRequestException('Accounts must have the same currency');
+      }
+
+      const obligationStorage = await manager
+        .createQueryBuilder(MoneyStoragesEntity, 'moneyStorage')
+        .where('moneyStorage.id = :id', { id: obligationStorageId })
+        .getOne();
+
+      if (!obligationStorage) {
+        throw new BadRequestException(`Obligation storage ${obligationStorageId} not found`);
+      }
+
+      const formattedAmount = BigInt(amount);
+      const creditAvailable = BigInt(creditAccount.available);
+      const creditBalance = BigInt(creditAccount.balance);
+      const debitAvailable = BigInt(debitAccount.available);
+      const debitBalance = BigInt(debitAccount.balance);
+      const moveTransactionId = this.generateTransactionId();
+
+      if (creditAvailable < formattedAmount) {
+        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
+      }
+
+      const transaction = manager.create(TransactionEntity, {
+        transactionId: moveTransactionId,
+        amount: formattedAmount.toString(),
+        debitId: debitId,
+        creditId: creditId,
+        status: TransactionStatus.COMPLETED,
+        operationType: OperationType.LOAN,
+        executionDate: new Date(),
+        description: description ?? null,
+      });
+
+      let obligationAccount = await manager
+        .createQueryBuilder(AccountEntity, 'account')
+        .setLock('pessimistic_write')
+        .where('LOWER(account.name) = LOWER(:name)', { name: creditAccount.name })
+        .andWhere('account.moneyStorageId = :storageId', { storageId: obligationStorageId })
+        .getOne();
+
+      if (obligationAccount) {
+        if (obligationAccount.status !== AccountStatus.ACTIVE) {
+          throw new BadRequestException(`Obligation account ${obligationAccount.id} should be active`);
+        }
+
+        if (obligationAccount.currencyId !== creditAccount.currencyId) {
+          throw new BadRequestException('Obligation account must have the same currency');
+        }
+
+        const newObligationAvailable = BigInt(obligationAccount.available) + formattedAmount;
+        const newObligationBalance = BigInt(obligationAccount.balance) + formattedAmount;
+
+        await manager.update(AccountEntity, obligationAccount.id, {
+          available: newObligationAvailable.toString(),
+          balance: newObligationBalance.toString(),
+        });
+      } else {
+        const newObligationAccountData: RecordEntity<AccountEntity> = {
+          name: creditAccount.name,
+          moneyStorageId: obligationStorageId,
+          status: AccountStatus.ACTIVE,
+          balance: formattedAmount.toString(),
+          available: formattedAmount.toString(),
+          currencyId: creditAccount.currencyId,
+          description: 'Automatic create while taken loan',
+        };
+
+        const newObligationAccount = manager.create(AccountEntity, newObligationAccountData);
+        await manager.save(newObligationAccount);
+        obligationAccount = newObligationAccount;
+      }
+
+      const obligationTransaction = manager.create(TransactionEntity, {
+        transactionId: this.generateTransactionId(),
+        parentTransactionId: transaction.transactionId,
+        amount: formattedAmount.toString(),
+        debitId: obligationAccount.id,
+        creditId: null,
+        status: TransactionStatus.COMPLETED,
+        operationType: OperationType.LOAN,
+        executionDate: new Date(),
+        description: description ?? null,
+      });
+
+      const newCreditAvailable = creditAvailable - formattedAmount;
+      const newCreditBalance = creditBalance - formattedAmount;
+      const newDebitAvailable = debitAvailable + formattedAmount;
+      const newDebitBalance = debitBalance + formattedAmount;
+
+      await Promise.all([
+        manager.update(AccountEntity, creditId, {
+          available: newCreditAvailable.toString(),
+          balance: newCreditBalance.toString(),
+        }),
+        manager.update(AccountEntity, debitId, {
+          available: newDebitAvailable.toString(),
+          balance: newDebitBalance.toString(),
+        }),
+      ]);
+
+      await manager.save(transaction);
+      await manager.save(obligationTransaction);
+
+      return [transaction, obligationTransaction];
     });
   }
 

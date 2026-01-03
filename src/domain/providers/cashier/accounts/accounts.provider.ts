@@ -1,6 +1,13 @@
 import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity';
 import { createdMapListFromEntity } from 'src/migrations/utils/createdMapListFromEntity';
-import { ILike, In, Not } from 'typeorm';
+import {
+  And,
+  ILike,
+  In,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Not
+} from 'typeorm';
 
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
@@ -278,6 +285,12 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
           ...(filter?.status && { status: In(filter.status) }),
           ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
           ...(filter?.ids && { id: In(filter.ids) }),
+          ...((filter?.balanceFrom || filter?.balanceTo) && {
+            balance: And(
+              ...(filter?.balanceFrom ? [MoreThanOrEqual(filter.balanceFrom.toString())] : []),
+              ...(filter?.balanceTo ? [LessThanOrEqual(filter.balanceTo.toString())] : []),
+            )
+          }),
         },
       ],
       order,

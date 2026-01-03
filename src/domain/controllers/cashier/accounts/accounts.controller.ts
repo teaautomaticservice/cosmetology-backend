@@ -222,6 +222,16 @@ export class AccountsController {
     required: false,
     type: 'string'
   })
+  @ApiQuery({
+    name: 'balanceFrom',
+    required: false,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'balanceTo',
+    required: false,
+    type: 'number',
+  })
   @ApiOkResponse({
     description: 'List of accounts with money storages',
     type: AccountsWithStoragePaginatedDto,
@@ -234,6 +244,8 @@ export class AccountsController {
     @Query('moneyStoragesIds', ParseArray) moneyStoragesIds?: string[],
     @Query('status', ParseArray) status?: AccountStatus[],
     @Query('query', ParseString) query?: string,
+    @QueryInt('balanceFrom') balanceFrom?: number,
+    @QueryInt('balanceTo') balanceTo?: number,
   ): Promise<AccountsWithStoragePaginatedDto> {
     const [accountsWithStore, count] = await this.cashierService.getActualAccountsList({
       pagination: {
@@ -249,6 +261,8 @@ export class AccountsController {
         ...(moneyStoragesIds && { moneyStoragesIds: moneyStoragesIds.map((val) => Number(val)) }),
         status,
         query,
+        balanceFrom,
+        balanceTo,
       },
     });
 
