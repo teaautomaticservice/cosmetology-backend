@@ -62,12 +62,43 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
       order,
     });
 
-    const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
+    const accountByStore = await this.getAccountsByStorageList({
+      moneyStorages: rawMoneyStorages,
+    });
+
+    return [accountByStore, moneyStorageCount];
+  }
+
+  public async getObligationAccountsByStorageList({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: Order<MoneyStoragesEntity>;
+  }): Promise<FoundAndCounted<AccountsByStoreDto>> {
+    const [rawMoneyStorages, moneyStorageCount] = await this.moneyStoragesProvider.findObligationStorages({
+      pagination,
+      order,
+    });
+
+    const accountByStore = await this.getAccountsByStorageList({
+      moneyStorages: rawMoneyStorages,
+    });
+
+    return [accountByStore, moneyStorageCount];
+  }
+
+  public async getAccountsByStorageList({
+    moneyStorages,
+  }: {
+    moneyStorages: MoneyStoragesEntity[];
+  }): Promise<AccountsByStoreDto[]> {
+    const moneyStoragesIds = moneyStorages.map(({ id }) => id);
 
     const [rawAccountsList] = await super.findAndCount({
       pagination: {
         page: 1,
-        pageSize: (100000 * moneyStorageCount),
+        pageSize: (100000 * moneyStoragesIds.length),
       },
       where: {
         moneyStorageId: In(moneyStoragesIds),
@@ -78,7 +109,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
 
     const accountMappedByMoneyStorages = createdMapListFromEntity(enrichedAccounts, 'moneyStorageId');
 
-    const accountByStore = rawMoneyStorages.map((moneyStorage) => {
+    const accountByStore = moneyStorages.map((moneyStorage) => {
       const accounts = accountMappedByMoneyStorages[moneyStorage.id] ?? [];
       return new AccountsByStoreDto({
         moneyStorage,
@@ -86,7 +117,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
       });
     });
 
-    return [accountByStore, moneyStorageCount];
+    return accountByStore;
   }
 
   public async getActualAccountsWithStorage({
@@ -99,6 +130,48 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     filter?: AccountsWithStorageFilter;
   }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
     const [rawMoneyStorages] = await this.moneyStoragesProvider.getActualMoneyStorage();
+
+    const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
+
+    const [rawAccountsList, accountListCount] = await this.getRawAccountsList({
+      pagination,
+      order,
+      filter: {
+        moneyStoragesIds,
+        ...filter,
+      },
+    });
+
+    const enrichedAccounts = await this.accountsEnrichment(rawAccountsList);
+
+    const accountsWithMoneyStorage = enrichedAccounts.map((account) => {
+      const moneyStorage = account.moneyStorage ?? null;
+      const currency = account.currency;
+      return new AccountWithMoneyStorageDto({
+        account,
+        moneyStorage,
+        currency,
+      });
+    });
+
+    return [accountsWithMoneyStorage, accountListCount];
+  }
+
+  public async getObligationAccountsWithStorage({
+    pagination,
+    order,
+    filter,
+  }: {
+    pagination: Pagination;
+    order?: Order<AccountEntity>;
+    filter?: AccountsWithStorageFilter;
+  }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
+    const [rawMoneyStorages] = await this.moneyStoragesProvider.findObligationStorages({
+      pagination: {
+        page: 1,
+        pageSize: 1000000,
+      },
+    });
 
     const moneyStoragesIds = rawMoneyStorages.map(({ id }) => id);
 

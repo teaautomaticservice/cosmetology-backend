@@ -224,6 +224,21 @@ export class CashierService {
     return resp;
   }
 
+  public async getActualAccountsByObligationStoragesList({
+    pagination,
+    order,
+  }: {
+    pagination: Pagination;
+    order?: Sort<SortAccountsByStorages>;
+  }): Promise<FoundAndCounted<AccountsByStoreDto>> {
+    const resp = await this.accountsProvider.getObligationAccountsByStorageList({
+      pagination,
+      order,
+    });
+
+    return resp;
+  }
+
   public async getAccountsAggregatedWithStorageList({
     pagination,
     order,
@@ -266,6 +281,24 @@ export class CashierService {
     filter?: AccountsWithStorageFilter;
   }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
     const resp = await this.accountsProvider.getActualAccountsWithStorage({
+      pagination,
+      order,
+      filter,
+    });
+
+    return resp;
+  }
+
+  public async getObligationAccountsList({
+    pagination,
+    order,
+    filter,
+  }: {
+    pagination: Pagination;
+    order?: Sort<keyof AccountEntity>;
+    filter?: AccountsWithStorageFilter;
+  }): Promise<FoundAndCounted<AccountWithMoneyStorageDto>> {
+    const resp = await this.accountsProvider.getObligationAccountsWithStorage({
       pagination,
       order,
       filter,

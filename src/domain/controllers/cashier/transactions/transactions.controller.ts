@@ -29,10 +29,6 @@ export class TransactionsController {
   @UseGuards(AuthGuard)
   @Get('/list')
   @ApiQueryPagination()
-  // @ApiQuerySortOrder([
-  //   'status',
-  //   'name',
-  // ] satisfies SortAccountsByStorages[])
   @ApiOkResponse({
     description: 'List of transactions',
     type: TransactionsPaginated,
@@ -40,8 +36,6 @@ export class TransactionsController {
   public async getList(
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
-      // @Query('sort', ParseString) sort?: SortAccountsByStorages,
-      // @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
   ): Promise<TransactionsPaginated> {
     const [transactions, count] = await this.cashierService.getTransactionsList();
 
