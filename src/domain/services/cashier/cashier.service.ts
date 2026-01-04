@@ -22,6 +22,7 @@ import { TransactionsProvider } from '@providers/cashier/transactions/transactio
 import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
+  LoanRepaymentTransaction,
   LoanTransaction
 } from '@providers/cashier/transactions/transactions.types';
 import {
@@ -528,6 +529,25 @@ export class CashierService {
     return true;
   }
 
+  public async receiptTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
+    const { amount } = data;
+    this.checkAmount(amount);
+
+    const resp = await this.transactionsProvider.receiptTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Open Balance');
+    }
+
+    return true;
+  }
+
   public async loanTransaction({
     data,
   }: {
@@ -546,15 +566,14 @@ export class CashierService {
     return true;
   }
 
-  public async receiptTransaction({
+  public async loanRepaymentTransaction({
     data,
   }: {
-    data: CreateTransaction;
+    data: LoanRepaymentTransaction;
   }): Promise<boolean> {
-    const { amount } = data;
-    this.checkAmount(amount);
+    this.checkAmount(data.amount);
 
-    const resp = await this.transactionsProvider.receiptTransaction({
+    const resp = await this.transactionsProvider.loanRepaymentTransaction({
       data,
     });
 

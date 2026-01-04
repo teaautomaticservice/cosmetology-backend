@@ -27,3 +27,12 @@ export type LoanTransaction = Pick<RecordEntity<
   obligationStorageId: number;
   amount: number;
 }
+
+export type LoanRepaymentTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'creditId' |
+  'description'
+> & {
+  creditObligationAccountId: number;
+  amount: number;
+}

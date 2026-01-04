@@ -13,6 +13,7 @@ import { CashierService } from '@services/cashier/cashier.service';
 
 import { GetTransactionDto } from './dtos/getTransaction.dto';
 import { NewLoanDto } from './dtos/newLoanDto';
+import { NewLoanRepaymentDto } from './dtos/newLoanRepaymentDto';
 import { NewOpenBalanceObligationDto } from './dtos/newOpenBalanceObligationDto';
 import { NewTransactionDto } from './dtos/newTransactionDto.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
@@ -111,6 +112,24 @@ export class TransactionsController {
   }
 
   @UseGuards(AuthGuard)
+  @Post('/receipt')
+  @ApiBody({
+    description: 'receipt',
+    type: NewTransactionDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Receipt successful created',
+  })
+  public async receipt(
+    @Body() transactionReq: NewTransactionDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.receiptTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
   @Post('/loan')
   @ApiBody({
     description: 'Loan',
@@ -129,18 +148,18 @@ export class TransactionsController {
   }
 
   @UseGuards(AuthGuard)
-  @Post('/receipt')
+  @Post('/loan-repayment')
   @ApiBody({
-    description: 'receipt',
-    type: NewTransactionDto,
+    description: 'Loan',
+    type: NewLoanRepaymentDto,
   })
   @ApiOkResponse({
-    description: 'New transaction Receipt successful created',
+    description: 'New transaction Loan Repayment successful created',
   })
-  public async receipt(
-    @Body() transactionReq: NewTransactionDto,
+  public async loanRepayment(
+    @Body() transactionReq: NewLoanRepaymentDto,
   ): Promise<boolean> {
-    const resp = await this.cashierService.receiptTransaction({
+    const resp = await this.cashierService.loanRepaymentTransaction({
       data: transactionReq,
     });
     return resp;
