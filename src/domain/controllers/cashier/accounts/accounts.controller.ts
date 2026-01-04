@@ -85,6 +85,42 @@ export class AccountsController {
   }
 
   @UseGuards(AuthGuard)
+  @Get('/accounts-by-obligation-storages-list')
+  @ApiQueryPagination()
+  @ApiQuerySortOrder(['status'] satisfies SortAccountsByStorages[])
+  @ApiOkResponse({
+    description: 'List of accounts by money storages successful',
+    type: AccountsByStorePaginated,
+  })
+  public async getAccountsByObligationStoragesList(
+    @QueryInt('page', 1) page: number,
+    @QueryInt('pageSize', 10) pageSize: number,
+    @Query('sort', ParseString) sort?: SortAccountsByStorages,
+    @Query('order', ParseSortOrderPipe,) order?: 1 | -1,
+  ): Promise<AccountsByStorePaginated> {
+    const [accountsByStore, count] = await this.cashierService.getActualAccountsByObligationStoragesList({
+      pagination: {
+        page,
+        pageSize,
+      },
+      ...(sort && {
+        order: {
+          [sort]: order ?? 1,
+        },
+      }),
+    });
+
+    return {
+      data: accountsByStore.map((data) => new GetAccountsByStoreDto(data)),
+      meta: {
+        count,
+        currentPage: page,
+        itemsPerPage: pageSize,
+      },
+    };
+  }
+
+  @UseGuards(AuthGuard)
   @Get('/accounts-aggregated-with-storage-list')
   @ApiQueryPagination()
   @ApiQuerySortOrder([
@@ -248,6 +284,84 @@ export class AccountsController {
     @QueryInt('balanceTo') balanceTo?: number,
   ): Promise<AccountsWithStoragePaginatedDto> {
     const [accountsWithStore, count] = await this.cashierService.getActualAccountsList({
+      pagination: {
+        page,
+        pageSize,
+      },
+      ...(sort && {
+        order: {
+          [sort]: order ?? 1,
+        },
+      }),
+      filter: {
+        ...(moneyStoragesIds && { moneyStoragesIds: moneyStoragesIds.map((val) => Number(val)) }),
+        status,
+        query,
+        balanceFrom,
+        balanceTo,
+      },
+    });
+
+    return {
+      data: accountsWithStore.map((data) => new GetAccountWithStorageDto(data)),
+      meta: {
+        count,
+        currentPage: page,
+        itemsPerPage: pageSize,
+      },
+    };
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('/obligation-list')
+  @ApiQueryPagination()
+  @ApiQuerySortOrder([
+    'status',
+    'name',
+  ] satisfies SortAccountsByStorages[])
+  @ApiQuery({
+    name: 'moneyStoragesIds',
+    required: false,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: AccountStatus,
+    isArray: true,
+    enumName: 'AccountStatus',
+  })
+  @ApiQuery({
+    name: 'query',
+    required: false,
+    type: 'string'
+  })
+  @ApiQuery({
+    name: 'balanceFrom',
+    required: false,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'balanceTo',
+    required: false,
+    type: 'number',
+  })
+  @ApiOkResponse({
+    description: 'List of accounts with obligation storages',
+    type: AccountsWithStoragePaginatedDto,
+  })
+  public async getObligationList(
+    @QueryInt('page', 1) page: number,
+    @QueryInt('pageSize', 10) pageSize: number,
+    @Query('sort', ParseString) sort?: SortAccountsByStorages,
+    @Query('order', ParseSortOrderPipe) order?: 1 | -1,
+    @Query('moneyStoragesIds', ParseArray) moneyStoragesIds?: string[],
+    @Query('status', ParseArray) status?: AccountStatus[],
+    @Query('query', ParseString) query?: string,
+    @QueryInt('balanceFrom') balanceFrom?: number,
+    @QueryInt('balanceTo') balanceTo?: number,
+  ): Promise<AccountsWithStoragePaginatedDto> {
+    const [accountsWithStore, count] = await this.cashierService.getObligationAccountsList({
       pagination: {
         page,
         pageSize,
