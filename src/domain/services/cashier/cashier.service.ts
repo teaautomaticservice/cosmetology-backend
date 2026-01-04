@@ -479,8 +479,7 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    const { amount } = data;
-    this.checkAmount(amount);
+    this.checkAmount(data.amount);
 
     const resp = await this.transactionsProvider.openBalanceTransaction({
       data,
@@ -498,8 +497,7 @@ export class CashierService {
   }: {
     data: CreateOpenBalanceObligationTransaction;
   }): Promise<boolean> {
-    const { amount } = data;
-    this.checkAmount(amount);
+    this.checkAmount(data.amount);
 
     const resp = await this.transactionsProvider.openBalanceObligationTransaction({
       data,
@@ -517,8 +515,7 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    const { amount } = data;
-    this.checkAmount(amount);
+    this.checkAmount(data.amount);
 
     const resp = await this.transactionsProvider.cashOutTransaction({
       data,
@@ -536,10 +533,28 @@ export class CashierService {
   }: {
     data: LoanTransaction;
   }): Promise<boolean> {
+    this.checkAmount(data.amount);
+
+    const resp = await this.transactionsProvider.loanTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Open Balance');
+    }
+
+    return true;
+  }
+
+  public async receiptTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
     const { amount } = data;
     this.checkAmount(amount);
 
-    const resp = await this.transactionsProvider.loanTransaction({
+    const resp = await this.transactionsProvider.receiptTransaction({
       data,
     });
 

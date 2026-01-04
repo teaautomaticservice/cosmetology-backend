@@ -127,4 +127,22 @@ export class TransactionsController {
     });
     return resp;
   }
+
+  @UseGuards(AuthGuard)
+  @Post('/receipt')
+  @ApiBody({
+    description: 'receipt',
+    type: NewTransactionDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Receipt successful created',
+  })
+  public async receipt(
+    @Body() transactionReq: NewTransactionDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.receiptTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
 }
