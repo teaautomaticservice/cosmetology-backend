@@ -38,7 +38,12 @@ export class TransactionsController {
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
   ): Promise<TransactionsPaginated> {
-    const [transactions, count] = await this.cashierService.getTransactionsList();
+    const [transactions, count] = await this.cashierService.getTransactionsList({
+      pagination: {
+        page,
+        pageSize,
+      }
+    });
 
     return {
       data: transactions.map((data) => new GetTransactionDto(data)),
