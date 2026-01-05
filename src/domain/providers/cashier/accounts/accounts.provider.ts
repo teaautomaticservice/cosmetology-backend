@@ -123,7 +123,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
       }), {
         balance: 0,
         available: 0,
-      })
+      });
       return new AccountsByStoreDto({
         moneyStorage,
         accounts,
