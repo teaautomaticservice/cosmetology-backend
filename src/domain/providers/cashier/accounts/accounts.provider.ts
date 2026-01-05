@@ -111,9 +111,24 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
 
     const accountByStore = moneyStorages.map((moneyStorage) => {
       const accounts = accountMappedByMoneyStorages[moneyStorage.id] ?? [];
+      const {
+        balance,
+        available,
+      } = accounts.reduce<{
+        balance: number;
+        available: number;
+      }>((acc, val) => ({
+        balance: Number(acc.balance) + Number(val.balance),
+        available: Number(acc.available) + Number(val.available),
+      }), {
+        balance: 0,
+        available: 0,
+      })
       return new AccountsByStoreDto({
         moneyStorage,
         accounts,
+        balance,
+        available,
       });
     });
 
