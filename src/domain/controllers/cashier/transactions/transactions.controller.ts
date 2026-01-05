@@ -16,6 +16,7 @@ import { NewLoanDto } from './dtos/newLoanDto';
 import { NewLoanRepaymentDto } from './dtos/newLoanRepaymentDto';
 import { NewOpenBalanceObligationDto } from './dtos/newOpenBalanceObligationDto';
 import { NewTransactionDto } from './dtos/newTransactionDto.dto';
+import { NewTransferDto } from './dtos/newTransferDto.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
 import { CASHIER_TRANSACTIONS_PATH } from '../cashier.paths';
 
@@ -154,6 +155,24 @@ export class TransactionsController {
     @Body() transactionReq: NewLoanRepaymentDto,
   ): Promise<boolean> {
     const resp = await this.cashierService.loanRepaymentTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/transfer')
+  @ApiBody({
+    description: 'Transfer',
+    type: NewTransferDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Transfer Repayment successful created',
+  })
+  public async loanTransfer(
+    @Body() transactionReq: NewTransferDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.transferTransaction({
       data: transactionReq,
     });
     return resp;
