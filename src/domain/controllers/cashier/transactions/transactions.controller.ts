@@ -169,7 +169,7 @@ export class TransactionsController {
   @ApiOkResponse({
     description: 'New transaction Transfer Repayment successful created',
   })
-  public async loanTransfer(
+  public async transfer(
     @Body() transactionReq: NewTransferDto,
   ): Promise<boolean> {
     const resp = await this.cashierService.transferTransaction({
