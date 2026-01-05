@@ -12,9 +12,23 @@ export class GetAccountsByStoreDto extends MoneyStorageDto {
   })
   public accounts: GetAccountDto[];
 
+  @ApiProperty({
+    type: 'number',
+    required: true,
+  })
+  public balance: number;
+
+  @ApiProperty({
+    type: 'number',
+    required: true,
+  })
+  public available: number;
+
   constructor(accountByStore: AccountsByStoreDto) {
     super(accountByStore);
 
     this.accounts = accountByStore.accounts.map((account) => new GetAccountDto(account));
+    this.balance = accountByStore.balance;
+    this.available = accountByStore.available;
   }
 }

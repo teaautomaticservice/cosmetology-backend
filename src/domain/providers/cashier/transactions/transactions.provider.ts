@@ -676,6 +676,93 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     });
   }
 
+  public async transferTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<TransactionEntity> {
+    const {
+      amount,
+      debitId,
+      creditId,
+      description,
+    } = data;
+
+    if (Number.isNaN(amount) || amount <= 0) {
+      throw new InternalServerErrorException(`Transfer create error. Amount ${amount} isn't correct`);
+    }
+
+    if (!debitId || !creditId) {
+      throw new InternalServerErrorException(`Transfer create error. debitId and creditId and should be exist`);
+    }
+
+    return this.dataSource.transaction(async (manager: EntityManager) => {
+      const accounts = await manager
+        .createQueryBuilder(AccountEntity, 'account')
+        .setLock('pessimistic_write')
+        .where('account.id IN (:...ids)', {
+          ids: [debitId, creditId].filter(Boolean)
+        })
+        .getMany();
+
+      const debitAccount = accounts.find(({ id }) => id === debitId) ?? null;
+      const creditAccount = accounts.find(({ id }) => id === creditId) ?? null;
+
+      if (!debitAccount || debitAccount.status !== AccountStatus.ACTIVE) {
+        throw new BadRequestException(`Debit account ${debitId} not found or not active`);
+      }
+
+      if (!creditAccount || creditAccount.status !== AccountStatus.ACTIVE) {
+        throw new BadRequestException(`Credit account ${creditId} not found or not active`);
+      }
+
+      if (debitAccount.currencyId !== creditAccount.currencyId) {
+        throw new BadRequestException('Accounts must have the same currency');
+      }
+
+      const formattedAmount = BigInt(amount);
+      const creditAvailable = BigInt(creditAccount.available);
+      const creditBalance = BigInt(creditAccount.balance);
+      const debitAvailable = BigInt(debitAccount.available);
+      const debitBalance = BigInt(debitAccount.balance);
+
+      if (creditAvailable < formattedAmount) {
+        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
+      }
+
+      const newCreditAvailable = creditAvailable - formattedAmount;
+      const newCreditBalance = creditBalance - formattedAmount;
+      const newDebitAvailable = debitAvailable + formattedAmount;
+      const newDebitBalance = debitBalance + formattedAmount;
+
+      await Promise.all([
+        manager.update(AccountEntity, creditId, {
+          available: newCreditAvailable.toString(),
+          balance: newCreditBalance.toString(),
+        }),
+        manager.update(AccountEntity, debitId, {
+          available: newDebitAvailable.toString(),
+          balance: newDebitBalance.toString(),
+        }),
+      ]);
+
+      const transaction = manager.create(TransactionEntity, {
+        transactionId: this.generateTransactionId(),
+        amount: formattedAmount.toString(),
+        debitId: debitId,
+        creditId: creditId,
+        status: TransactionStatus.COMPLETED,
+        operationType: OperationType.TRANSFER,
+        executionDate: new Date(),
+        description: description ?? null,
+      });
+
+      await manager.save(transaction);
+
+      return transaction;
+    });
+  }
+
   private generateTransactionId(): string {
     const year = new Date().getFullYear();
     const additionalId = uuid().replace(/-/g, '').substring(0, 12).toUpperCase();

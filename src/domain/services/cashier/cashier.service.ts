@@ -538,7 +538,7 @@ export class CashierService {
     });
 
     if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Open Balance');
+      throw new InternalServerErrorException('Error creating transaction Open Balance Obligation');
     }
 
     return true;
@@ -556,7 +556,7 @@ export class CashierService {
     });
 
     if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Open Balance');
+      throw new InternalServerErrorException('Error creating transaction Cash Out');
     }
 
     return true;
@@ -575,7 +575,7 @@ export class CashierService {
     });
 
     if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Open Balance');
+      throw new InternalServerErrorException('Error creating transaction Receipt');
     }
 
     return true;
@@ -593,7 +593,7 @@ export class CashierService {
     });
 
     if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Open Balance');
+      throw new InternalServerErrorException('Error creating transaction Loan');
     }
 
     return true;
@@ -611,7 +611,25 @@ export class CashierService {
     });
 
     if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Open Balance');
+      throw new InternalServerErrorException('Error creating transaction Loan Repayment');
+    }
+
+    return true;
+  }
+
+  public async transferTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
+    this.checkAmount(data.amount);
+
+    const resp = await this.transactionsProvider.transferTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Transfer');
     }
 
     return true;
