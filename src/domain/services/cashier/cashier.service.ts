@@ -503,8 +503,14 @@ export class CashierService {
   }
 
   // Transactions
-  public async getTransactionsList(): Promise<FoundAndCounted<TransactionEntity>> {
-    const resp = await this.transactionsProvider.getTransactionsList();
+  public async getTransactionsList({
+    pagination,
+  }: {
+    pagination: Pagination;
+  }): Promise<FoundAndCounted<TransactionEntity>> {
+    const resp = await this.transactionsProvider.getTransactionsList({
+      pagination,
+    });
     return resp;
   }
 

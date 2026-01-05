@@ -9,7 +9,7 @@ import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStora
 import { TransactionsDb } from '@postgresql/repositories/cashier/transactions/transactions.db';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
-import { FoundAndCounted, RecordEntity } from '@providers/common/common.type';
+import { FoundAndCounted, Pagination, RecordEntity } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 
 import {
@@ -28,12 +28,13 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     super(transactionsDb);
   }
 
-  public async getTransactionsList(): Promise<FoundAndCounted<TransactionEntity>> {
+  public async getTransactionsList({
+    pagination,
+  }: {
+    pagination: Pagination;
+  }): Promise<FoundAndCounted<TransactionEntity>> {
     return super.findAndCount({
-      pagination: {
-        page: 1,
-        pageSize: 10,
-      },
+      pagination,
       relations: ['debitAccount', 'creditAccount']
     });
   }
