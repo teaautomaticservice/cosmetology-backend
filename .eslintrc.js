@@ -183,5 +183,14 @@ module.exports = {
         "caughtErrorsIgnorePattern": "^_"
       }
     ],
+    'no-param-reassign': [
+      'error',
+      {
+        props: true,
+        ignorePropertyModificationsFor: [
+          'acc',
+        ],
+      },
+    ],
   },
 };

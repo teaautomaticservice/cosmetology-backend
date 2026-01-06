@@ -11,6 +11,7 @@ import {
 
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
+import { TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import {
   FoundAndCounted,
   ID,
@@ -30,6 +31,7 @@ import { normalizeString } from '@utils/normalizeString';
 import { AccountsByStoreDto } from './dtos/accountByStore.dto';
 import { AccountAggregatedWithStorageDto } from './dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';
+import { expendTransactionTypes, incomeTransactionTypes, transferTransactionTypes } from './accounts.constants';
 import {
   AccountsAggregatedWithStorage,
   AccountsAggregatedWithStorageFilter,
@@ -39,6 +41,7 @@ import {
 } from './accounts.type';
 import { CurrenciesProvider } from '../currencies/currencies.provider';
 import { MoneyStoragesProvider } from '../moneyStorages/moneyStorages.provider';
+import { TransactionsProvider } from '../transactions/transactions.provider';
 
 @Injectable()
 export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
@@ -46,6 +49,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     private readonly accountsDb: AccountsDb,
     private readonly moneyStoragesProvider: MoneyStoragesProvider,
     private readonly currenciesProvider: CurrenciesProvider,
+    private readonly transactionsProvider: TransactionsProvider,
   ) {
     super(accountsDb);
   }
@@ -105,30 +109,95 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
       },
     });
 
+    const accountsIds = rawAccountsList.map(({ id }) => id);
+
+    const [rawTransactions] = await this.transactionsProvider.getTransactionsList({
+      pagination: {
+        page: 1,
+        pageSize: (100000 * moneyStoragesIds.length),
+      },
+      filter: {
+        anyAccountIds: accountsIds,
+        status: [TransactionStatus.COMPLETED],
+      },
+    });
+
     const enrichedAccounts = await this.accountsEnrichment(rawAccountsList);
 
     const accountMappedByMoneyStorages = createdMapListFromEntity(enrichedAccounts, 'moneyStorageId');
+
+    const {
+      incomeByAccounts,
+      expendByAccounts,
+      transferByAccounts,
+    } = rawTransactions.reduce<{
+      incomeByAccounts: Record<number, number>;
+      expendByAccounts: Record<number, number>;
+      transferByAccounts: Record<number, number>;
+    }>((acc, trn) => {
+      const amount = Number(trn.amount);
+
+      if (trn.debitId && incomeTransactionTypes.includes(trn.operationType)) {
+        acc.incomeByAccounts[trn.debitId] = (acc.incomeByAccounts[trn.debitId] ?? 0) + amount;
+      }
+
+      if (trn.creditId && expendTransactionTypes.includes(trn.operationType)) {
+        acc.expendByAccounts[trn.creditId] = (acc.expendByAccounts[trn.creditId] ?? 0) + amount;
+      }
+
+      if ((trn.debitId || trn.creditId) && transferTransactionTypes.includes(trn.operationType)) {
+        const accountId = (trn.debitId ?? trn.creditId) as ID;
+        acc.transferByAccounts[accountId] = (acc.transferByAccounts[accountId] ?? 0) + amount;
+      }
+
+      return acc;
+    }, {
+      incomeByAccounts: {},
+      expendByAccounts: {},
+      transferByAccounts: {},
+    });
 
     const accountByStore = moneyStorages.map((moneyStorage) => {
       const accounts = accountMappedByMoneyStorages[moneyStorage.id] ?? [];
       const {
         balance,
         available,
+        income,
+        expend,
+        transfer,
       } = accounts.reduce<{
         balance: number;
         available: number;
-      }>((acc, val) => ({
-        balance: Number(acc.balance) + Number(val.balance),
-        available: Number(acc.available) + Number(val.available),
-      }), {
+        income: number;
+        expend: number;
+        transfer: number;
+      }>((acc, account) => {
+        const currentIncome = incomeByAccounts[account.id] ?? 0;
+        const expendIncome = expendByAccounts[account.id] ?? 0;
+        const transferIncome = transferByAccounts[account.id] ?? 0;
+        return {
+          balance: Number(acc.balance) + Number(account.balance),
+          available: Number(acc.available) + Number(account.available),
+
+          income: acc.income + currentIncome,
+          expend: acc.expend + expendIncome,
+          transfer: acc.transfer + transferIncome,
+        };
+      }, {
         balance: 0,
         available: 0,
+        income: 0,
+        expend: 0,
+        transfer: 0,
       });
       return new AccountsByStoreDto({
         moneyStorage,
         accounts,
         balance,
         available,
+        income,
+        expend,
+        transfer,
       });
     });
 
