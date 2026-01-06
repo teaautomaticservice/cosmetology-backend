@@ -1,4 +1,13 @@
-import { DataSource, EntityManager } from 'typeorm';
+import {
+  And,
+  DataSource,
+  EntityManager,
+  ILike,
+  In,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Not
+} from 'typeorm';
 import { v4 as uuid } from 'uuid';
 
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
@@ -9,6 +18,7 @@ import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStora
 import { TransactionsDb } from '@postgresql/repositories/cashier/transactions/transactions.db';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
+import { Where } from '@postgresql/repositories/common/common.types';
 import { FoundAndCounted, Pagination, RecordEntity } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 
@@ -16,7 +26,8 @@ import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
   LoanRepaymentTransaction,
-  LoanTransaction
+  LoanTransaction,
+  TransactionsFilter
 } from './transactions.types';
 
 @Injectable()
@@ -30,12 +41,47 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
 
   public async getTransactionsList({
     pagination,
+    filter,
   }: {
     pagination: Pagination;
+    filter?: TransactionsFilter;
   }): Promise<FoundAndCounted<TransactionEntity>> {
+    const baseWhere: Where<TransactionEntity> = {
+      ...(filter?.parentTransactionIds && { parentTransactionId: In(filter.parentTransactionIds) }),
+      ...(filter?.status && { status: In(filter.status) }),
+      ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
+      ...(filter?.debitIds && { debitId: In(filter.debitIds) }),
+      ...(filter?.creditIds && { creditId: In(filter.creditIds) }),
+      ...((filter?.amountFrom && filter?.amountTo) &&
+        ({
+          amount: And(
+            ...(filter?.amountFrom ? [MoreThanOrEqual(filter.amountFrom.toString())] : []),
+            ...(filter?.amountTo ? [LessThanOrEqual(filter.amountTo.toString())] : []),
+          ),
+        })),
+      ...(filter?.amountFrom && !filter?.amountTo && {
+        amount: MoreThanOrEqual(filter.amountFrom.toString()),
+      }),
+      ...(!filter?.amountFrom && filter?.amountTo && {
+        amount: LessThanOrEqual(filter.amountTo.toString()),
+      }),
+    };
+
     return super.findAndCount({
       pagination,
-      relations: ['debitAccount', 'creditAccount']
+      relations: ['debitAccount', 'creditAccount'],
+      where: (filter?.query || filter?.anyAccountIds) ? [
+        {
+          ...baseWhere,
+          ...(filter?.query && AccountEntity.checkLikeId(filter.query) ? { id: Number(filter.query) } : {}),
+          ...(filter?.anyAccountIds && { debitId: In(filter.anyAccountIds) }),
+        },
+        {
+          ...baseWhere,
+          ...(filter?.query ? { transactionId: ILike(`%${filter.query}%`) } : {}),
+          ...(filter?.anyAccountIds && { creditId: In(filter.anyAccountIds) }),
+        }
+      ] : baseWhere
     });
   }
 

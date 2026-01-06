@@ -4,12 +4,14 @@ import { AccountsRepositoryModule } from '@providers/postgresql/repositories/cas
 import { AccountsProvider } from './accounts.provider';
 import { CurrenciesProviderModule } from '../currencies/currenciesProvider.module';
 import { MoneyStoragesProviderModule } from '../moneyStorages/moneyStorageProvider.module';
+import { TransactionsProviderModule } from '../transactions/transactionsProvider.module';
 
 @Module({
   imports: [
     AccountsRepositoryModule,
     MoneyStoragesProviderModule,
     CurrenciesProviderModule,
+    TransactionsProviderModule,
   ],
   providers: [AccountsProvider],
   exports: [AccountsProvider],

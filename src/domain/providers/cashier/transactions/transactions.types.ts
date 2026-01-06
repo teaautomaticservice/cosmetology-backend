@@ -1,5 +1,5 @@
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
-import { RecordEntity } from '@providers/common/common.type';
+import { ID, RecordEntity } from '@providers/common/common.type';
 
 export type CreateTransaction = Pick<RecordEntity<
   TransactionEntity>,
@@ -35,4 +35,17 @@ export type LoanRepaymentTransaction = Pick<RecordEntity<
 > & {
   creditObligationAccountId: number;
   amount: number;
+}
+
+export type TransactionsFilter = {
+  ids?: ID[];
+  parentTransactionIds?: string[];
+  status?: TransactionEntity['status'][];
+  notStatus?: TransactionEntity['status'][];
+  debitIds?: ID[];
+  creditIds?: ID[];
+  anyAccountIds?: ID[];
+  query?: string;
+  amountFrom?: number;
+  amountTo?: number;
 }
