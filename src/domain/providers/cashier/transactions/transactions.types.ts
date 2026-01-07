@@ -30,6 +30,7 @@ export type LoanTransaction = Pick<RecordEntity<
 
 export type LoanRepaymentTransaction = Pick<RecordEntity<
   TransactionEntity>,
+  'debitId' |
   'creditId' |
   'description'
 > & {
