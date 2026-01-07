@@ -624,6 +624,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     const {
       amount,
       creditObligationAccountId,
+      debitId,
       creditId,
       description,
     } = data;
@@ -632,7 +633,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       throw new InternalServerErrorException(`Loan Repayment create error. Amount ${amount} isn't correct`);
     }
 
-    if (!creditObligationAccountId || !creditId) {
+    if (!creditObligationAccountId || !creditId || !debitId) {
       throw new InternalServerErrorException(`Loan Repayment create error. creditObligationAccountId and creditId should be exist`);
     }
 
@@ -641,12 +642,13 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
         .where('account.id IN (:...ids)', {
-          ids: [creditObligationAccountId, creditId].filter(Boolean)
+          ids: [creditObligationAccountId, creditId, debitId].filter(Boolean)
         })
         .getMany();
 
       const creditObligationAccountAccount = accounts.find(({ id }) => id === creditObligationAccountId) ?? null;
       const creditAccount = accounts.find(({ id }) => id === creditId) ?? null;
+      const debitAccount = accounts.find(({ id }) => id === debitId) ?? null;
 
       if (!creditObligationAccountAccount || creditObligationAccountAccount.status !== AccountStatus.ACTIVE) {
         throw new BadRequestException(
@@ -658,11 +660,20 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         throw new BadRequestException(`Credit account ${creditId} not found or not active`);
       }
 
-      if (creditObligationAccountAccount.currencyId !== creditAccount.currencyId) {
+      if (!debitAccount || debitAccount.status !== AccountStatus.ACTIVE) {
+        throw new BadRequestException(`Debit account ${debitId} not found or not active`);
+      }
+
+      if (
+        creditObligationAccountAccount.currencyId !== creditAccount.currencyId ||
+        creditObligationAccountAccount.currencyId !== debitAccount.currencyId
+      ) {
         throw new BadRequestException('Accounts must have the same currency');
       }
 
       const formattedAmount = BigInt(amount);
+      const debitAvailable = BigInt(debitAccount.available);
+      const debitBalance = BigInt(debitAccount.balance);
       const creditAvailable = BigInt(creditAccount.available);
       const creditBalance = BigInt(creditAccount.balance);
       const creditObligationAvailable = BigInt(creditObligationAccountAccount.available);
@@ -677,12 +688,18 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         throw new BadRequestException(`Insufficient funds in the Obligation account ${creditObligationAccountId}`);
       }
 
+      const newDebitAvailable = debitAvailable + formattedAmount;
+      const newDebitBalance = debitBalance + formattedAmount;
       const newCreditAvailable = creditAvailable - formattedAmount;
       const newCreditBalance = creditBalance - formattedAmount;
       const newCreditObligationAvailable = creditObligationAvailable - formattedAmount;
       const newCreditObligationBalance = creditObligationBalance - formattedAmount;
 
       await Promise.all([
+        manager.update(AccountEntity, debitId, {
+          available: newDebitAvailable.toString(),
+          balance: newDebitBalance.toString(),
+        }),
         manager.update(AccountEntity, creditId, {
           available: newCreditAvailable.toString(),
           balance: newCreditBalance.toString(),
@@ -696,7 +713,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       const transaction = manager.create(TransactionEntity, {
         transactionId: moveTransactionId,
         amount: formattedAmount.toString(),
-        debitId: null,
+        debitId: debitId,
         creditId: creditId,
         status: TransactionStatus.COMPLETED,
         operationType: OperationType.LOAN_REPAYMENT,

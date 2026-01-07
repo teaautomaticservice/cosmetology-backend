@@ -21,6 +21,13 @@ export class NewLoanRepaymentDto {
     required: true,
     nullable: false,
   })
+  public readonly debitId: ID;
+
+  @ApiProperty({
+    type: 'number',
+    required: true,
+    nullable: false,
+  })
   public readonly creditId: ID;
 
   @ApiProperty({
