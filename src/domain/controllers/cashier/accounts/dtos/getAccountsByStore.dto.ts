@@ -40,7 +40,19 @@ export class GetAccountsByStoreDto extends MoneyStorageDto {
     type: 'number',
     required: true,
   })
-  public transfer: number;
+  public insideTransfer: number;
+
+  @ApiProperty({
+    type: 'number',
+    required: true,
+  })
+  public incomeTransfer: number;
+
+  @ApiProperty({
+    type: 'number',
+    required: true,
+  })
+  public expendTransfer: number;
 
   constructor(accountByStore: AccountsByStoreDto) {
     super(accountByStore);
@@ -50,6 +62,8 @@ export class GetAccountsByStoreDto extends MoneyStorageDto {
     this.available = accountByStore.available;
     this.income = accountByStore.income;
     this.expend = accountByStore.expend;
-    this.transfer = accountByStore.transfer;
+    this.insideTransfer = accountByStore.insideTransfer;
+    this.incomeTransfer = accountByStore.incomeTransfer;
+    this.expendTransfer = accountByStore.expendTransfer;
   }
 }
