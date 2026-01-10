@@ -9,7 +9,9 @@ export class AccountsByStoreDto extends MoneyStoragesEntity {
   public available: number;
   public income: number;
   public expend: number;
-  public transfer: number;
+  public insideTransfer: number;
+  public incomeTransfer: number;
+  public expendTransfer: number;
 
   constructor({
     moneyStorage,
@@ -18,7 +20,9 @@ export class AccountsByStoreDto extends MoneyStoragesEntity {
     available,
     income,
     expend,
-    transfer,
+    insideTransfer,
+    expendTransfer,
+    incomeTransfer,
   }: {
     moneyStorage: MoneyStoragesEntity;
     accounts: EnrichedAccountData<AccountEntity>[];
@@ -26,7 +30,9 @@ export class AccountsByStoreDto extends MoneyStoragesEntity {
     available: number;
     income: number;
     expend: number;
-    transfer: number;
+    insideTransfer: number;
+    incomeTransfer: number;
+    expendTransfer: number;
   }) {
     super();
 
@@ -37,7 +43,9 @@ export class AccountsByStoreDto extends MoneyStoragesEntity {
       available,
       income,
       expend,
-      transfer,
+      insideTransfer,
+      incomeTransfer,
+      expendTransfer,
     });
   }
 }

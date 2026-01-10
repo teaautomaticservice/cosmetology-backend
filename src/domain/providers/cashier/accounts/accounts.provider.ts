@@ -129,11 +129,15 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     const {
       incomeByAccounts,
       expendByAccounts,
-      transferByAccounts,
+      transferInsideByAccounts,
+      transferIncomeByAccounts,
+      transferExpendByAccounts,
     } = rawTransactions.reduce<{
       incomeByAccounts: Record<number, number>;
       expendByAccounts: Record<number, number>;
-      transferByAccounts: Record<number, number>;
+      transferInsideByAccounts: Record<number, number>;
+      transferIncomeByAccounts: Record<number, number>;
+      transferExpendByAccounts: Record<number, number>;
     }>((acc, trn) => {
       const amount = Number(trn.amount);
 
@@ -145,16 +149,25 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
         acc.expendByAccounts[trn.creditId] = (acc.expendByAccounts[trn.creditId] ?? 0) + amount;
       }
 
-      if ((trn.debitId || trn.creditId) && transferTransactionTypes.includes(trn.operationType)) {
-        const accountId = (trn.debitId ?? trn.creditId) as ID;
-        acc.transferByAccounts[accountId] = (acc.transferByAccounts[accountId] ?? 0) + amount;
+      if (transferTransactionTypes.includes(trn.operationType)) {
+        if ((trn.debitId && trn.creditId) && (trn.creditAccount?.moneyStorageId !== trn.debitAccount?.moneyStorageId)) {
+          acc.transferIncomeByAccounts[trn.debitId] = (acc.transferIncomeByAccounts[trn.debitId] ?? 0) + amount;
+          acc.transferExpendByAccounts[trn.creditId] = (acc.transferExpendByAccounts[trn.creditId] ?? 0) + amount;
+        }
+
+        if ((trn.debitId || trn.creditId)) {
+          const accountId = (trn.debitId ?? trn.creditId) as ID;
+          acc.transferInsideByAccounts[accountId] = (acc.transferInsideByAccounts[accountId] ?? 0) + amount;
+        }
       }
 
       return acc;
     }, {
       incomeByAccounts: {},
       expendByAccounts: {},
-      transferByAccounts: {},
+      transferInsideByAccounts: {},
+      transferIncomeByAccounts: {},
+      transferExpendByAccounts: {},
     });
 
     const accountByStore = moneyStorages.map((moneyStorage) => {
@@ -164,31 +177,41 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
         available,
         income,
         expend,
-        transfer,
+        insideTransfer,
+        incomeTransfer,
+        expendTransfer,
       } = accounts.reduce<{
         balance: number;
         available: number;
         income: number;
         expend: number;
-        transfer: number;
+        insideTransfer: number;
+        expendTransfer: number;
+        incomeTransfer: number;
       }>((acc, account) => {
         const currentIncome = incomeByAccounts[account.id] ?? 0;
         const expendIncome = expendByAccounts[account.id] ?? 0;
-        const transferIncome = transferByAccounts[account.id] ?? 0;
+        const transferInside = transferInsideByAccounts[account.id] ?? 0;
+        const transferIncome = transferIncomeByAccounts[account.id] ?? 0;
+        const transferExpend = transferExpendByAccounts[account.id] ?? 0;
         return {
           balance: Number(acc.balance) + Number(account.balance),
           available: Number(acc.available) + Number(account.available),
 
           income: acc.income + currentIncome,
           expend: acc.expend + expendIncome,
-          transfer: acc.transfer + transferIncome,
+          insideTransfer: acc.insideTransfer + transferInside,
+          incomeTransfer: acc.incomeTransfer + transferIncome,
+          expendTransfer: acc.expendTransfer + transferExpend,
         };
       }, {
         balance: 0,
         available: 0,
         income: 0,
         expend: 0,
-        transfer: 0,
+        insideTransfer: 0,
+        incomeTransfer: 0,
+        expendTransfer: 0,
       });
       return new AccountsByStoreDto({
         moneyStorage,
@@ -197,7 +220,9 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
         available,
         income,
         expend,
-        transfer,
+        insideTransfer,
+        expendTransfer,
+        incomeTransfer,
       });
     });
 
