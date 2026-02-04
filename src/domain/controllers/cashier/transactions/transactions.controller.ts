@@ -1,3 +1,6 @@
+import { ParseArray } from 'src/ambient/parsers/parseArray';
+import { parseArrayNumbers } from 'src/ambient/parsers/parseArrayNumbers';
+
 import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
 import { QueryInt } from '@decorators/queryInt';
@@ -6,9 +9,11 @@ import {
   Controller,
   Get,
   Post,
+  Query,
   UseGuards
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { GetTransactionDto } from './dtos/getTransaction.dto';
@@ -30,6 +35,47 @@ export class TransactionsController {
   @UseGuards(AuthGuard)
   @Get('/list')
   @ApiQueryPagination()
+  @ApiQuery({
+    name: 'amountFrom',
+    required: false,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'amountTo',
+    required: false,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: TransactionStatus,
+    isArray: true,
+    enumName: 'TransactionStatus',
+  })
+  @ApiQuery({
+    name: 'anyAccountIds',
+    type: 'number',
+    required: false,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'creditIds',
+    type: 'number',
+    required: false,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'debitIds',
+    type: 'number',
+    required: false,
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'ids',
+    type: 'number',
+    required: false,
+    isArray: true,
+  })
   @ApiOkResponse({
     description: 'List of transactions',
     type: TransactionsPaginated,
@@ -37,12 +83,28 @@ export class TransactionsController {
   public async getList(
     @QueryInt('page', 1) page: number,
     @QueryInt('pageSize', 10) pageSize: number,
+    @QueryInt('amountFrom') amountFrom?: number,
+    @QueryInt('amountTo') amountTo?: number,
+    @Query('status', ParseArray) status?: TransactionStatus[],
+    @Query('anyAccountIds', parseArrayNumbers) anyAccountIds?: number[],
+    @Query('creditIds', parseArrayNumbers) creditIds?: number[],
+    @Query('debitIds', parseArrayNumbers) debitIds?: number[],
+    @Query('ids', parseArrayNumbers) ids?: number[],
   ): Promise<TransactionsPaginated> {
     const [transactions, count] = await this.cashierService.getTransactionsList({
       pagination: {
         page,
         pageSize,
-      }
+      },
+      filter: {
+        amountFrom,
+        amountTo,
+        anyAccountIds,
+        creditIds,
+        debitIds,
+        ids,
+        status,
+      },
     });
 
     return {

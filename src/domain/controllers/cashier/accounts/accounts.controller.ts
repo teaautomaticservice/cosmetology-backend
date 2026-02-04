@@ -1,4 +1,5 @@
 import { ParseArray } from 'src/ambient/parsers/parseArray';
+import { parseArrayNumbers } from 'src/ambient/parsers/parseArrayNumbers';
 import { ParseSortOrderPipe } from 'src/ambient/parsers/parseSortOrder';
 import { ParseString } from 'src/ambient/parsers/parseString';
 import { ParseObjectIdPipe } from 'src/ambient/pipes/parseIntId';
@@ -277,7 +278,7 @@ export class AccountsController {
     @QueryInt('pageSize', 10) pageSize: number,
     @Query('sort', ParseString) sort?: SortAccountsByStorages,
     @Query('order', ParseSortOrderPipe) order?: 1 | -1,
-    @Query('moneyStoragesIds', ParseArray) moneyStoragesIds?: string[],
+    @Query('moneyStoragesIds', parseArrayNumbers) moneyStoragesIds?: number[],
     @Query('status', ParseArray) status?: AccountStatus[],
     @Query('query', ParseString) query?: string,
     @QueryInt('balanceFrom') balanceFrom?: number,
@@ -294,7 +295,7 @@ export class AccountsController {
         },
       }),
       filter: {
-        ...(moneyStoragesIds && { moneyStoragesIds: moneyStoragesIds.map((val) => Number(val)) }),
+        moneyStoragesIds,
         status,
         query,
         balanceFrom,

@@ -23,7 +23,8 @@ import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
   LoanRepaymentTransaction,
-  LoanTransaction
+  LoanTransaction,
+  TransactionsFilter
 } from '@providers/cashier/transactions/transactions.types';
 import {
   FoundAndCounted,
@@ -505,11 +506,14 @@ export class CashierService {
   // Transactions
   public async getTransactionsList({
     pagination,
+    filter,
   }: {
     pagination: Pagination;
+    filter?: TransactionsFilter;
   }): Promise<FoundAndCounted<TransactionEntity>> {
     const resp = await this.transactionsProvider.getTransactionsList({
       pagination,
+      filter,
     });
     return resp;
   }
