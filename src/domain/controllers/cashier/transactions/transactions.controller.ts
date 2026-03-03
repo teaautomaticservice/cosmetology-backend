@@ -70,12 +70,6 @@ export class TransactionsController {
     required: false,
     isArray: true,
   })
-  @ApiQuery({
-    name: 'ids',
-    type: 'number',
-    required: false,
-    isArray: true,
-  })
   @ApiOkResponse({
     description: 'List of transactions',
     type: TransactionsPaginated,
@@ -89,7 +83,6 @@ export class TransactionsController {
     @Query('anyAccountIds', parseArrayNumbers) anyAccountIds?: number[],
     @Query('creditIds', parseArrayNumbers) creditIds?: number[],
     @Query('debitIds', parseArrayNumbers) debitIds?: number[],
-    @Query('ids', parseArrayNumbers) ids?: number[],
   ): Promise<TransactionsPaginated> {
     const [transactions, count] = await this.cashierService.getTransactionsList({
       pagination: {
@@ -102,7 +95,6 @@ export class TransactionsController {
         anyAccountIds,
         creditIds,
         debitIds,
-        ids,
         status,
       },
     });
