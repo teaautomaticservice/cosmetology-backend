@@ -39,7 +39,6 @@ export type LoanRepaymentTransaction = Pick<RecordEntity<
 }
 
 export type TransactionsFilter = {
-  ids?: ID[];
   parentTransactionIds?: string[];
   status?: TransactionEntity['status'][];
   notStatus?: TransactionEntity['status'][];
