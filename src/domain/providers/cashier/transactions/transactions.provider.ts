@@ -800,7 +800,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         amount: formattedAmount.toString(),
         creditId: creditId,
         status: TransactionStatus.COMPLETED,
-        operationType: OperationType.LOAN,
+        operationType: OperationType.LENT,
         executionDate: new Date(),
         description: description ?? null,
       });
@@ -821,8 +821,8 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           throw new BadRequestException('Obligation account must have the same currency');
         }
 
-        const newObligationAvailable = BigInt(obligationAccount.available) + formattedAmount;
-        const newObligationBalance = BigInt(obligationAccount.balance) + formattedAmount;
+        const newObligationAvailable = BigInt(obligationAccount.available) - formattedAmount;
+        const newObligationBalance = BigInt(obligationAccount.balance) - formattedAmount;
 
         await manager.update(AccountEntity, obligationAccount.id, {
           available: newObligationAvailable.toString(),
@@ -848,10 +848,10 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         transactionId: this.generateTransactionId(),
         parentTransactionId: transaction.transactionId,
         amount: formattedAmount.toString(),
-        debitId: obligationAccount.id,
-        creditId: null,
+        debitId: null,
+        creditId: obligationAccount.id,
         status: TransactionStatus.COMPLETED,
-        operationType: OperationType.LOAN,
+        operationType: OperationType.LENT,
         executionDate: new Date(),
         description: description ?? null,
       });
@@ -900,10 +900,10 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         })
         .getMany();
 
-      const creditObligationAccountAccount = accounts.find(({ id }) => id === obligationAccountId) ?? null;
+      const obligationAccount = accounts.find(({ id }) => id === obligationAccountId) ?? null;
       const debitAccount = accounts.find(({ id }) => id === debitId) ?? null;
 
-      if (!creditObligationAccountAccount || creditObligationAccountAccount.status !== AccountStatus.ACTIVE) {
+      if (!obligationAccount || obligationAccount.status !== AccountStatus.ACTIVE) {
         throw new BadRequestException(
           `Obligation account ${obligationAccountId} not found or not active`
         );
@@ -914,7 +914,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       }
 
       if (
-        creditObligationAccountAccount.currencyId !== debitAccount.currencyId
+        obligationAccount.currencyId !== debitAccount.currencyId
       ) {
         throw new BadRequestException('Accounts must have the same currency');
       }
@@ -922,18 +922,14 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       const formattedAmount = BigInt(amount);
       const debitAvailable = BigInt(debitAccount.available);
       const debitBalance = BigInt(debitAccount.balance);
-      const creditObligationAvailable = BigInt(creditObligationAccountAccount.available);
-      const creditObligationBalance = BigInt(creditObligationAccountAccount.balance);
+      const obligationAvailable = BigInt(obligationAccount.available);
+      const obligationBalance = BigInt(obligationAccount.balance);
       const moveTransactionId = this.generateTransactionId();
-
-      if (creditObligationAvailable < formattedAmount) {
-        throw new BadRequestException(`Insufficient funds in the Obligation account ${obligationAccountId}`);
-      }
 
       const newDebitAvailable = debitAvailable + formattedAmount;
       const newDebitBalance = debitBalance + formattedAmount;
-      const newCreditObligationAvailable = creditObligationAvailable - formattedAmount;
-      const newCreditObligationBalance = creditObligationBalance - formattedAmount;
+      const newObligationAvailable = obligationAvailable + formattedAmount;
+      const newObligationBalance = obligationBalance + formattedAmount;
 
       await Promise.all([
         manager.update(AccountEntity, debitId, {
@@ -941,8 +937,8 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           balance: newDebitBalance.toString(),
         }),
         manager.update(AccountEntity, obligationAccountId, {
-          available: newCreditObligationAvailable.toString(),
-          balance: newCreditObligationBalance.toString(),
+          available: newObligationAvailable.toString(),
+          balance: newObligationBalance.toString(),
         }),
       ]);
 
@@ -951,7 +947,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         amount: formattedAmount.toString(),
         debitId: debitId,
         status: TransactionStatus.COMPLETED,
-        operationType: OperationType.LOAN_REPAYMENT,
+        operationType: OperationType.LENT_REPAYMENT,
         executionDate: new Date(),
         description: description ?? null,
       });
@@ -960,10 +956,10 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         transactionId: this.generateTransactionId(),
         parentTransactionId: moveTransactionId,
         amount: formattedAmount.toString(),
-        debitId: null,
-        creditId: obligationAccountId,
+        debitId: obligationAccountId,
+        creditId: null,
         status: TransactionStatus.COMPLETED,
-        operationType: OperationType.LOAN_REPAYMENT,
+        operationType: OperationType.LENT_REPAYMENT,
         executionDate: new Date(),
         description: description ?? null,
       });
