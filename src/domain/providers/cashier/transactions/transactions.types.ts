@@ -38,6 +38,24 @@ export type LoanRepaymentTransaction = Pick<RecordEntity<
   amount: number;
 }
 
+export type LentTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'creditId' |
+  'description'
+> & {
+  creditObligationAccountId: number;
+  amount: number;
+}
+
+export type LentRepaymentTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'debitId' |
+  'description'
+> & {
+  obligationAccountId: number;
+  amount: number;
+}
+
 export type TransactionsFilter = {
   parentTransactionIds?: string[];
   status?: TransactionEntity['status'][];

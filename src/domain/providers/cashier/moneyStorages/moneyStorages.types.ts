@@ -2,4 +2,5 @@ import { MoneyStoragesEntity } from '@providers/postgresql/repositories/cashier/
 
 export type MoneyStoragesFilter = {
   status?: MoneyStoragesEntity['status'][];
+  isObligation?: boolean;
 }

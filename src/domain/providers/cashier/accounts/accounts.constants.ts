@@ -6,6 +6,7 @@ export const incomeTransactionTypes = [
   OperationType.REFUND_IN,
   OperationType.LOAN_OUTSIDE,
   OperationType.ADJUSTMENT,
+  OperationType.LENT_REPAYMENT
 ];
 export const expendTransactionTypes = [
   OperationType.CLOSING_BALANCE,
@@ -15,10 +16,10 @@ export const expendTransactionTypes = [
   OperationType.WRITE_OFF,
   OperationType.DEPRECATION,
   OperationType.ADJUSTMENT,
+  OperationType.LENT,
 ];
 export const transferTransactionTypes = [
   OperationType.TRANSFER,
   OperationType.LOAN,
   OperationType.LOAN_REPAYMENT,
-
 ];

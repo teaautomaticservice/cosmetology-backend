@@ -23,4 +23,6 @@ export enum OperationType {
   ADJUSTMENT = 'ADJ',
   WRITE_OFF = 'WRO',
   DEPRECATION = 'DPR',
+  LENT = 'LNT',
+  LENT_REPAYMENT = 'LRT',
 };

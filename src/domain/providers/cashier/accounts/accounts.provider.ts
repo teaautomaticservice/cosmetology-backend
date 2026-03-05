@@ -246,8 +246,11 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
       pagination,
       order,
       filter: {
-        moneyStoragesIds,
         ...filter,
+        moneyStoragesIds: [
+          ...moneyStoragesIds,
+          ...(filter?.moneyStoragesIds ?? []),
+        ],
       },
     });
 
