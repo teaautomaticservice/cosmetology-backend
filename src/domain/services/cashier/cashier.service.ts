@@ -22,6 +22,8 @@ import { TransactionsProvider } from '@providers/cashier/transactions/transactio
 import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
+  LentRepaymentTransaction,
+  LentTransaction,
   LoanRepaymentTransaction,
   LoanTransaction,
   TransactionsFilter
@@ -622,6 +624,42 @@ export class CashierService {
 
     if (!Boolean(resp)) {
       throw new InternalServerErrorException('Error creating transaction Loan Repayment');
+    }
+
+    return true;
+  }
+
+  public async lentTransaction({
+    data,
+  }: {
+    data: LentTransaction;
+  }): Promise<boolean> {
+    this.checkAmount(data.amount);
+
+    const resp = await this.transactionsProvider.lentTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Lent');
+    }
+
+    return true;
+  }
+
+  public async lentRepaymentTransaction({
+    data,
+  }: {
+    data: LentRepaymentTransaction;
+  }): Promise<boolean> {
+    this.checkAmount(data.amount);
+
+    const resp = await this.transactionsProvider.lentRepaymentTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Lent Repayment');
     }
 
     return true;

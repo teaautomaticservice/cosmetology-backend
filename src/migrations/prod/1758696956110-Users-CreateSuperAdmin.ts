@@ -14,11 +14,18 @@ export class UsersCreateSuper1728290091882 implements MigrationInterface {
       type: UserType.SuperAdministrator,
     });
 
-    await queryRunner.manager.createQueryBuilder()
-      .insert()
-      .into(USERS_ENTITY)
-      .values(superAdmin)
-      .execute();
+    await queryRunner.query(
+      `INSERT INTO "${USERS_ENTITY}" ("createdAt", "updatedAt", "email", "password", "status", "type")
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [
+        superAdmin.createdAt,
+        superAdmin.updatedAt,
+        superAdmin.email,
+        superAdmin.password,
+        superAdmin.status,
+        superAdmin.type,
+      ],
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

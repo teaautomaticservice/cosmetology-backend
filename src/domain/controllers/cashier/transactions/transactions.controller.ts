@@ -17,10 +17,12 @@ import { TransactionStatus } from '@postgresql/repositories/cashier/transactions
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { GetTransactionDto } from './dtos/getTransaction.dto';
-import { NewLoanDto } from './dtos/newLoanDto';
-import { NewLoanRepaymentDto } from './dtos/newLoanRepaymentDto';
-import { NewOpenBalanceObligationDto } from './dtos/newOpenBalanceObligationDto';
-import { NewTransactionDto } from './dtos/newTransactionDto.dto';
+import { NewLentDto } from './dtos/newLent.dto';
+import { NewLentRepaymentDto } from './dtos/newLentRepayment.dto';
+import { NewLoanDto } from './dtos/newLoan.dto';
+import { NewLoanRepaymentDto } from './dtos/newLoanRepayment.dto';
+import { NewOpenBalanceObligationDto } from './dtos/newOpenBalanceObligation.dto';
+import { NewTransactionDto } from './dtos/newTransaction.dto';
 import { NewTransferDto } from './dtos/newTransferDto.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
 import { CASHIER_TRANSACTIONS_PATH } from '../cashier.paths';
@@ -214,6 +216,42 @@ export class TransactionsController {
     @Body() transactionReq: NewLoanRepaymentDto,
   ): Promise<boolean> {
     const resp = await this.cashierService.loanRepaymentTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/lent')
+  @ApiBody({
+    description: 'Lent',
+    type: NewLentDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Lent successful created',
+  })
+  public async lent(
+    @Body() transactionReq: NewLentDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.lentTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/lent-repayment')
+  @ApiBody({
+    description: 'Lent',
+    type: NewLentRepaymentDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Lent Repayment successful created',
+  })
+  public async lentRepayment(
+    @Body() transactionReq: NewLentRepaymentDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.lentRepaymentTransaction({
       data: transactionReq,
     });
     return resp;

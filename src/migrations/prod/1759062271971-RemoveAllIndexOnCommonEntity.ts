@@ -3,40 +3,40 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class RemoveAllIndexOnCommonEntity1759062271971 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_0f5cbe00928ba4489cc7312573"
+            DROP INDEX IF EXISTS "public"."IDX_0f5cbe00928ba4489cc7312573"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_d1c708d852dcfde10fa0fd12fa"
+            DROP INDEX IF EXISTS "public"."IDX_d1c708d852dcfde10fa0fd12fa"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_3f685b7ecabe1703331227aa4d"
+            DROP INDEX IF EXISTS "public"."IDX_3f685b7ecabe1703331227aa4d"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_953b93af84b32b74e611a52871"
+            DROP INDEX IF EXISTS "public"."IDX_953b93af84b32b74e611a52871"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_44d9d7225cbe6e248376dd413d"
+            DROP INDEX IF EXISTS "public"."IDX_44d9d7225cbe6e248376dd413d"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_f4cb29076f8a55a70c9545b6ee"
+           DROP INDEX IF EXISTS "public"."IDX_f4cb29076f8a55a70c9545b6ee"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_284257a7a4f1c23a4bda08ecf2"
+            DROP INDEX IF EXISTS "public"."IDX_284257a7a4f1c23a4bda08ecf2"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_99d184ff35c63f34ed196cc14d"
+            DROP INDEX IF EXISTS "public"."IDX_99d184ff35c63f34ed196cc14d"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_8c81e184ebeb3bc9c608f20657"
+            DROP INDEX IF EXISTS "public"."IDX_8c81e184ebeb3bc9c608f20657"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_25a0ad0d4af94552269c66c2c1"
+            DROP INDEX IF EXISTS "public"."IDX_25a0ad0d4af94552269c66c2c1"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_28e79e52851ae6894f90f2cfc8"
+            DROP INDEX IF EXISTS "public"."IDX_28e79e52851ae6894f90f2cfc8"
         `);
     await queryRunner.query(`
-            DROP INDEX "public"."IDX_97671909ccbc3812cae43f5d53"
+            DROP INDEX IF EXISTS "public"."IDX_97671909ccbc3812cae43f5d53"
         `);
   }
 
