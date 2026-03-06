@@ -247,10 +247,10 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
       order,
       filter: {
         ...filter,
-        moneyStoragesIds: [
-          ...moneyStoragesIds,
-          ...(filter?.moneyStoragesIds ?? []),
-        ],
+        moneyStoragesIds:
+          Array.isArray(filter?.moneyStoragesIds) && filter?.moneyStoragesIds.length ?
+            filter?.moneyStoragesIds :
+            moneyStoragesIds,
       },
     });
 
