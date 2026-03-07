@@ -833,10 +833,10 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           name: creditAccount.name,
           moneyStorageId: creditObligationAccountId,
           status: AccountStatus.ACTIVE,
-          balance: formattedAmount.toString(),
-          available: formattedAmount.toString(),
+          balance: (formattedAmount * BigInt(-1)).toString(),
+          available: (formattedAmount * BigInt(-1)).toString(),
           currencyId: creditAccount.currencyId,
-          description: 'Automatic create while taken loan',
+          description: 'Automatic create while give lent',
         };
 
         const newObligationAccount = manager.create(AccountEntity, newObligationAccountData);
