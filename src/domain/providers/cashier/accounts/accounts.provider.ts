@@ -107,6 +107,9 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
       where: {
         moneyStorageId: In(moneyStoragesIds),
       },
+      order: {
+        available: 'DESC',
+      }
     });
 
     const accountsIds = rawAccountsList.map(({ id }) => id);
