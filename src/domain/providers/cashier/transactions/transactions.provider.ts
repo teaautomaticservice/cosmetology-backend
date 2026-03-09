@@ -69,19 +69,25 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       }),
     };
 
+    const hasAnd = filter?.query ||
+      filter?.anyAccountIds ||
+      filter?.anyId;
+
     return super.findAndCount({
       pagination,
       relations: ['debitAccount', 'creditAccount'],
-      where: (filter?.query || filter?.anyAccountIds) ? [
+      where: hasAnd ? [
         {
           ...baseWhere,
-          ...(filter?.query && AccountEntity.checkLikeId(filter.query) ? { id: Number(filter.query) } : {}),
-          ...(filter?.anyAccountIds && { debitId: In(filter.anyAccountIds) }),
+          description: filter?.query && ILike(`%${filter.query}%`),
+          debitId: filter?.anyAccountIds && In(filter.anyAccountIds),
+          transactionId: filter?.anyId,
         },
         {
           ...baseWhere,
-          ...(filter?.query ? { transactionId: ILike(`%${filter.query}%`) } : {}),
-          ...(filter?.anyAccountIds && { creditId: In(filter.anyAccountIds) }),
+          transactionId: filter?.query && ILike(`%${filter.query}%`),
+          creditId: filter?.anyAccountIds && In(filter.anyAccountIds),
+          parentTransactionId: filter?.anyId,
         }
       ] : baseWhere
     });

@@ -66,4 +66,5 @@ export type TransactionsFilter = {
   query?: string;
   amountFrom?: number;
   amountTo?: number;
+  anyId?: string;
 }
