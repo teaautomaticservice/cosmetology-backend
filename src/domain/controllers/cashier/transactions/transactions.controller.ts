@@ -1,5 +1,6 @@
 import { ParseArray } from 'src/ambient/parsers/parseArray';
 import { parseArrayNumbers } from 'src/ambient/parsers/parseArrayNumbers';
+import { ParseString } from 'src/ambient/parsers/parseString';
 
 import { AuthGuard } from '@controllers/common/guards/auth.guard';
 import { ApiQueryPagination } from '@decorators/ApiQueryPagination';
@@ -72,6 +73,16 @@ export class TransactionsController {
     required: false,
     isArray: true,
   })
+  @ApiQuery({
+    name: 'anyId',
+    type: 'string',
+    required: false,
+  })
+  @ApiQuery({
+    name: 'query',
+    type: 'string',
+    required: false,
+  })
   @ApiOkResponse({
     description: 'List of transactions',
     type: TransactionsPaginated,
@@ -85,6 +96,8 @@ export class TransactionsController {
     @Query('anyAccountIds', parseArrayNumbers) anyAccountIds?: number[],
     @Query('creditIds', parseArrayNumbers) creditIds?: number[],
     @Query('debitIds', parseArrayNumbers) debitIds?: number[],
+    @Query('anyId', ParseString) anyId?: string,
+    @Query('query', ParseString) query?: string,
   ): Promise<TransactionsPaginated> {
     const [transactions, count] = await this.cashierService.getTransactionsList({
       pagination: {
@@ -98,6 +111,8 @@ export class TransactionsController {
         creditIds,
         debitIds,
         status,
+        anyId,
+        query,
       },
     });
 
