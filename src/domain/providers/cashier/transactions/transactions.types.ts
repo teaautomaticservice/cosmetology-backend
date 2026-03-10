@@ -1,4 +1,5 @@
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
+import { OperationType } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { ID, RecordEntity } from '@providers/common/common.type';
 
 export type CreateTransaction = Pick<RecordEntity<
@@ -67,4 +68,5 @@ export type TransactionsFilter = {
   amountFrom?: number;
   amountTo?: number;
   anyId?: string;
+  operationTypes?: OperationType[];
 }
