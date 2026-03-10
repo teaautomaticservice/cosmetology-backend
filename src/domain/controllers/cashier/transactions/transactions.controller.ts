@@ -14,7 +14,7 @@ import {
   UseGuards
 } from '@nestjs/common';
 import { ApiBody, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
+import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { CashierService } from '@services/cashier/cashier.service';
 
 import { GetTransactionDto } from './dtos/getTransaction.dto';
@@ -83,6 +83,12 @@ export class TransactionsController {
     type: 'string',
     required: false,
   })
+  @ApiQuery({
+    name: 'operationTypes',
+    enum: OperationType,
+    required: false,
+    isArray: true,
+  })
   @ApiOkResponse({
     description: 'List of transactions',
     type: TransactionsPaginated,
@@ -98,6 +104,7 @@ export class TransactionsController {
     @Query('debitIds', parseArrayNumbers) debitIds?: number[],
     @Query('anyId', ParseString) anyId?: string,
     @Query('query', ParseString) query?: string,
+    @Query('operationTypes', ParseArray) operationTypes?: OperationType[],
   ): Promise<TransactionsPaginated> {
     const [transactions, count] = await this.cashierService.getTransactionsList({
       pagination: {
@@ -113,6 +120,7 @@ export class TransactionsController {
         status,
         anyId,
         query,
+        operationTypes,
       },
     });
 
