@@ -1,3 +1,4 @@
+import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity';
 import {
   And,
   DataSource,
@@ -20,9 +21,10 @@ import { TransactionsDb } from '@postgresql/repositories/cashier/transactions/tr
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { Where } from '@postgresql/repositories/common/common.types';
-import { FoundAndCounted, Pagination, RecordEntity } from '@providers/common/common.type';
+import { FoundAndCounted, ID, Pagination, RecordEntity } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 
+import { COMMON_TRANSACTION_ERROR } from './transactions.contants';
 import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
@@ -122,34 +124,30 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: CreateTransaction;
   }): Promise<TransactionEntity> {
     const {
-      amount,
       debitId,
       creditId,
       description,
     } = data;
 
-    if (Number.isNaN(amount) || amount < 0) {
-      throw new InternalServerErrorException(`Open Balance create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
     if (!debitId) {
-      throw new InternalServerErrorException(`Open Balance create error. Account ${debitId} should be exist`);
+      throw new InternalServerErrorException(
+        `${COMMON_TRANSACTION_ERROR} Account ${debitId} should be exist`
+      );
     }
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
-      const accounts = await manager
-        .createQueryBuilder(AccountEntity, 'account')
-        .setLock('pessimistic_write')
-        .where('account.id IN (:...ids)', {
-          ids: [debitId, creditId].filter(Boolean)
-        })
-        .getMany();
+    return this.buildTransactions(async (manager) => {
+      const accounts = this.getAccountsForUpdate({
+        manager,
+        accountIds: [debitId, creditId]
+      });
 
-      const debitAccount = accounts.find(({ id }) => id === debitId) ?? null;
-      const creditAccount = accounts.find(({ id }) => id === creditId) ?? null;
+      const debitAccount = accounts[debitId] ?? null;
+      const creditAccount = creditId ? accounts[creditId] : null;
 
       if (!debitAccount) {
-        throw new BadRequestException(`Debit account ${debitId} not found`);
+        throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Debit account ${debitId} not found`);
       }
 
       if (debitAccount.status !== AccountStatus.ACTIVE) {
@@ -1092,5 +1090,62 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     const additionalId = uuid().replace(/-/g, '').substring(0, 12).toUpperCase();
     const timestamp = Date.now().toString(36).toUpperCase();
     return `TXN-${year}-${timestamp}${additionalId}`;
+  }
+
+  private getTransactionAmountError = (amount?: number | null): InternalServerErrorException => {
+    return new InternalServerErrorException(
+      `${COMMON_TRANSACTION_ERROR} Amount ${amount} isn't correct`
+    );
+  };
+
+  private validateAmount(
+    amount?: number | null,
+    {
+      allowZero,
+    }: {
+      allowZero?: boolean;
+    } = {}
+  ): number {
+    if (amount == null) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    if (amount && amount < 0) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    if (!amount && !allowZero) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    return amount;
+  }
+
+  private buildTransactions<Result>(
+    execute: (manager: EntityManager) => Promise<Result>
+  ): Promise<Result> {
+    return this.dataSource.transaction(execute);
+  }
+
+  private async getAccountsForUpdate({
+    manager,
+    accountIds,
+  }: {
+    manager: EntityManager;
+    accountIds: Array<ID | null | undefined>;
+  }): Promise<Record<ID, AccountEntity | undefined>> {
+    const ids = accountIds.filter((val) => val != null);
+
+    if (!ids.length) {
+      return {};
+    }
+
+    const accounts = await manager
+      .createQueryBuilder(AccountEntity, 'account')
+      .setLock('pessimistic_write')
+      .where('account.id IN (:...ids)', { ids })
+      .getMany();
+
+    return createdMapFromEntity(accounts);
   }
 }

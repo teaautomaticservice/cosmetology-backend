@@ -1,9 +1,24 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/src/$1",
+    "^@utils/(.*)$": "<rootDir>/src/ambient/utils/$1",
+    "^@commonConstants/(.*)$": "<rootDir>/src/ambient/constants/$1",
+    "^@decorators/(.*)$": "<rootDir>/src/ambient/decorators/$1",
+    "^@ambientProviders/(.*)$": "<rootDir>/src/ambient/providers/$1",
+    "^@config/(.*)$": "<rootDir>/src/ambient/config/$1",
+    "^@constants/(.*)$": "<rootDir>/src/domain/constants/$1",
+    "^@controllers/(.*)$": "<rootDir>/src/domain/controllers/$1",
+    "^@postgresql/(.*)$": "<rootDir>/src/domain/providers/postgresql/$1",
+    "^@providers/(.*)$": "<rootDir>/src/domain/providers/$1",
+    "^@services/(.*)$": "<rootDir>/src/domain/services/$1",
+    "^@sheduler/(.*)$": "<rootDir>/src/domain/sheduler/$1",
+    "^@typings/(.*)$": "<rootDir>/src/domain/typings/$1"
   }
 }

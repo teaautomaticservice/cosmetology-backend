@@ -1,0 +1,1 @@
+export const COMMON_TRANSACTION_ERROR = 'Transaction create error.';
