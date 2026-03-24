@@ -159,7 +159,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
 
           return true;
         }
-      })
+      });
 
       const formattedAmount = BigInt(amount);
 
@@ -207,7 +207,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         manager,
         account: checkedDebitAccount,
         amount,
-      })
+      });
 
       const transaction = manager.create(TransactionEntity, {
         transactionId: this.generateTransactionId(),
