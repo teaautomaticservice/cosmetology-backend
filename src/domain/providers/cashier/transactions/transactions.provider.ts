@@ -8,7 +8,8 @@ import {
   In,
   LessThanOrEqual,
   MoreThanOrEqual,
-  Not
+  Not,
+  UpdateResult
 } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 
@@ -146,21 +147,21 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       const debitAccount = accounts[debitId] ?? null;
       const creditAccount = creditId ? accounts[creditId] : null;
 
-      if (!debitAccount) {
-        throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Debit account ${debitId} not found`);
-      }
+      const checkedDebitAccount = this.checkAccount(debitAccount, {
+        context: `Debit account ${debitId}.`,
+        additionalCheck: (acc) => {
+          const debitAvailable = BigInt(acc.available);
+          const debitBalance = BigInt(acc.balance);
 
-      if (debitAccount.status !== AccountStatus.ACTIVE) {
-        throw new BadRequestException(`Debit account ${debitId} should be active`);
-      }
+          if (debitAvailable !== 0n || debitBalance !== 0n) {
+            throw new BadRequestException(`Debit account ${debitId} should be empty`);
+          }
+
+          return true;
+        }
+      })
 
       const formattedAmount = BigInt(amount);
-      const debitAvailable = BigInt(debitAccount.available);
-      const debitBalance = BigInt(debitAccount.balance);
-
-      if (debitAvailable !== 0n || debitBalance !== 0n) {
-        throw new BadRequestException(`Debit account ${debitId} should be empty`);
-      }
 
       const lastDebitTransaction = await manager
         .createQueryBuilder(TransactionEntity, 'tx')
@@ -180,7 +181,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           throw new BadRequestException(`Credit account ${creditId} should be active`);
         }
 
-        if (debitAccount.currencyId !== creditAccount.currencyId) {
+        if (checkedDebitAccount.currencyId !== creditAccount.currencyId) {
           throw new BadRequestException('Accounts must have the same currency');
         }
 
@@ -202,13 +203,11 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         });
       }
 
-      const newDebitAvailable = debitAvailable + formattedAmount;
-      const newDebitBalance = debitBalance + formattedAmount;
-
-      await manager.update(AccountEntity, debitId, {
-        available: newDebitAvailable.toString(),
-        balance: newDebitBalance.toString(),
-      });
+      await this.increaseAccountBalance({
+        manager,
+        account: checkedDebitAccount,
+        amount,
+      })
 
       const transaction = manager.create(TransactionEntity, {
         transactionId: this.generateTransactionId(),
@@ -1147,5 +1146,56 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       .getMany();
 
     return createdMapFromEntity(accounts);
+  }
+
+  private checkAccount(
+    account,
+    {
+      context,
+      additionalCheck,
+    }: {
+      account?: AccountEntity | null;
+      context?: string;
+      additionalCheck?: (account: AccountEntity) => boolean;
+    }): AccountEntity {
+    if (!account) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account not found. ${context}`);
+    }
+
+    if (account.status !== AccountStatus.ACTIVE) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account should be active. ${context}`);
+    }
+
+    const additionalCheckResult = additionalCheck?.(account) ?? true;
+
+    if (!additionalCheckResult) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Additional check failed. ${context}`);
+    }
+
+    return account;
+  }
+
+  private async increaseAccountBalance({
+    manager,
+    account,
+    amount,
+  }: {
+    manager: EntityManager;
+    account: AccountEntity;
+    amount: number;
+  }): Promise<UpdateResult> {
+    const { id, available, balance } = account;
+
+    const formattedAmount = BigInt(amount);
+    const debitAvailable = BigInt(available);
+    const debitBalance = BigInt(balance);
+
+    const newDebitAvailable = debitAvailable + formattedAmount;
+    const newDebitBalance = debitBalance + formattedAmount;
+
+    return manager.update(AccountEntity, id, {
+      available: newDebitAvailable.toString(),
+      balance: newDebitBalance.toString(),
+    });
   }
 }
