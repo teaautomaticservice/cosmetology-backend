@@ -756,7 +756,6 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       accountIds: [creditId],
       execute: async ({
         amountAsBigInt,
-        amountAsString,
         manager,
         getAccount,
         registerAccount,

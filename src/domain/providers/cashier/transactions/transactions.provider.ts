@@ -138,7 +138,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     }
 
     return this.buildTransactions(async (manager) => {
-      const accounts = this.getAccountsForUpdate({
+      const accounts = await this.getAccountsForUpdate({
         manager,
         accountIds: [debitId, creditId]
       });
