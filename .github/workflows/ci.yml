@@ -19,6 +19,8 @@ jobs:
         uses: ./.github/template/build
       - name: Lint
         run: npm run lint
+      - name: Test e2e
+        run: npm run test:e2e
 
   build:
     needs: lint
