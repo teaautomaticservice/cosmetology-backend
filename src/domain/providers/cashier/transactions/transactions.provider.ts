@@ -211,18 +211,15 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: CreateOpenBalanceObligationTransaction;
   }): Promise<TransactionEntity> {
     const {
-      amount,
       obligationStorageId,
       description,
       debitName,
       currencyId,
     } = data;
 
-    if (Number.isNaN(amount) || amount < 0) {
-      throw new InternalServerErrorException(`Open Balance create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
+    return this.buildTransactions(async (manager: EntityManager) => {
       const obligationStorage = await manager
         .createQueryBuilder(MoneyStoragesEntity, 'moneyStorage')
         .where('moneyStorage.id = :id', { id: obligationStorageId })
@@ -289,21 +286,18 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: CreateTransaction;
   }): Promise<TransactionEntity> {
     const {
-      amount,
       debitId,
       creditId,
       description,
     } = data;
 
-    if (Number.isNaN(amount) || amount < 0) {
-      throw new InternalServerErrorException(`Cash Out create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
     if (!creditId) {
       throw new InternalServerErrorException(`Cash Out create error. Account ${creditId} should be exist`);
     }
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
+    return this.buildTransactions(async (manager) => {
       const accounts = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
@@ -383,21 +377,18 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: CreateTransaction;
   }): Promise<TransactionEntity> {
     const {
-      amount,
       debitId,
       creditId,
       description,
     } = data;
 
-    if (Number.isNaN(amount) || amount < 0) {
-      throw new InternalServerErrorException(`Open Balance create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
     if (!debitId) {
       throw new InternalServerErrorException(`Open Balance create error. Account ${debitId} should be exist`);
     }
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
+    return this.buildTransactions(async (manager) => {
       const accounts = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
@@ -479,22 +470,19 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: LoanTransaction;
   }): Promise<[TransactionEntity, TransactionEntity]> {
     const {
-      amount,
       debitId,
       creditId,
       obligationStorageId,
       description,
     } = data;
 
-    if (Number.isNaN(amount) || amount < 0) {
-      throw new InternalServerErrorException(`Loan create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
     if (!debitId || !creditId) {
       throw new InternalServerErrorException(`Loan create error. debitId and creditId and should be exist`);
     }
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
+    return this.buildTransactions(async (manager) => {
       const accounts = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
@@ -629,22 +617,19 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: LoanRepaymentTransaction;
   }): Promise<[TransactionEntity, TransactionEntity]> {
     const {
-      amount,
       creditObligationAccountId,
       debitId,
       creditId,
       description,
     } = data;
 
-    if (Number.isNaN(amount) || amount < 0) {
-      throw new InternalServerErrorException(`Loan Repayment create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
     if (!creditObligationAccountId || !creditId || !debitId) {
       throw new InternalServerErrorException(`Loan Repayment create error. creditObligationAccountId and creditId should be exist`);
     }
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
+    return this.buildTransactions(async (manager) => {
       const accounts = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
@@ -753,21 +738,18 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: LentTransaction;
   }): Promise<[TransactionEntity, TransactionEntity]> {
     const {
-      amount,
       creditId,
       creditObligationAccountId,
       description,
     } = data;
 
-    if (Number.isNaN(amount) || amount < 0) {
-      throw new InternalServerErrorException(`Lent create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
     if (!creditId) {
       throw new InternalServerErrorException(`Lent create error. debitId and creditId and should be exist`);
     }
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
+    return this.buildTransactions(async (manager) => {
       const accounts = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
@@ -882,21 +864,18 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: LentRepaymentTransaction;
   }): Promise<[TransactionEntity, TransactionEntity]> {
     const {
-      amount,
       obligationAccountId,
       debitId,
       description,
     } = data;
 
-    if (Number.isNaN(amount) || amount < 0) {
-      throw new InternalServerErrorException(`Lent Repayment create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
     if (!obligationAccountId || !debitId) {
       throw new InternalServerErrorException(`Lent Repayment create error. obligationAccountId and debitId should be exist`);
     }
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
+    return this.buildTransactions(async (manager) => {
       const accounts = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
@@ -982,21 +961,18 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     data: CreateTransaction;
   }): Promise<TransactionEntity> {
     const {
-      amount,
       debitId,
       creditId,
       description,
     } = data;
 
-    if (Number.isNaN(amount) || amount <= 0) {
-      throw new InternalServerErrorException(`Transfer create error. Amount ${amount} isn't correct`);
-    }
+    const amount = this.validateAmount(data.amount);
 
     if (!debitId || !creditId) {
       throw new InternalServerErrorException(`Transfer create error. debitId and creditId and should be exist`);
     }
 
-    return this.dataSource.transaction(async (manager: EntityManager) => {
+    return this.buildTransactions(async (manager) => {
       const accounts = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
