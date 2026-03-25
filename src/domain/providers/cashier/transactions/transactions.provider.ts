@@ -144,10 +144,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         accountIds: [debitId, creditId]
       });
 
-      const debitAccount = accounts[debitId] ?? null;
-      const creditAccount = creditId ? accounts[creditId] : null;
-
-      const checkedDebitAccount = this.checkAccount(debitAccount, {
+      const checkedDebitAccount = this.checkAccount(accounts[debitId], {
         context: `Debit account ${debitId}.`,
         additionalCheck: (acc) => {
           const debitAvailable = BigInt(acc.available);
@@ -160,8 +157,6 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           return true;
         }
       });
-
-      const formattedAmount = BigInt(amount);
 
       const lastDebitTransaction = await manager
         .createQueryBuilder(TransactionEntity, 'tx')
@@ -176,30 +171,16 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         );
       }
 
-      if (creditAccount) {
-        if (creditAccount.status !== AccountStatus.ACTIVE) {
-          throw new BadRequestException(`Credit account ${creditId} should be active`);
-        }
+      if (creditId) {
+        const checkedCreditAccount = this.checkAccount(accounts[creditId], {
+          context: `Credit account ${debitId}.`,
+          checkCurrencyId: checkedDebitAccount.currencyId,
+        });
 
-        if (checkedDebitAccount.currencyId !== creditAccount.currencyId) {
-          throw new BadRequestException('Accounts must have the same currency');
-        }
-
-        const creditAvailable = BigInt(creditAccount.available);
-        const creditBalance = BigInt(creditAccount.balance);
-
-        if (creditAvailable < formattedAmount) {
-          throw new BadRequestException(
-            `Insufficient funds. Available: ${creditAccount.available}, Required: ${amount}`
-          );
-        }
-
-        const newCreditAvailable = creditAvailable - formattedAmount;
-        const newCreditBalance = creditBalance - formattedAmount;
-
-        await manager.update(AccountEntity, creditId, {
-          available: newCreditAvailable.toString(),
-          balance: newCreditBalance.toString(),
+        await this.decreaseAccountBalance({
+          manager,
+          account: checkedCreditAccount,
+          amount,
         });
       }
 
@@ -209,15 +190,13 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         amount,
       });
 
-      const transaction = manager.create(TransactionEntity, {
-        transactionId: this.generateTransactionId(),
-        amount: formattedAmount.toString(),
+      const transaction = this.createTransaction({
+        manager,
+        amount,
         debitId: debitId,
-        creditId: creditId ?? null,
-        status: TransactionStatus.COMPLETED,
+        creditId: creditId,
         operationType: OperationType.OPENING_BALANCE,
-        executionDate: new Date(),
-        description: description ?? null,
+        description,
       });
 
       await manager.save(transaction);
@@ -1152,10 +1131,12 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     account,
     {
       context,
+      checkCurrencyId,
       additionalCheck,
     }: {
       account?: AccountEntity | null;
       context?: string;
+      checkCurrencyId?: ID;
       additionalCheck?: (account: AccountEntity) => boolean;
     }): AccountEntity {
     if (!account) {
@@ -1164,6 +1145,10 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
 
     if (account.status !== AccountStatus.ACTIVE) {
       throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account should be active. ${context}`);
+    }
+
+    if (checkCurrencyId && account.currencyId !== checkCurrencyId) {
+      throw new BadRequestException('Accounts must have the same currency');
     }
 
     const additionalCheckResult = additionalCheck?.(account) ?? true;
@@ -1190,12 +1175,72 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     const debitAvailable = BigInt(available);
     const debitBalance = BigInt(balance);
 
-    const newDebitAvailable = debitAvailable + formattedAmount;
-    const newDebitBalance = debitBalance + formattedAmount;
+    const newAvailable = debitAvailable + formattedAmount;
+    const newBalance = debitBalance + formattedAmount;
 
     return manager.update(AccountEntity, id, {
-      available: newDebitAvailable.toString(),
-      balance: newDebitBalance.toString(),
+      available: newAvailable.toString(),
+      balance: newBalance.toString(),
+    });
+  }
+
+  private async decreaseAccountBalance({
+    manager,
+    account,
+    amount,
+  }: {
+    manager: EntityManager;
+    account: AccountEntity;
+    amount: number;
+  }): Promise<UpdateResult> {
+    const { id, available, balance } = account;
+
+    const formattedAmount = BigInt(amount);
+    const creditAvailable = BigInt(available);
+    const creditBalance = BigInt(balance);
+
+    if (creditAvailable < formattedAmount) {
+      throw new BadRequestException(
+        `Insufficient funds. Available: ${account.available}, Required: ${amount}`
+      );
+    }
+
+    const newAvailable = creditAvailable - formattedAmount;
+    const newBalance = creditBalance - formattedAmount;
+
+    return manager.update(AccountEntity, id, {
+      available: newAvailable.toString(),
+      balance: newBalance.toString(),
+    });
+  }
+
+  private createTransaction({
+    manager,
+    amount,
+    operationType,
+    debitId = null,
+    creditId = null,
+    parentTransactionId,
+    description = null,
+  }: {
+    manager: EntityManager;
+    amount: TransactionEntity['amount'] | number | bigint;
+    operationType: TransactionEntity['operationType'];
+    debitId?: TransactionEntity['debitId'];
+    creditId?: TransactionEntity['debitId'];
+    parentTransactionId?: TransactionEntity['parentTransactionId'];
+    description?: TransactionEntity['description'];
+  }): TransactionEntity {
+    return manager.create(TransactionEntity, {
+      transactionId: this.generateTransactionId(),
+      parentTransactionId,
+      amount: amount.toString(),
+      debitId: debitId,
+      creditId: creditId,
+      status: TransactionStatus.COMPLETED,
+      operationType,
+      executionDate: new Date(),
+      description,
     });
   }
 }
