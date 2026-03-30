@@ -416,28 +416,25 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     }
 
     return this.buildTransactions(async (manager) => {
-      const accounts = await manager
-        .createQueryBuilder(AccountEntity, 'account')
-        .setLock('pessimistic_write')
-        .where('account.id IN (:...ids)', {
-          ids: [debitId, creditId].filter(Boolean)
-        })
-        .getMany();
+      const accounts = await this.getAccountsForUpdate({
+        manager,
+        accountIds: [debitId, creditId]
+      });
 
-      const debitAccount = accounts.find(({ id }) => id === debitId) ?? null;
-      const creditAccount = accounts.find(({ id }) => id === creditId) ?? null;
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}.`,
+      });
 
-      if (!debitAccount || debitAccount.status !== AccountStatus.ACTIVE) {
-        throw new BadRequestException(`Debit account ${debitId} not found or not active`);
-      }
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}.`,
+        additionalCheck: (acc) => {
+          if (debitAccount.currencyId !== acc.currencyId) {
+            throw new BadRequestException('Accounts must have the same currency');
+          }
 
-      if (!creditAccount || creditAccount.status !== AccountStatus.ACTIVE) {
-        throw new BadRequestException(`Credit account ${creditId} not found or not active`);
-      }
-
-      if (debitAccount.currencyId !== creditAccount.currencyId) {
-        throw new BadRequestException('Accounts must have the same currency');
-      }
+          return true;
+        }
+      });
 
       const obligationStorage = await manager
         .createQueryBuilder(MoneyStoragesEntity, 'moneyStorage')
@@ -449,25 +446,18 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       }
 
       const formattedAmount = BigInt(amount);
-      const creditAvailable = BigInt(creditAccount.available);
-      const creditBalance = BigInt(creditAccount.balance);
-      const debitAvailable = BigInt(debitAccount.available);
-      const debitBalance = BigInt(debitAccount.balance);
-      const moveTransactionId = this.generateTransactionId();
 
-      if (creditAvailable < formattedAmount) {
+      if (BigInt(creditAccount.available) < formattedAmount) {
         throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
       }
 
-      const transaction = manager.create(TransactionEntity, {
-        transactionId: moveTransactionId,
-        amount: formattedAmount.toString(),
+      const transaction = this.createTransaction({
+        manager,
+        amount,
         debitId: debitId,
         creditId: creditId,
-        status: TransactionStatus.COMPLETED,
         operationType: OperationType.LOAN,
-        executionDate: new Date(),
-        description: description ?? null,
+        description,
       });
 
       let obligationAccount = await manager
@@ -478,20 +468,21 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         .getOne();
 
       if (obligationAccount) {
-        if (obligationAccount.status !== AccountStatus.ACTIVE) {
-          throw new BadRequestException(`Obligation account ${obligationAccount.id} should be active`);
-        }
+        obligationAccount = this.checkAccount(obligationAccount, {
+          context: `Obligation account ${obligationAccount.id}.`,
+          additionalCheck: (acc) => {
+            if (creditAccount.currencyId !== acc.currencyId) {
+              throw new BadRequestException('Obligation account must have the same currency');
+            }
 
-        if (obligationAccount.currencyId !== creditAccount.currencyId) {
-          throw new BadRequestException('Obligation account must have the same currency');
-        }
+            return true;
+          }
+        });
 
-        const newObligationAvailable = BigInt(obligationAccount.available) + formattedAmount;
-        const newObligationBalance = BigInt(obligationAccount.balance) + formattedAmount;
-
-        await manager.update(AccountEntity, obligationAccount.id, {
-          available: newObligationAvailable.toString(),
-          balance: newObligationBalance.toString(),
+        await this.increaseAccountBalance({
+          manager,
+          account: obligationAccount,
+          amount,
         });
       } else {
         const newObligationAccountData: RecordEntity<AccountEntity> = {
@@ -509,31 +500,26 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         obligationAccount = newObligationAccount;
       }
 
-      const obligationTransaction = manager.create(TransactionEntity, {
-        transactionId: this.generateTransactionId(),
+      const obligationTransaction = this.createTransaction({
+        manager,
         parentTransactionId: transaction.transactionId,
-        amount: formattedAmount.toString(),
+        amount,
         debitId: obligationAccount.id,
         creditId: null,
-        status: TransactionStatus.COMPLETED,
         operationType: OperationType.LOAN,
-        executionDate: new Date(),
-        description: description ?? null,
+        description,
       });
 
-      const newCreditAvailable = creditAvailable - formattedAmount;
-      const newCreditBalance = creditBalance - formattedAmount;
-      const newDebitAvailable = debitAvailable + formattedAmount;
-      const newDebitBalance = debitBalance + formattedAmount;
-
       await Promise.all([
-        manager.update(AccountEntity, creditId, {
-          available: newCreditAvailable.toString(),
-          balance: newCreditBalance.toString(),
+        this.decreaseAccountBalance({
+          manager,
+          account: creditAccount,
+          amount,
         }),
-        manager.update(AccountEntity, debitId, {
-          available: newDebitAvailable.toString(),
-          balance: newDebitBalance.toString(),
+        this.increaseAccountBalance({
+          manager,
+          account: debitAccount,
+          amount,
         }),
       ]);
 
