@@ -173,7 +173,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
 
       if (creditId) {
         const checkedCreditAccount = this.checkAccount(accounts[creditId], {
-          context: `Credit account ${debitId}.`,
+          context: `Credit account ${creditId}.`,
           checkCurrencyId: checkedDebitAccount.currencyId,
         });
 
@@ -351,7 +351,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     const amount = this.validateAmount(data.amount);
 
     if (!debitId) {
-      throw new InternalServerErrorException(`Open Balance create error. Account ${debitId} should be exist`);
+      throw new InternalServerErrorException(`Receipt transaction create error. Account ${debitId} should be exist`);
     }
 
     return this.buildTransactions(async (manager) => {
@@ -372,7 +372,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
 
       if (creditId) {
         const creditAccount = this.checkAccount(accounts[creditId], {
-          context: `Debit account ${creditId}.`,
+          context: `Credit account ${creditId}.`,
         });
 
         await this.decreaseAccountBalance({
@@ -640,86 +640,79 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
   }): Promise<[TransactionEntity, TransactionEntity]> {
     const {
       creditId,
-      creditObligationAccountId,
+      creditObligationStorageId,
       description,
     } = data;
 
     const amount = this.validateAmount(data.amount);
 
-    if (!creditId) {
-      throw new InternalServerErrorException(`Lent create error. debitId and creditId and should be exist`);
+    if (!creditId || !creditObligationStorageId) {
+      throw new InternalServerErrorException(`Lent create error. creditObligationStorageId and creditId and should be exist`);
     }
 
     return this.buildTransactions(async (manager) => {
-      const accounts = await manager
-        .createQueryBuilder(AccountEntity, 'account')
-        .setLock('pessimistic_write')
-        .where('account.id IN (:...ids)', {
-          ids: [creditId].filter(Boolean)
-        })
-        .getMany();
+      const accounts = await this.getAccountsForUpdate({
+        manager,
+        accountIds: [creditId]
+      });
 
-      const creditAccount = accounts.find(({ id }) => id === creditId) ?? null;
-
-      if (!creditAccount || creditAccount.status !== AccountStatus.ACTIVE) {
-        throw new BadRequestException(`Credit account ${creditId} not found or not active`);
-      }
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}.`,
+      });
 
       const obligationStorage = await manager
         .createQueryBuilder(MoneyStoragesEntity, 'moneyStorage')
-        .where('moneyStorage.id = :id', { id: creditObligationAccountId })
+        .where('moneyStorage.id = :id', { id: creditObligationStorageId })
         .getOne();
 
       if (!obligationStorage) {
-        throw new BadRequestException(`Obligation storage ${creditObligationAccountId} not found`);
+        throw new BadRequestException(`Obligation storage ${creditObligationStorageId} not found`);
       }
 
       const formattedAmount = BigInt(amount);
       const creditAvailable = BigInt(creditAccount.available);
-      const creditBalance = BigInt(creditAccount.balance);
-      const moveTransactionId = this.generateTransactionId();
 
       if (creditAvailable < formattedAmount) {
         throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
       }
 
-      const transaction = manager.create(TransactionEntity, {
-        transactionId: moveTransactionId,
-        amount: formattedAmount.toString(),
+      const transaction = this.createTransaction({
+        manager,
+        amount,
         creditId: creditId,
-        status: TransactionStatus.COMPLETED,
         operationType: OperationType.LENT,
-        executionDate: new Date(),
-        description: description ?? null,
+        description,
       });
 
       let obligationAccount = await manager
         .createQueryBuilder(AccountEntity, 'account')
         .setLock('pessimistic_write')
         .where('LOWER(account.name) = LOWER(:name)', { name: creditAccount.name })
-        .andWhere('account.moneyStorageId = :storageId', { storageId: creditObligationAccountId })
+        .andWhere('account.moneyStorageId = :storageId', { storageId: creditObligationStorageId })
         .getOne();
 
       if (obligationAccount) {
-        if (obligationAccount.status !== AccountStatus.ACTIVE) {
-          throw new BadRequestException(`Obligation account ${obligationAccount.id} should be active`);
-        }
+        obligationAccount = this.checkAccount(obligationAccount, {
+          context: `Obligation account ${obligationAccount.id}.`,
+          additionalCheck: (acc) => {
+            if (creditAccount.currencyId !== acc.currencyId) {
+              throw new BadRequestException('Obligation account must have the same currency');
+            }
 
-        if (obligationAccount.currencyId !== creditAccount.currencyId) {
-          throw new BadRequestException('Obligation account must have the same currency');
-        }
+            return true;
+          }
+        });
 
-        const newObligationAvailable = BigInt(obligationAccount.available) - formattedAmount;
-        const newObligationBalance = BigInt(obligationAccount.balance) - formattedAmount;
-
-        await manager.update(AccountEntity, obligationAccount.id, {
-          available: newObligationAvailable.toString(),
-          balance: newObligationBalance.toString(),
+        await this.decreaseAccountBalance({
+          manager,
+          account: obligationAccount,
+          amount,
+          isMayBeNegative: true,
         });
       } else {
         const newObligationAccountData: RecordEntity<AccountEntity> = {
           name: creditAccount.name,
-          moneyStorageId: creditObligationAccountId,
+          moneyStorageId: creditObligationStorageId,
           status: AccountStatus.ACTIVE,
           balance: (formattedAmount * BigInt(-1)).toString(),
           available: (formattedAmount * BigInt(-1)).toString(),
@@ -732,24 +725,20 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
         obligationAccount = newObligationAccount;
       }
 
-      const obligationTransaction = manager.create(TransactionEntity, {
-        transactionId: this.generateTransactionId(),
+      const obligationTransaction = this.createTransaction({
+        manager,
         parentTransactionId: transaction.transactionId,
-        amount: formattedAmount.toString(),
+        amount,
         debitId: null,
         creditId: obligationAccount.id,
-        status: TransactionStatus.COMPLETED,
         operationType: OperationType.LENT,
-        executionDate: new Date(),
-        description: description ?? null,
+        description,
       });
 
-      const newCreditAvailable = creditAvailable - formattedAmount;
-      const newCreditBalance = creditBalance - formattedAmount;
-
-      await manager.update(AccountEntity, creditId, {
-        available: newCreditAvailable.toString(),
-        balance: newCreditBalance.toString(),
+      await this.decreaseAccountBalance({
+        manager,
+        account: creditAccount,
+        amount,
       });
 
       await manager.save(transaction);
@@ -777,76 +766,56 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     }
 
     return this.buildTransactions(async (manager) => {
-      const accounts = await manager
-        .createQueryBuilder(AccountEntity, 'account')
-        .setLock('pessimistic_write')
-        .where('account.id IN (:...ids)', {
-          ids: [obligationAccountId, debitId].filter(Boolean)
-        })
-        .getMany();
+      const accounts = await this.getAccountsForUpdate({
+        manager,
+        accountIds: [obligationAccountId, debitId]
+      });
 
-      const obligationAccount = accounts.find(({ id }) => id === obligationAccountId) ?? null;
-      const debitAccount = accounts.find(({ id }) => id === debitId) ?? null;
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}.`,
+      });
 
-      if (!obligationAccount || obligationAccount.status !== AccountStatus.ACTIVE) {
-        throw new BadRequestException(
-          `Obligation account ${obligationAccountId} not found or not active`
-        );
-      }
+      const obligationAccount = this.checkAccount(accounts[obligationAccountId], {
+        context: `Obligation account ${obligationAccountId}.`,
+        additionalCheck: (acc) => {
+          if (debitAccount.currencyId !== acc.currencyId) {
+            throw new BadRequestException('Accounts must have the same currency');
+          }
 
-      if (!debitAccount || debitAccount.status !== AccountStatus.ACTIVE) {
-        throw new BadRequestException(`Debit account ${debitId} not found or not active`);
-      }
-
-      if (
-        obligationAccount.currencyId !== debitAccount.currencyId
-      ) {
-        throw new BadRequestException('Accounts must have the same currency');
-      }
-
-      const formattedAmount = BigInt(amount);
-      const debitAvailable = BigInt(debitAccount.available);
-      const debitBalance = BigInt(debitAccount.balance);
-      const obligationAvailable = BigInt(obligationAccount.available);
-      const obligationBalance = BigInt(obligationAccount.balance);
-      const moveTransactionId = this.generateTransactionId();
-
-      const newDebitAvailable = debitAvailable + formattedAmount;
-      const newDebitBalance = debitBalance + formattedAmount;
-      const newObligationAvailable = obligationAvailable + formattedAmount;
-      const newObligationBalance = obligationBalance + formattedAmount;
+          return true;
+        }
+      });
 
       await Promise.all([
-        manager.update(AccountEntity, debitId, {
-          available: newDebitAvailable.toString(),
-          balance: newDebitBalance.toString(),
+        this.increaseAccountBalance({
+          manager,
+          account: debitAccount,
+          amount,
         }),
-        manager.update(AccountEntity, obligationAccountId, {
-          available: newObligationAvailable.toString(),
-          balance: newObligationBalance.toString(),
+        this.increaseAccountBalance({
+          manager,
+          account: obligationAccount,
+          amount,
         }),
       ]);
 
-      const transaction = manager.create(TransactionEntity, {
-        transactionId: moveTransactionId,
-        amount: formattedAmount.toString(),
+      const transaction = this.createTransaction({
+        manager,
+        amount,
         debitId: debitId,
-        status: TransactionStatus.COMPLETED,
+        creditId: null,
         operationType: OperationType.LENT_REPAYMENT,
-        executionDate: new Date(),
-        description: description ?? null,
+        description,
       });
 
-      const obligationTransaction = manager.create(TransactionEntity, {
-        transactionId: this.generateTransactionId(),
-        parentTransactionId: moveTransactionId,
-        amount: formattedAmount.toString(),
+      const obligationTransaction = this.createTransaction({
+        manager,
+        parentTransactionId: transaction.transactionId,
+        amount,
         debitId: obligationAccountId,
         creditId: null,
-        status: TransactionStatus.COMPLETED,
         operationType: OperationType.LENT_REPAYMENT,
-        executionDate: new Date(),
-        description: description ?? null,
+        description,
       });
 
       await manager.save(transaction);
@@ -986,17 +955,16 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
   }
 
   private checkAccount(
-    account,
+    account?: AccountEntity | null,
     {
       context,
       checkCurrencyId,
       additionalCheck,
     }: {
-      account?: AccountEntity | null;
       context?: string;
       checkCurrencyId?: ID;
       additionalCheck?: (account: AccountEntity) => boolean;
-    }): AccountEntity {
+    } = {}): AccountEntity {
     if (!account) {
       throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account not found. ${context}`);
     }
@@ -1046,10 +1014,12 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     manager,
     account,
     amount,
+    isMayBeNegative,
   }: {
     manager: EntityManager;
     account: AccountEntity;
     amount: number;
+    isMayBeNegative?: boolean;
   }): Promise<UpdateResult> {
     const { id, available, balance } = account;
 
@@ -1057,7 +1027,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     const creditAvailable = BigInt(available);
     const creditBalance = BigInt(balance);
 
-    if (creditAvailable < formattedAmount) {
+    if (!isMayBeNegative && (creditAvailable < formattedAmount)) {
       throw new BadRequestException(
         `Insufficient funds. Available: ${account.available}, Required: ${amount}`
       );
@@ -1085,7 +1055,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     amount: TransactionEntity['amount'] | number | bigint;
     operationType: TransactionEntity['operationType'];
     debitId?: TransactionEntity['debitId'];
-    creditId?: TransactionEntity['debitId'];
+    creditId?: TransactionEntity['creditId'];
     parentTransactionId?: TransactionEntity['parentTransactionId'];
     description?: TransactionEntity['description'];
   }): TransactionEntity {

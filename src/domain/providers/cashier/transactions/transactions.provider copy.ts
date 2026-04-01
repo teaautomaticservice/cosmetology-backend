@@ -738,7 +738,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     const {
       amount,
       creditId,
-      creditObligationAccountId,
+      creditObligationStorageId,
       description,
     } = data;
 
@@ -771,11 +771,11 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
 
         const obligationStorage = await manager
           .createQueryBuilder(MoneyStoragesEntity, 'moneyStorage')
-          .where('moneyStorage.id = :id', { id: creditObligationAccountId })
+          .where('moneyStorage.id = :id', { id: creditObligationStorageId })
           .getOne();
 
         if (!obligationStorage) {
-          throw new BadRequestException(`Obligation storage ${creditObligationAccountId} not found`);
+          throw new BadRequestException(`Obligation storage ${creditObligationStorageId} not found`);
         }
 
         const creditBalance = getCurrentBalance(creditAccount.id);
@@ -795,7 +795,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           .createQueryBuilder(AccountEntity, 'account')
           .setLock('pessimistic_write')
           .where('LOWER(account.name) = LOWER(:name)', { name: creditAccount.name })
-          .andWhere('account.moneyStorageId = :storageId', { storageId: creditObligationAccountId })
+          .andWhere('account.moneyStorageId = :storageId', { storageId: creditObligationStorageId })
           .getOne();
 
         if (obligationAccount) {
@@ -819,7 +819,7 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           const negativeAmountAsString = (-amountAsBigInt).toString();
           const newObligationAccountData: RecordEntity<AccountEntity> = {
             name: creditAccount.name,
-            moneyStorageId: creditObligationAccountId,
+            moneyStorageId: creditObligationStorageId,
             status: AccountStatus.ACTIVE,
             balance: negativeAmountAsString,
             available: negativeAmountAsString,

@@ -727,7 +727,7 @@ describe('TransactionsProvider (integration)', () => {
         data: {
           amount: 20000,
           creditId: creditAccount.id,
-          creditObligationAccountId: obligationStorage.id,
+          creditObligationStorageId: obligationStorage.id,
           description: 'Lent to friend',
         },
       });
@@ -759,7 +759,7 @@ describe('TransactionsProvider (integration)', () => {
         data: {
           amount: 10000,
           creditId: creditAccount.id,
-          creditObligationAccountId: obligationStorage.id,
+          creditObligationStorageId: obligationStorage.id,
           description: 'First lent',
         },
       });
@@ -768,7 +768,7 @@ describe('TransactionsProvider (integration)', () => {
         data: {
           amount: 15000,
           creditId: creditAccount.id,
-          creditObligationAccountId: obligationStorage.id,
+          creditObligationStorageId: obligationStorage.id,
           description: 'Second lent',
         },
       });
@@ -788,7 +788,7 @@ describe('TransactionsProvider (integration)', () => {
           data: {
             amount: 500,
             creditId: creditAccount.id,
-            creditObligationAccountId: obligationStorage.id,
+            creditObligationStorageId: obligationStorage.id,
             description: null,
           },
         }),
@@ -810,7 +810,7 @@ describe('TransactionsProvider (integration)', () => {
         data: {
           amount: 20000,
           creditId: creditAccount.id,
-          creditObligationAccountId: obligationStorage.id,
+          creditObligationStorageId: obligationStorage.id,
           description: 'Lent',
         },
       });
@@ -853,7 +853,7 @@ describe('TransactionsProvider (integration)', () => {
         data: {
           amount: 15000,
           creditId: creditAccount.id,
-          creditObligationAccountId: obligationStorage.id,
+          creditObligationStorageId: obligationStorage.id,
           description: 'Lent',
         },
       });

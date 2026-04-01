@@ -21,7 +21,7 @@ export class NewLentDto {
     required: true,
     nullable: false,
   })
-  public readonly creditObligationAccountId: ID;
+  public readonly creditObligationStorageId: ID;
 
   @ApiProperty({
     type: 'string',
