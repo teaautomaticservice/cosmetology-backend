@@ -26,6 +26,8 @@ import {
   LentTransaction,
   LoanRepaymentTransaction,
   LoanTransaction,
+  RefundInTransaction,
+  RefundOutTransaction,
   TransactionsFilter
 } from '@providers/cashier/transactions/transactions.types';
 import {
@@ -525,8 +527,6 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    this.checkAmount(data.amount);
-
     const resp = await this.transactionsProvider.openBalanceTransaction({
       data,
     });
@@ -543,8 +543,6 @@ export class CashierService {
   }: {
     data: CreateOpenBalanceObligationTransaction;
   }): Promise<boolean> {
-    this.checkAmount(data.amount);
-
     const resp = await this.transactionsProvider.openBalanceObligationTransaction({
       data,
     });
@@ -561,8 +559,6 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    this.checkAmount(data.amount);
-
     const resp = await this.transactionsProvider.cashOutTransaction({
       data,
     });
@@ -579,9 +575,6 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    const { amount } = data;
-    this.checkAmount(amount);
-
     const resp = await this.transactionsProvider.receiptTransaction({
       data,
     });
@@ -598,8 +591,6 @@ export class CashierService {
   }: {
     data: LoanTransaction;
   }): Promise<boolean> {
-    this.checkAmount(data.amount);
-
     const resp = await this.transactionsProvider.loanTransaction({
       data,
     });
@@ -616,8 +607,6 @@ export class CashierService {
   }: {
     data: LoanRepaymentTransaction;
   }): Promise<boolean> {
-    this.checkAmount(data.amount);
-
     const resp = await this.transactionsProvider.loanRepaymentTransaction({
       data,
     });
@@ -634,8 +623,6 @@ export class CashierService {
   }: {
     data: LentTransaction;
   }): Promise<boolean> {
-    this.checkAmount(data.amount);
-
     const resp = await this.transactionsProvider.lentTransaction({
       data,
     });
@@ -652,8 +639,6 @@ export class CashierService {
   }: {
     data: LentRepaymentTransaction;
   }): Promise<boolean> {
-    this.checkAmount(data.amount);
-
     const resp = await this.transactionsProvider.lentRepaymentTransaction({
       data,
     });
@@ -670,8 +655,6 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    this.checkAmount(data.amount);
-
     const resp = await this.transactionsProvider.transferTransaction({
       data,
     });
@@ -683,32 +666,35 @@ export class CashierService {
     return true;
   }
 
-  private checkAmount(val: number): void {
-    const amount = Number(val);
-    let notValid = false;
+  public async refundInTransaction({
+    data,
+  }: {
+    data: RefundInTransaction;
+  }): Promise<boolean> {
+    const resp = await this.transactionsProvider.refundInTransaction({
+      data,
+    });
 
-    if (Number.isNaN(amount)) {
-      notValid = true;
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Refund In');
     }
 
-    if (!Number.isFinite(amount)) {
-      notValid = true;
+    return true;
+  }
+
+  public async refundOutTransaction({
+    data,
+  }: {
+    data: RefundOutTransaction;
+  }): Promise<boolean> {
+    const resp = await this.transactionsProvider.refundOutTransaction({
+      data,
+    });
+
+    if (!Boolean(resp)) {
+      throw new InternalServerErrorException('Error creating transaction Refund Out');
     }
 
-    if (!Number.isInteger(amount)) {
-      notValid = true;
-    }
-
-    if (amount < 0) {
-      notValid = true;
-    }
-
-    if (notValid) {
-      throw new BadRequestException(VALIDATION_ERROR, {
-        cause: {
-          amount: ['amount should be correct number'],
-        },
-      });
-    }
+    return true;
   }
 }

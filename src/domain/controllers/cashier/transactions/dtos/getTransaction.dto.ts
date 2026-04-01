@@ -25,14 +25,14 @@ export class GetTransactionDto {
     required: true,
     nullable: false,
   })
-  public transactionId: string;
+  public readonly transactionId: string;
 
   @ApiProperty({
     type: 'number',
     required: true,
     nullable: false,
   })
-  public amount: number;
+  public readonly amount: number;
 
   @ApiProperty({
     type: 'number',
@@ -64,17 +64,19 @@ export class GetTransactionDto {
 
   @ApiProperty({
     enum: TransactionStatus,
+    enumName: 'TransactionStatus',
     required: true,
     nullable: false,
   })
-  public status: TransactionStatus;
+  public readonly status: TransactionStatus;
 
   @ApiProperty({
     enum: OperationType,
+    enumName: 'OperationType',
     required: true,
     nullable: false,
   })
-  public operationType: OperationType;
+  public readonly operationType: OperationType;
 
   @ApiProperty({
     type: 'string',
@@ -97,7 +99,7 @@ export class GetTransactionDto {
     required: true,
     nullable: true,
   })
-  public description: string | null;
+  public readonly description: string | null;
 
   constructor({
     id,

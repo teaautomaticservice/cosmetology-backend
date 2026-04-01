@@ -44,7 +44,7 @@ export type LentTransaction = Pick<RecordEntity<
   'creditId' |
   'description'
 > & {
-  creditObligationAccountId: number;
+  creditObligationStorageId: number;
   amount: number;
 }
 
@@ -56,6 +56,18 @@ export type LentRepaymentTransaction = Pick<RecordEntity<
   obligationAccountId: number;
   amount: number;
 }
+
+export type RefundInTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'transactionId' |
+  'description'
+> & { amount: number }
+
+export type RefundOutTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'transactionId' |
+  'description'
+> & { amount: number }
 
 export type TransactionsFilter = {
   parentTransactionIds?: string[];

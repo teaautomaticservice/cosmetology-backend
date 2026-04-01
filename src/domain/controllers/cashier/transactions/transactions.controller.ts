@@ -23,6 +23,8 @@ import { NewLentRepaymentDto } from './dtos/newLentRepayment.dto';
 import { NewLoanDto } from './dtos/newLoan.dto';
 import { NewLoanRepaymentDto } from './dtos/newLoanRepayment.dto';
 import { NewOpenBalanceObligationDto } from './dtos/newOpenBalanceObligation.dto';
+import { NewRefundInDto } from './dtos/newRefundIn.dto';
+import { NewRefundOutDto } from './dtos/newRefundOut.dto';
 import { NewTransactionDto } from './dtos/newTransaction.dto';
 import { NewTransferDto } from './dtos/newTransferDto.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
@@ -293,6 +295,42 @@ export class TransactionsController {
     @Body() transactionReq: NewTransferDto,
   ): Promise<boolean> {
     const resp = await this.cashierService.transferTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/refundIn')
+  @ApiBody({
+    description: 'Refund In',
+    type: NewRefundInDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Refund In successful created',
+  })
+  public async refundIn(
+    @Body() transactionReq: NewRefundInDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.refundInTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/refundOut')
+  @ApiBody({
+    description: 'Refund Out',
+    type: NewRefundOutDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Refund Out successful created',
+  })
+  public async refundOut(
+    @Body() transactionReq: NewRefundOutDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.refundOutTransaction({
       data: transactionReq,
     });
     return resp;
