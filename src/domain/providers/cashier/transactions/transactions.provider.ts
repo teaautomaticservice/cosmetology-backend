@@ -33,6 +33,8 @@ import {
   LentTransaction,
   LoanRepaymentTransaction,
   LoanTransaction,
+  RefundInTransaction,
+  RefundOutTransaction,
   TransactionsFilter
 } from './transactions.types';
 
@@ -890,6 +892,237 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     });
   }
 
+  public async refundOutTransaction({
+    data,
+  }: {
+    data: RefundOutTransaction;
+  }): Promise<TransactionEntity> {
+    const {
+      transactionId,
+      description,
+    } = data;
+
+    const amount = this.validateAmount(data.amount);
+
+    if (!transactionId) {
+      throw new InternalServerErrorException(
+        `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} should be exist`
+      );
+    }
+
+    return this.buildTransactions(async (manager) => {
+      const originalTransaction = await manager
+        .createQueryBuilder(TransactionEntity, 'tx')
+        .where('tx.transactionId = :transactionId', { transactionId })
+        .getOne();
+
+      if (!originalTransaction || originalTransaction.status !== TransactionStatus.COMPLETED) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} not found or incorrect status`
+        );
+      }
+
+      const {
+        debitId: debitedAccountId,
+        creditId: creditedAccountId,
+        operationType,
+        amount: originalAmount,
+      } = originalTransaction;
+
+      if (!debitedAccountId) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Account ${debitedAccountId} should be exist`
+        );
+      }
+
+      if (operationType !== OperationType.RECEIPT) {
+        throw new InternalServerErrorException(
+          COMMON_TRANSACTION_ERROR +
+          ' Refund out should apply only for Receipt transaction'
+        );
+      }
+
+      const existingRefunds = await manager
+        .createQueryBuilder(TransactionEntity, 'tx')
+        .select('COALESCE(SUM(tx.amount), 0)', 'total')
+        .where('tx.parentTransactionId = :parentId', { parentId: transactionId })
+        .andWhere('tx.operationType = :opType', { opType: OperationType.REFUND_OUT })
+        .getRawOne<{ total: string }>();
+
+      const totalRefunded = BigInt(existingRefunds?.total ?? 0);
+      const availableForRefund = BigInt(originalAmount) - totalRefunded;
+
+      if (availableForRefund < BigInt(amount)) {
+        throw new BadRequestException(
+          `Insufficient funds for refund. Available: ${availableForRefund}, Required: ${amount}`
+        );
+      }
+
+      const accounts = await this.getAccountsForUpdate({
+        manager,
+        accountIds: [debitedAccountId, creditedAccountId]
+      });
+
+      const currentCreditAccount = this.checkAccount(accounts[debitedAccountId], {
+        context: `Debited account of account ${debitedAccountId}.`,
+      });
+
+      if (creditedAccountId) {
+        const currentDebitAccount = this.checkAccount(accounts[creditedAccountId], {
+          context: `Credited account of account ${creditedAccountId}.`,
+          additionalCheck: (acc) => {
+            if (currentCreditAccount.currencyId !== acc.currencyId) {
+              throw new BadRequestException('Accounts must have the same currency');
+            }
+
+            return true;
+          }
+        });
+
+        await this.increaseAccountBalance({
+          manager,
+          account: currentDebitAccount,
+          amount,
+        });
+      }
+
+      await this.decreaseAccountBalance({
+        manager,
+        account: currentCreditAccount,
+        amount,
+      });
+
+      const transaction = this.createTransaction({
+        parentTransactionId: originalTransaction.transactionId,
+        manager,
+        amount,
+        debitId: creditedAccountId,
+        creditId: debitedAccountId,
+        operationType: OperationType.REFUND_OUT,
+        description,
+      });
+
+      await manager.save(transaction);
+
+      return transaction;
+    });
+  }
+
+  public async refundInTransaction({
+    data,
+  }: {
+    data: RefundInTransaction;
+  }): Promise<TransactionEntity> {
+    const {
+      transactionId,
+      description,
+    } = data;
+
+    const amount = this.validateAmount(data.amount);
+
+    if (!transactionId) {
+      throw new InternalServerErrorException(`${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} should be exist`);
+    }
+
+    return this.buildTransactions(async (manager) => {
+      const originalTransaction = await manager
+        .createQueryBuilder(TransactionEntity, 'tx')
+        .where('tx.transactionId = :transactionId', { transactionId })
+        .getOne();
+
+      if (!originalTransaction || originalTransaction.status !== TransactionStatus.COMPLETED) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} not found or incorrect status`
+        );
+      }
+
+      const {
+        creditId: creditedAccountId,
+        debitId: debitedAccountId,
+        operationType,
+        amount: originalAmount,
+      } = originalTransaction;
+
+      if (!creditedAccountId) {
+        throw new InternalServerErrorException(
+          COMMON_TRANSACTION_ERROR
+          + ` Account ${creditedAccountId} should be exist`
+        );
+      }
+
+      if (operationType !== OperationType.CASH_OUT) {
+        throw new InternalServerErrorException(
+          COMMON_TRANSACTION_ERROR +
+          ' Refund in should apply only for Cash Out transaction'
+        );
+      }
+
+      const existingRefunds = await manager
+        .createQueryBuilder(TransactionEntity, 'tx')
+        .select('COALESCE(SUM(tx.amount), 0)', 'total')
+        .where('tx.parentTransactionId = :parentId', { parentId: transactionId })
+        .andWhere('tx.operationType = :opType', { opType: OperationType.REFUND_IN })
+        .getRawOne<{ total: string }>();
+
+      const totalRefunded = BigInt(existingRefunds?.total ?? 0);
+      const availableForRefund = BigInt(originalAmount) - totalRefunded;
+
+      if (availableForRefund < BigInt(amount)) {
+        throw new BadRequestException(
+          `Insufficient funds for refund. Available: ${availableForRefund}, Required: ${amount}`
+        );
+      }
+
+      const accounts = await this.getAccountsForUpdate({
+        manager,
+        accountIds: [creditedAccountId, debitedAccountId]
+      });
+
+      const currentDebitAccount = this.checkAccount(accounts[creditedAccountId], {
+        context: `Credited account of account ${creditedAccountId}.`,
+      });
+
+      if (debitedAccountId) {
+        const currentCreditAccount = this.checkAccount(accounts[debitedAccountId], {
+          context: `Debited account of account ${debitedAccountId}.`,
+          additionalCheck: (acc) => {
+            if (currentDebitAccount.currencyId !== acc.currencyId) {
+              throw new BadRequestException('Accounts must have the same currency');
+            }
+
+            return true;
+          }
+        });
+
+        await this.decreaseAccountBalance({
+          manager,
+          account: currentCreditAccount,
+          amount,
+        });
+      }
+
+      await this.increaseAccountBalance({
+        manager,
+        account: currentDebitAccount,
+        amount,
+      });
+
+      const transaction = this.createTransaction({
+        parentTransactionId: originalTransaction.transactionId,
+        manager,
+        amount,
+        debitId: creditedAccountId,
+        creditId: debitedAccountId,
+        operationType: OperationType.REFUND_IN,
+        description,
+      });
+
+      await manager.save(transaction);
+
+      return transaction;
+    });
+  }
+
   private generateTransactionId(): string {
     const year = new Date().getFullYear();
     const additionalId = uuid().replace(/-/g, '').substring(0, 12).toUpperCase();
@@ -911,15 +1144,15 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
       allowZero?: boolean;
     } = {}
   ): number {
-    if (amount == null) {
+    if (amount == null || Number.isNaN(amount)) {
       throw this.getTransactionAmountError(amount);
     }
 
-    if (amount && amount < 0) {
+    if (amount < 0) {
       throw this.getTransactionAmountError(amount);
     }
 
-    if (!amount && !allowZero) {
+    if (amount === 0 && !allowZero) {
       throw this.getTransactionAmountError(amount);
     }
 

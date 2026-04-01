@@ -876,6 +876,313 @@ describe('TransactionsProvider (integration)', () => {
     });
   });
 
+  // ─── refundOutTransaction ─────────────────────────────────────
+
+  describe('refundOutTransaction', () => {
+    const createReceiptForRefund = async (overrides: {
+      amount?: number;
+      debitBalance?: string;
+      creditBalance?: string;
+    } = {}): Promise<{ receiptTx: TransactionEntity; debitAccount: AccountEntity; creditAccount: AccountEntity }> => {
+      const { amount = 20000, debitBalance = '0', creditBalance = '50000' } = overrides;
+      const debitAccount = await createAccount({ balance: debitBalance, available: debitBalance });
+      const creditAccount = await createAccount({ balance: creditBalance, available: creditBalance });
+
+      const receiptTx = await provider.receiptTransaction({
+        data: {
+          amount,
+          debitId: debitAccount.id,
+          creditId: creditAccount.id,
+          description: 'Original receipt',
+        },
+      });
+
+      return { receiptTx, debitAccount, creditAccount };
+    };
+
+    it('should reverse a receipt transaction and create REFUND_OUT', async () => {
+      const { receiptTx, debitAccount, creditAccount } = await createReceiptForRefund();
+
+      const result = await provider.refundOutTransaction({
+        data: {
+          amount: 20000,
+          transactionId: receiptTx.transactionId,
+          description: 'Full refund',
+        },
+      });
+
+      expect(result.operationType).toBe(OperationType.REFUND_OUT);
+      expect(result.status).toBe(TransactionStatus.COMPLETED);
+      expect(result.amount).toBe('20000');
+      expect(result.parentTransactionId).toBe(receiptTx.transactionId);
+      expect(result.creditId).toBe(debitAccount.id);
+      expect(result.debitId).toBe(creditAccount.id);
+      expect(result.transactionId).toMatch(/^TXN-/);
+
+      const updatedDebit = await getAccount(debitAccount.id);
+      expect(updatedDebit.balance).toBe('0');
+      expect(updatedDebit.available).toBe('0');
+
+      const updatedCredit = await getAccount(creditAccount.id);
+      expect(updatedCredit.balance).toBe('50000');
+      expect(updatedCredit.available).toBe('50000');
+    });
+
+    it('should allow partial refund', async () => {
+      const { receiptTx, debitAccount } = await createReceiptForRefund();
+
+      const result = await provider.refundOutTransaction({
+        data: {
+          amount: 8000,
+          transactionId: receiptTx.transactionId,
+          description: 'Partial refund',
+        },
+      });
+
+      expect(result.amount).toBe('8000');
+
+      const updatedDebit = await getAccount(debitAccount.id);
+      expect(updatedDebit.balance).toBe('12000');
+      expect(updatedDebit.available).toBe('12000');
+    });
+
+    it('should allow multiple partial refunds up to original amount', async () => {
+      const { receiptTx, debitAccount } = await createReceiptForRefund();
+
+      await provider.refundOutTransaction({
+        data: { amount: 8000, transactionId: receiptTx.transactionId, description: null },
+      });
+
+      await provider.refundOutTransaction({
+        data: { amount: 7000, transactionId: receiptTx.transactionId, description: null },
+      });
+
+      const updatedDebit = await getAccount(debitAccount.id);
+      expect(updatedDebit.balance).toBe('5000');
+      expect(updatedDebit.available).toBe('5000');
+    });
+
+    it('should throw when cumulative refunds exceed original amount', async () => {
+      const { receiptTx } = await createReceiptForRefund();
+
+      await provider.refundOutTransaction({
+        data: { amount: 15000, transactionId: receiptTx.transactionId, description: null },
+      });
+
+      await expect(
+        provider.refundOutTransaction({
+          data: { amount: 10000, transactionId: receiptTx.transactionId, description: null },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when original transaction is not found', async () => {
+      await expect(
+        provider.refundOutTransaction({
+          data: { amount: 100, transactionId: 'TXN-NONEXISTENT', description: null },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when original transaction is not RECEIPT', async () => {
+      const creditAccount = await createAccount({ balance: '50000', available: '50000' });
+
+      const cashOutTx = await provider.cashOutTransaction({
+        data: { amount: 10000, debitId: null, creditId: creditAccount.id, description: null },
+      });
+
+      await expect(
+        provider.refundOutTransaction({
+          data: { amount: 5000, transactionId: cashOutTx.transactionId, description: null },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when debit account is not active', async () => {
+      const { receiptTx, debitAccount } = await createReceiptForRefund();
+      await accountRepo.update(debitAccount.id, { status: AccountStatus.DEACTIVATED });
+
+      await expect(
+        provider.refundOutTransaction({
+          data: { amount: 5000, transactionId: receiptTx.transactionId, description: null },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when amount is negative', async () => {
+      await expect(
+        provider.refundOutTransaction({
+          data: { amount: -100, transactionId: 'TXN-ANY', description: null },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
+  // ─── refundInTransaction ──────────────────────────────────────
+
+  describe('refundInTransaction', () => {
+    const createCashOutForRefund = async (overrides: {
+      amount?: number;
+      creditBalance?: string;
+      withDebit?: boolean;
+    } = {}): Promise<{
+      cashOutTx: TransactionEntity;
+      creditAccount: AccountEntity;
+      debitAccount: AccountEntity | null;
+    }> => {
+      const { amount = 20000, creditBalance = '50000', withDebit = true } = overrides;
+      const creditAccount = await createAccount({ balance: creditBalance, available: creditBalance });
+      const debitAccount = withDebit ? await createAccount() : null;
+
+      const cashOutTx = await provider.cashOutTransaction({
+        data: {
+          amount,
+          debitId: debitAccount?.id ?? null,
+          creditId: creditAccount.id,
+          description: 'Original cash out',
+        },
+      });
+
+      return { cashOutTx, creditAccount, debitAccount };
+    };
+
+    it('should reverse a cash out transaction and create REFUND_IN', async () => {
+      const { cashOutTx, creditAccount, debitAccount } = await createCashOutForRefund();
+
+      const result = await provider.refundInTransaction({
+        data: {
+          amount: 20000,
+          transactionId: cashOutTx.transactionId,
+          description: 'Full refund',
+        },
+      });
+
+      expect(result.operationType).toBe(OperationType.REFUND_IN);
+      expect(result.status).toBe(TransactionStatus.COMPLETED);
+      expect(result.amount).toBe('20000');
+      expect(result.parentTransactionId).toBe(cashOutTx.transactionId);
+      expect(result.debitId).toBe(creditAccount.id);
+      expect(result.creditId).toBe(debitAccount?.id);
+      expect(result.transactionId).toMatch(/^TXN-/);
+
+      const updatedCredit = await getAccount(creditAccount.id);
+      expect(updatedCredit.balance).toBe('50000');
+      expect(updatedCredit.available).toBe('50000');
+
+      const updatedDebit = await getAccount(debitAccount?.id as number);
+      expect(updatedDebit.balance).toBe('0');
+      expect(updatedDebit.available).toBe('0');
+    });
+
+    it('should refund cash out that had no debit account', async () => {
+      const { cashOutTx, creditAccount } = await createCashOutForRefund({ withDebit: false });
+
+      const result = await provider.refundInTransaction({
+        data: {
+          amount: 20000,
+          transactionId: cashOutTx.transactionId,
+          description: 'Refund without debit',
+        },
+      });
+
+      expect(result.operationType).toBe(OperationType.REFUND_IN);
+      expect(result.creditId).toBeNull();
+
+      const updatedCredit = await getAccount(creditAccount.id);
+      expect(updatedCredit.balance).toBe('50000');
+      expect(updatedCredit.available).toBe('50000');
+    });
+
+    it('should allow partial refund', async () => {
+      const { cashOutTx, creditAccount } = await createCashOutForRefund();
+
+      const result = await provider.refundInTransaction({
+        data: {
+          amount: 8000,
+          transactionId: cashOutTx.transactionId,
+          description: 'Partial refund',
+        },
+      });
+
+      expect(result.amount).toBe('8000');
+
+      const updatedCredit = await getAccount(creditAccount.id);
+      expect(updatedCredit.balance).toBe('38000');
+      expect(updatedCredit.available).toBe('38000');
+    });
+
+    it('should allow multiple partial refunds up to original amount', async () => {
+      const { cashOutTx, creditAccount } = await createCashOutForRefund();
+
+      await provider.refundInTransaction({
+        data: { amount: 8000, transactionId: cashOutTx.transactionId, description: null },
+      });
+
+      await provider.refundInTransaction({
+        data: { amount: 7000, transactionId: cashOutTx.transactionId, description: null },
+      });
+
+      const updatedCredit = await getAccount(creditAccount.id);
+      expect(updatedCredit.balance).toBe('45000');
+      expect(updatedCredit.available).toBe('45000');
+    });
+
+    it('should throw when cumulative refunds exceed original amount', async () => {
+      const { cashOutTx } = await createCashOutForRefund();
+
+      await provider.refundInTransaction({
+        data: { amount: 15000, transactionId: cashOutTx.transactionId, description: null },
+      });
+
+      await expect(
+        provider.refundInTransaction({
+          data: { amount: 10000, transactionId: cashOutTx.transactionId, description: null },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when original transaction is not found', async () => {
+      await expect(
+        provider.refundInTransaction({
+          data: { amount: 100, transactionId: 'TXN-NONEXISTENT', description: null },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when original transaction is not CASH_OUT', async () => {
+      const debitAccount = await createAccount({ balance: '10000', available: '10000' });
+
+      const receiptTx = await provider.receiptTransaction({
+        data: { amount: 5000, debitId: debitAccount.id, creditId: null, description: null },
+      });
+
+      await expect(
+        provider.refundInTransaction({
+          data: { amount: 3000, transactionId: receiptTx.transactionId, description: null },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when credited account is not active', async () => {
+      const { cashOutTx, creditAccount } = await createCashOutForRefund();
+      await accountRepo.update(creditAccount.id, { status: AccountStatus.DEACTIVATED });
+
+      await expect(
+        provider.refundInTransaction({
+          data: { amount: 5000, transactionId: cashOutTx.transactionId, description: null },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when amount is negative', async () => {
+      await expect(
+        provider.refundInTransaction({
+          data: { amount: -100, transactionId: 'TXN-ANY', description: null },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+  });
+
   // ─── getTransactionsList ──────────────────────────────────────
 
   describe('getTransactionsList', () => {

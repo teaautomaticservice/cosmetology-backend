@@ -57,6 +57,18 @@ export type LentRepaymentTransaction = Pick<RecordEntity<
   amount: number;
 }
 
+export type RefundInTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'transactionId' |
+  'description'
+> & { amount: number }
+
+export type RefundOutTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'transactionId' |
+  'description'
+> & { amount: number }
+
 export type TransactionsFilter = {
   parentTransactionIds?: string[];
   status?: TransactionEntity['status'][];
