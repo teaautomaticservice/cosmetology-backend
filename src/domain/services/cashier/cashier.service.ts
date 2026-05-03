@@ -654,22 +654,6 @@ export class CashierService {
     return true;
   }
 
-  public async transferTransaction({
-    data,
-  }: {
-    data: CreateTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.transferTransaction({
-      data,
-    });
-
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Transfer');
-    }
-
-    return true;
-  }
-
   public async refundInTransaction({
     data,
   }: {
@@ -702,7 +686,27 @@ export class CashierService {
     return true;
   }
 
-  public async transferTransaction2(data: CreateTransaction): Promise<TransactionEntity> {
+  // public async transferTransaction({
+  //   data,
+  // }: {
+  //   data: CreateTransaction;
+  // }): Promise<boolean> {
+  //   const resp = await this.transactionsProvider.transferTransaction({
+  //     data,
+  //   });
+
+  //   if (!Boolean(resp)) {
+  //     throw new InternalServerErrorException('Error creating transaction Transfer');
+  //   }
+
+  //   return true;
+  // }
+
+  public async transferTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
     const { debitId, creditId, description } = data;
     const amount = this.validateAmount(data.amount);
 
@@ -710,7 +714,7 @@ export class CashierService {
       throw new BadRequestException('debitId and creditId are required for transfer');
     }
 
-    return this.cashierTxRunner.run(async (uow) => {
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
       const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
       const debitAccount = this.checkAccount(accounts[debitId], {
         context: `Debit account ${debitId}`,
@@ -735,6 +739,15 @@ export class CashierService {
         description,
       });
     });
+
+    if (!Boolean(newTransaction)) {
+
+      throw new InternalServerErrorException('Error creating transaction Transfer');
+    }
+
+    this.logger.info('Creating transaction Transfer', newTransaction);
+
+    return true;
   }
 
   private getTransactionAmountError = (amount?: number | null): InternalServerErrorException => {
@@ -771,11 +784,11 @@ export class CashierService {
     {
       context,
       checkCurrencyId,
-      additionalCheck,
+      // additionalCheck,
     }: {
       context?: string;
       checkCurrencyId?: ID;
-      additionalCheck?: (account: AccountEntity) => boolean;
+      // additionalCheck?: (account: AccountEntity) => boolean;
     } = {}): AccountEntity {
     if (!account) {
       throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account not found. ${context}`);
@@ -789,11 +802,11 @@ export class CashierService {
       throw new BadRequestException('Accounts must have the same currency');
     }
 
-    const additionalCheckResult = additionalCheck?.(account) ?? true;
+    // const additionalCheckResult = additionalCheck?.(account) ?? true;
 
-    if (!additionalCheckResult) {
-      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Additional check failed. ${context}`);
-    }
+    // if (!additionalCheckResult) {
+    //   throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Additional check failed. ${context}`);
+    // }
 
     return account;
   }
