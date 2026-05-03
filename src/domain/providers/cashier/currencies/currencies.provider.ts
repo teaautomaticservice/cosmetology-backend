@@ -1,10 +1,18 @@
 import { FindOptionsOrder } from 'typeorm';
 
 import { Injectable } from '@nestjs/common';
-import { FoundAndCounted, ID, Pagination, RecordEntity } from '@providers/common/common.type';
+import {
+  FoundAndCounted,
+  ID,
+  Pagination,
+  RecordEntity,
+  TxOpsDeps
+} from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { CurrenciesDb } from '@providers/postgresql/repositories/cashier/currencies/currencies.db';
 import { CurrencyEntity } from '@providers/postgresql/repositories/cashier/currencies/currencies.entity';
+
+import { CurrenciesTxOps } from './currencies.txOps';
 
 @Injectable()
 export class CurrenciesProvider extends CommonPostgresqlProvider<CurrencyEntity> {
@@ -62,5 +70,9 @@ export class CurrenciesProvider extends CommonPostgresqlProvider<CurrencyEntity>
 
   public async findByIds(ids: number[]): Promise<CurrencyEntity[] | null> {
     return super.findByIds(ids);
+  }
+
+  public forTx(deps: TxOpsDeps): CurrenciesTxOps {
+    return new CurrenciesTxOps(deps);
   }
 }

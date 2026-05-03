@@ -22,10 +22,17 @@ import { TransactionsDb } from '@postgresql/repositories/cashier/transactions/tr
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { Where } from '@postgresql/repositories/common/common.types';
-import { FoundAndCounted, ID, Pagination, RecordEntity } from '@providers/common/common.type';
+import {
+  FoundAndCounted,
+  ID,
+  Pagination,
+  RecordEntity,
+  TxOpsDeps
+} from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 
 import { COMMON_TRANSACTION_ERROR } from './transactions.contants';
+import { TransactionsTxOps } from './transactions.txOps';
 import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
@@ -1121,6 +1128,10 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
 
       return transaction;
     });
+  }
+
+  public forTx(deps: TxOpsDeps): TransactionsTxOps {
+    return new TransactionsTxOps(deps);
   }
 
   private generateTransactionId(): string {

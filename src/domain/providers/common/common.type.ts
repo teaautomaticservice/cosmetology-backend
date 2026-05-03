@@ -1,4 +1,4 @@
-import { FindOptionsOrder } from 'typeorm';
+import { EntityManager, FindOptionsOrder } from 'typeorm';
 
 import { CommonEntity } from '@providers/postgresql/repositories/common/common.entity';
 
@@ -42,4 +42,12 @@ export type NewData<T> = Omit<Partial<T>, CommonEntityKeys>;
 export type UpdatedEntity<T extends CommonEntity> = {
   currentId: CommonEntity['id'];
   newData: NewData<T>;
+}
+
+export interface TxContext {
+  userId: ID | null;
+}
+export interface TxOpsDeps {
+  manager: EntityManager;
+  context: TxContext;
 }

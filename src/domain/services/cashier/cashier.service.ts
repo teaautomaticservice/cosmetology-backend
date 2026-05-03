@@ -5,6 +5,7 @@ import { VALIDATION_ERROR } from '@constants/errors';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
+import { OperationType } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import {
   AccountsAggregatedWithStorage,
@@ -16,8 +17,10 @@ import {
 import { AccountsByStoreDto } from '@providers/cashier/accounts/dtos/accountByStore.dto';
 import { AccountAggregatedWithStorageDto } from '@providers/cashier/accounts/dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
+import { CashierTxRunner } from '@providers/cashier/cashier.txRunner';
 import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
 import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
+import { COMMON_TRANSACTION_ERROR } from '@providers/cashier/transactions/transactions.contants';
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
   CreateOpenBalanceObligationTransaction,
@@ -57,6 +60,7 @@ export class CashierService {
     private readonly moneyStoragesProvider: MoneyStoragesProvider,
     private readonly accountsProvider: AccountsProvider,
     private readonly transactionsProvider: TransactionsProvider,
+    private readonly cashierTxRunner: CashierTxRunner,
   ) { }
 
   public async getCurrenciesList(params: { pagination: Pagination }): Promise<[CurrencyEntity[], number]> {
@@ -696,5 +700,101 @@ export class CashierService {
     }
 
     return true;
+  }
+
+  public async transferTransaction2(data: CreateTransaction): Promise<TransactionEntity> {
+    const { debitId, creditId, description } = data;
+    const amount = this.validateAmount(data.amount);
+
+    if (!debitId || !creditId) {
+      throw new BadRequestException('debitId and creditId are required for transfer');
+    }
+
+    return this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+      });
+
+      if (creditAccount.currencyId !== debitAccount.currencyId) {
+        throw new BadRequestException('Accounts must have the same currency');
+      }
+
+      const bigAmount = BigInt(amount);
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount,
+        debitId,
+        creditId,
+        operationType: OperationType.TRANSFER,
+        description,
+      });
+    });
+  }
+
+  private getTransactionAmountError = (amount?: number | null): InternalServerErrorException => {
+    return new InternalServerErrorException(
+      `${COMMON_TRANSACTION_ERROR} Amount ${amount} isn't correct`
+    );
+  };
+
+  private validateAmount(
+    amount?: number | null,
+    {
+      allowZero,
+    }: {
+      allowZero?: boolean;
+    } = {}
+  ): number {
+    if (amount == null || Number.isNaN(amount)) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    if (amount < 0) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    if (amount === 0 && !allowZero) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    return amount;
+  }
+
+  private checkAccount(
+    account?: AccountEntity | null,
+    {
+      context,
+      checkCurrencyId,
+      additionalCheck,
+    }: {
+      context?: string;
+      checkCurrencyId?: ID;
+      additionalCheck?: (account: AccountEntity) => boolean;
+    } = {}): AccountEntity {
+    if (!account) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account not found. ${context}`);
+    }
+
+    if (account.status !== AccountStatus.ACTIVE) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account should be active. ${context}`);
+    }
+
+    if (checkCurrencyId && account.currencyId !== checkCurrencyId) {
+      throw new BadRequestException('Accounts must have the same currency');
+    }
+
+    const additionalCheckResult = additionalCheck?.(account) ?? true;
+
+    if (!additionalCheckResult) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Additional check failed. ${context}`);
+    }
+
+    return account;
   }
 }
