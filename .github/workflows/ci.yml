@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
 
 jobs:
   lint:
@@ -19,11 +19,23 @@ jobs:
         uses: ./.github/template/build
       - name: Lint
         run: npm run lint
+
+  e2e:
+    needs: lint
+    runs-on: self-hosted
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Prepare
+        uses: ./.github/template/build
       - name: Test e2e
         run: npm run test:e2e
 
   build:
-    needs: lint
+    needs: [ lint, e2e ]
     if: |
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' &&
