@@ -33,6 +33,21 @@ export class TransactionsTxOps extends CommonTxOps<TransactionEntity> {
     } as RecordEntity<TransactionEntity>);
   }
 
+  public async lastDebitTransaction({
+    debitId
+  }: {
+    debitId: ID;
+  }): Promise<TransactionEntity | null> {
+    return super.findOne({
+      where: {
+        debitId,
+      },
+      order: {
+        createdAt: -1,
+      },
+    });
+  }
+
   private generateTransactionId(): string {
     const year = new Date().getFullYear();
     const additionalId = uuid().replace(/-/g, '').substring(0, 12).toUpperCase();

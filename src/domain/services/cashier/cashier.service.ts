@@ -526,22 +526,6 @@ export class CashierService {
     return resp;
   }
 
-  public async openBalanceTransaction({
-    data,
-  }: {
-    data: CreateTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.openBalanceTransaction({
-      data,
-    });
-
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Open Balance');
-    }
-
-    return true;
-  }
-
   public async openBalanceObligationTransaction({
     data,
   }: {
@@ -686,21 +670,72 @@ export class CashierService {
     return true;
   }
 
-  // public async transferTransaction({
-  //   data,
-  // }: {
-  //   data: CreateTransaction;
-  // }): Promise<boolean> {
-  //   const resp = await this.transactionsProvider.transferTransaction({
-  //     data,
-  //   });
+  public async openBalanceTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
+    // const resp = await this.transactionsProvider.openBalanceTransaction({
+    //   data,
+    // });
 
-  //   if (!Boolean(resp)) {
-  //     throw new InternalServerErrorException('Error creating transaction Transfer');
-  //   }
+    const { debitId, creditId, description } = data;
+    const amount = this.validateAmount(data.amount);
 
-  //   return true;
-  // }
+    if (!debitId) {
+      throw new BadRequestException('debitId are required for transfer');
+    }
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+
+      const bigDebitAvailable = BigInt(debitAccount.available);
+      const bigDebitBalance = BigInt(debitAccount.balance);
+
+      if (bigDebitAvailable !== 0n || bigDebitBalance !== 0n) {
+        throw new BadRequestException(`Debit account ${debitId} should be empty`);
+      }
+
+      const lastDebitTransaction = await uow.transactions.lastDebitTransaction({ debitId });
+
+      if (lastDebitTransaction && lastDebitTransaction.operationType !== OperationType.CLOSING_BALANCE) {
+        throw new BadRequestException(
+          `Cannot create Opening Balance. Last debit transaction for account ${debitId} is not CLOSING_BALANCE`
+        );
+      }
+
+      const bigAmount = BigInt(amount);
+
+      if (creditId) {
+        const creditAccount = this.checkAccount(accounts[creditId], {
+          context: `Credit account ${creditId}.`,
+          checkCurrencyId: debitAccount.currencyId,
+        });
+        await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      }
+
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount,
+        debitId: debitId,
+        creditId: creditId,
+        operationType: OperationType.OPENING_BALANCE,
+        description,
+      });
+    });
+
+    if (!Boolean(newTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Open Balance');
+    }
+
+    this.logger.info('Creating transaction Open Balance', newTransaction);
+
+    return true;
+  }
 
   public async transferTransaction({
     data,
@@ -721,11 +756,8 @@ export class CashierService {
       });
       const creditAccount = this.checkAccount(accounts[creditId], {
         context: `Credit account ${creditId}`,
+        checkCurrencyId: debitAccount.currencyId,
       });
-
-      if (creditAccount.currencyId !== debitAccount.currencyId) {
-        throw new BadRequestException('Accounts must have the same currency');
-      }
 
       const bigAmount = BigInt(amount);
       await uow.accounts.decreaseBalance(creditAccount, bigAmount);
@@ -741,7 +773,6 @@ export class CashierService {
     });
 
     if (!Boolean(newTransaction)) {
-
       throw new InternalServerErrorException('Error creating transaction Transfer');
     }
 

@@ -1,6 +1,13 @@
-import { DeepPartial, EntityTarget, FindOptionsWhere, UpdateResult } from 'typeorm';
+import {
+  DeepPartial,
+  EntityTarget,
+  FindOptionsOrder,
+  FindOptionsWhere,
+  UpdateResult
+} from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
+import { Where } from '@postgresql/repositories/common/common.types';
 import { CommonEntity } from '@providers/postgresql/repositories/common/common.entity';
 
 import { ID, RecordEntity, TxContext, TxOpsDeps } from './common.type';
@@ -62,6 +69,41 @@ export abstract class CommonTxOps<Entity extends CommonEntity> {
     }
 
     return qb.getMany();
+  }
+
+  protected async find({
+    order,
+    limit,
+    forUpdate,
+    where,
+  }: {
+    order?: FindOptionsOrder<Entity>;
+    limit?: number;
+    forUpdate?: boolean;
+    where: Where<Entity>;
+  }): Promise<Entity[]> {
+    return this.manager.find(this.entityClass, {
+      where,
+      order,
+      take: limit,
+      lock: forUpdate ? { mode: 'pessimistic_write' } : undefined,
+    });
+  }
+
+  protected async findOne({
+    order,
+    forUpdate,
+    where,
+  }: {
+    order?: FindOptionsOrder<Entity>;
+    forUpdate?: boolean;
+    where: Where<Entity>;
+  }): Promise<Entity | null> {
+    return this.manager.findOne(this.entityClass, {
+      where,
+      order,
+      lock: forUpdate ? { mode: 'pessimistic_write' } : undefined,
+    });
   }
 
   protected async create(data: RecordEntity<Entity>): Promise<Entity> {
