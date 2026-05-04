@@ -9,16 +9,6 @@ export type CreateTransaction = Pick<RecordEntity<
   'description'
 > & { amount: number }
 
-export type CreateOpenBalanceObligationTransaction = Pick<RecordEntity<
-  TransactionEntity>,
-  'description'
-> & {
-  debitName: string;
-  obligationStorageId: number;
-  currencyId: number;
-  amount: number;
-}
-
 export type LoanTransaction = Pick<RecordEntity<
   TransactionEntity>,
   'debitId' |

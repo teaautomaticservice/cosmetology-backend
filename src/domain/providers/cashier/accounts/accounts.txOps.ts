@@ -1,9 +1,19 @@
 import { createdMapFromEntity } from 'src/migrations/utils/createdMapFromEntity';
+import { Raw } from 'typeorm';
 
 import { BadRequestException } from '@nestjs/common';
+import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { CommonTxOps } from '@providers/common/common.txOps';
 import { ID, RecordEntity, TxOpsDeps } from '@providers/common/common.type';
 import { AccountEntity } from '@providers/postgresql/repositories/cashier/accounts/accounts.entity';
+
+type CreateAccount = {
+  name: string;
+  moneyStorageId: ID;
+  amount: string;
+  currencyId: ID;
+  description?: string | null;
+}
 
 export class AccountsTxOps extends CommonTxOps<AccountEntity> {
   constructor(deps: TxOpsDeps) {
@@ -20,6 +30,32 @@ export class AccountsTxOps extends CommonTxOps<AccountEntity> {
     }
     const accounts = await super.findByIds(cleanIds, { forUpdate: true });
     return createdMapFromEntity(accounts);
+  }
+
+  public async findByName(name: AccountEntity['name']): Promise<AccountEntity | null> {
+    return super.findOne({
+      where: {
+        name: Raw((alias) => `LOWER(${alias}) = LOWER(:value)`, { value: name }),
+      },
+    });
+  }
+
+  public async createAccount({
+    name,
+    amount,
+    currencyId,
+    moneyStorageId,
+    description,
+  }: CreateAccount): Promise<AccountEntity> {
+    return super.create({
+      name,
+      available: amount,
+      balance: amount,
+      currencyId,
+      moneyStorageId,
+      description: description ?? null,
+      status: AccountStatus.ACTIVE,
+    });
   }
 
   public async increaseBalance(account: AccountEntity, amount: bigint): Promise<void> {

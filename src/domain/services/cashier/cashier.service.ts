@@ -23,7 +23,6 @@ import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneySto
 import { COMMON_TRANSACTION_ERROR } from '@providers/cashier/transactions/transactions.contants';
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
-  CreateOpenBalanceObligationTransaction,
   CreateTransaction,
   LentRepaymentTransaction,
   LentTransaction,
@@ -51,6 +50,8 @@ import {
   MoneyStorageStatus,
   MoneyStorageType
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
+
+import { CreateOpenBalanceObligationTransaction } from './cashier.types';
 
 @Injectable()
 export class CashierService {
@@ -526,22 +527,6 @@ export class CashierService {
     return resp;
   }
 
-  public async openBalanceObligationTransaction({
-    data,
-  }: {
-    data: CreateOpenBalanceObligationTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.openBalanceObligationTransaction({
-      data,
-    });
-
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Open Balance Obligation');
-    }
-
-    return true;
-  }
-
   public async cashOutTransaction({
     data,
   }: {
@@ -675,10 +660,6 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    // const resp = await this.transactionsProvider.openBalanceTransaction({
-    //   data,
-    // });
-
     const { debitId, creditId, description } = data;
     const amount = this.validateAmount(data.amount);
 
@@ -720,7 +701,7 @@ export class CashierService {
       await uow.accounts.increaseBalance(debitAccount, bigAmount);
 
       return uow.transactions.createTransaction({
-        amount: bigAmount,
+        amount: bigAmount.toString(),
         debitId: debitId,
         creditId: creditId,
         operationType: OperationType.OPENING_BALANCE,
@@ -733,6 +714,64 @@ export class CashierService {
     }
 
     this.logger.info('Creating transaction Open Balance', newTransaction);
+
+    return true;
+  }
+
+  public async openBalanceObligationTransaction({
+    data,
+  }: {
+    data: CreateOpenBalanceObligationTransaction;
+  }): Promise<boolean> {
+    const {
+      obligationStorageId,
+      description,
+      debitName,
+      currencyId,
+    } = data;
+
+    const amount = this.validateAmount(data.amount);
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const obligationStorage = await uow.moneyStorages.findObligationByIdForUpdate(obligationStorageId);
+
+      if (!obligationStorage) {
+        throw new InternalServerErrorException(`Open Balance create error. Obligation storage with id: ${obligationStorageId} not found`);
+      }
+
+      const currency = await uow.currencies.findById(currencyId);
+
+      if (!currency) {
+        throw new InternalServerErrorException(`Open Balance create error. Currency with id: ${currencyId} not found`);
+      }
+
+      const obligationAccount = await uow.accounts.findByName(debitName);
+
+      if (obligationAccount) {
+        throw new BadRequestException(`Debit account ${debitName} already exists`);
+      }
+
+      const bigAmount = BigInt(amount);
+
+      const newObligationAccount = await uow.accounts.createAccount({
+        name: debitName,
+        moneyStorageId: obligationStorageId,
+        amount: bigAmount.toString(),
+        currencyId,
+        description: 'Automatic create while opening balance for obligation storage',
+      });
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId: newObligationAccount.id,
+        operationType: OperationType.OPENING_BALANCE,
+        description,
+      });
+    });
+
+    if (!Boolean(newTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Open Balance Obligation');
+    }
 
     return true;
   }
@@ -764,7 +803,7 @@ export class CashierService {
       await uow.accounts.increaseBalance(debitAccount, bigAmount);
 
       return uow.transactions.createTransaction({
-        amount: bigAmount,
+        amount: bigAmount.toString(),
         debitId,
         creditId,
         operationType: OperationType.TRANSFER,

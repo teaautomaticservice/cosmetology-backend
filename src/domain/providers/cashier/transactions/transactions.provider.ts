@@ -16,7 +16,6 @@ import { v4 as uuid } from 'uuid';
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
-import { CurrencyEntity } from '@postgresql/repositories/cashier/currencies/currencies.entity';
 import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import { TransactionsDb } from '@postgresql/repositories/cashier/transactions/transactions.db';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
@@ -34,7 +33,6 @@ import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.pro
 import { COMMON_TRANSACTION_ERROR } from './transactions.contants';
 import { TransactionsTxOps } from './transactions.txOps';
 import {
-  CreateOpenBalanceObligationTransaction,
   CreateTransaction,
   LentRepaymentTransaction,
   LentTransaction,
@@ -125,78 +123,6 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           parentTransactionId: filter?.anyId,
         }
       ] : baseWhere
-    });
-  }
-
-  public async openBalanceObligationTransaction({
-    data,
-  }: {
-    data: CreateOpenBalanceObligationTransaction;
-  }): Promise<TransactionEntity> {
-    const {
-      obligationStorageId,
-      description,
-      debitName,
-      currencyId,
-    } = data;
-
-    const amount = this.validateAmount(data.amount);
-
-    return this.buildTransactions(async (manager: EntityManager) => {
-      const obligationStorage = await manager
-        .createQueryBuilder(MoneyStoragesEntity, 'moneyStorage')
-        .where('moneyStorage.id = :id', { id: obligationStorageId })
-        .getOne();
-
-      if (!obligationStorage) {
-        throw new InternalServerErrorException(`Open Balance create error. Obligation storage with id: ${obligationStorageId} not found`);
-      }
-
-      const currency = await manager
-        .createQueryBuilder(CurrencyEntity, 'currency')
-        .where('currency.id = :id', { id: currencyId })
-        .getOne();
-
-      if (!currency) {
-        throw new InternalServerErrorException(`Open Balance create error. Currency with id: ${currencyId} not found`);
-      }
-
-      const obligationAccount = await manager
-        .createQueryBuilder(AccountEntity, 'account')
-        .where('LOWER(account.name) = LOWER(:name)', { name: debitName })
-        .andWhere('account.moneyStorageId = :storageId', { storageId: obligationStorageId })
-        .getOne();
-
-      if (obligationAccount) {
-        throw new BadRequestException(`Debit account ${debitName} already exists`);
-      }
-
-      const formattedAmount = BigInt(amount);
-
-      const newObligationAccountData: RecordEntity<AccountEntity> = {
-        name: debitName,
-        moneyStorageId: obligationStorageId,
-        status: AccountStatus.ACTIVE,
-        balance: formattedAmount.toString(),
-        available: formattedAmount.toString(),
-        currencyId,
-        description: 'Automatic create while opening balance for obligation storage',
-      };
-
-      const newObligationAccount = manager.create(AccountEntity, newObligationAccountData);
-      await manager.save(newObligationAccount);
-
-      const transaction = this.createTransaction({
-        manager,
-        amount,
-        debitId: newObligationAccount.id,
-        operationType: OperationType.OPENING_BALANCE,
-        description,
-      });
-
-      await manager.save(transaction);
-
-      return transaction;
     });
   }
 

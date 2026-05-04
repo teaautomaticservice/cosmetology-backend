@@ -6,7 +6,7 @@ import { ID, RecordEntity, TxOpsDeps } from '@providers/common/common.type';
 import { TransactionEntity } from '@providers/postgresql/repositories/cashier/transactions/transactions.entity';
 
 type CreateTransactionData = {
-  amount: bigint;
+  amount: string;
   operationType: OperationType;
   debitId?: ID | null;
   creditId?: ID | null;
@@ -23,7 +23,7 @@ export class TransactionsTxOps extends CommonTxOps<TransactionEntity> {
     return super.create({
       transactionId: this.generateTransactionId(),
       parentTransactionId: data.parentTransactionId ?? null,
-      amount: data.amount.toString(),
+      amount: data.amount,
       debitId: data.debitId ?? null,
       creditId: data.creditId ?? null,
       status: TransactionStatus.COMPLETED,
