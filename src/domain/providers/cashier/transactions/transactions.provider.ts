@@ -33,7 +33,6 @@ import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.pro
 import { COMMON_TRANSACTION_ERROR } from './transactions.contants';
 import { TransactionsTxOps } from './transactions.txOps';
 import {
-  CreateTransaction,
   LentRepaymentTransaction,
   LentTransaction,
   LoanRepaymentTransaction,
@@ -123,66 +122,6 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           parentTransactionId: filter?.anyId,
         }
       ] : baseWhere
-    });
-  }
-
-  public async receiptTransaction({
-    data,
-  }: {
-    data: CreateTransaction;
-  }): Promise<TransactionEntity> {
-    const {
-      debitId,
-      creditId,
-      description,
-    } = data;
-
-    const amount = this.validateAmount(data.amount);
-
-    if (!debitId) {
-      throw new InternalServerErrorException(`Receipt transaction create error. Account ${debitId} should be exist`);
-    }
-
-    return this.buildTransactions(async (manager) => {
-      const accounts = await this.getAccountsForUpdate({
-        manager,
-        accountIds: [debitId, creditId]
-      });
-
-      const debitAccount = this.checkAccount(accounts[debitId], {
-        context: `Debit account ${debitId}.`,
-      });
-
-      await this.increaseAccountBalance({
-        manager,
-        account: debitAccount,
-        amount,
-      });
-
-      if (creditId) {
-        const creditAccount = this.checkAccount(accounts[creditId], {
-          context: `Credit account ${creditId}.`,
-        });
-
-        await this.decreaseAccountBalance({
-          manager,
-          account: creditAccount,
-          amount,
-        });
-      }
-
-      const transaction = this.createTransaction({
-        manager,
-        amount,
-        debitId: debitId,
-        creditId: creditId,
-        operationType: OperationType.RECEIPT,
-        description,
-      });
-
-      await manager.save(transaction);
-
-      return transaction;
     });
   }
 

@@ -9,4 +9,11 @@ export type CreateOpenBalanceObligationTransaction = Pick<RecordEntity<
   obligationStorageId: number;
   currencyId: number;
   amount: number;
-}
+};
+
+export type CreateTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'debitId' |
+  'creditId' |
+  'description'
+> & { amount: number };

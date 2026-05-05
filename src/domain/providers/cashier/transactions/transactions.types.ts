@@ -2,13 +2,6 @@ import { TransactionEntity } from '@postgresql/repositories/cashier/transactions
 import { OperationType } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { ID, RecordEntity } from '@providers/common/common.type';
 
-export type CreateTransaction = Pick<RecordEntity<
-  TransactionEntity>,
-  'debitId' |
-  'creditId' |
-  'description'
-> & { amount: number }
-
 export type LoanTransaction = Pick<RecordEntity<
   TransactionEntity>,
   'debitId' |

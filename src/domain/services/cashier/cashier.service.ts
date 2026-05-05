@@ -23,7 +23,6 @@ import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneySto
 import { COMMON_TRANSACTION_ERROR } from '@providers/cashier/transactions/transactions.contants';
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
-  CreateTransaction,
   LentRepaymentTransaction,
   LentTransaction,
   LoanRepaymentTransaction,
@@ -51,7 +50,7 @@ import {
   MoneyStorageType
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
-import { CreateOpenBalanceObligationTransaction } from './cashier.types';
+import { CreateOpenBalanceObligationTransaction, CreateTransaction } from './cashier.types';
 
 @Injectable()
 export class CashierService {
@@ -527,22 +526,6 @@ export class CashierService {
     return resp;
   }
 
-  public async receiptTransaction({
-    data,
-  }: {
-    data: CreateTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.receiptTransaction({
-      data,
-    });
-
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Receipt');
-    }
-
-    return true;
-  }
-
   public async loanTransaction({
     data,
   }: {
@@ -805,6 +788,58 @@ export class CashierService {
 
     if (!Boolean(newTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Cash Out');
+    }
+
+    return true;
+  }
+
+  public async receiptTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
+    const {
+      debitId,
+      creditId,
+      description,
+    } = data;
+
+    const amount = this.validateAmount(data.amount);
+
+    if (!debitId) {
+      throw new InternalServerErrorException(`Receipt transaction create error. Account ${debitId} should be exist`);
+    }
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+
+      const bigAmount = BigInt(amount);
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      if (creditId) {
+        const creditAccount = this.checkAccount(accounts[creditId], {
+          context: `Credit account ${creditId}`,
+          checkCurrencyId: debitAccount.currencyId,
+        });
+
+        await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      }
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId,
+        operationType: OperationType.RECEIPT,
+        description,
+      });
+    });
+
+    if (!Boolean(newTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Receipt');
     }
 
     return true;
