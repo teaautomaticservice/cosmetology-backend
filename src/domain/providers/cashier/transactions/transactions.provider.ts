@@ -126,66 +126,6 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
     });
   }
 
-  public async cashOutTransaction({
-    data,
-  }: {
-    data: CreateTransaction;
-  }): Promise<TransactionEntity> {
-    const {
-      debitId,
-      creditId,
-      description,
-    } = data;
-
-    const amount = this.validateAmount(data.amount);
-
-    if (!creditId) {
-      throw new InternalServerErrorException(`Cash Out create error. Account ${creditId} should be exist`);
-    }
-
-    return this.buildTransactions(async (manager) => {
-      const accounts = await this.getAccountsForUpdate({
-        manager,
-        accountIds: [debitId, creditId]
-      });
-
-      const creditAccount = this.checkAccount(accounts[creditId], {
-        context: `Credit account ${creditId}.`,
-      });
-
-      await this.decreaseAccountBalance({
-        manager,
-        account: creditAccount,
-        amount,
-      });
-
-      if (debitId) {
-        const debitAccount = this.checkAccount(accounts[debitId], {
-          context: `Debit account ${debitId}.`,
-        });
-
-        await this.increaseAccountBalance({
-          manager,
-          account: debitAccount,
-          amount,
-        });
-      }
-
-      const transaction = this.createTransaction({
-        manager,
-        amount,
-        debitId: debitId,
-        creditId: creditId,
-        operationType: OperationType.CASH_OUT,
-        description,
-      });
-
-      await manager.save(transaction);
-
-      return transaction;
-    });
-  }
-
   public async receiptTransaction({
     data,
   }: {

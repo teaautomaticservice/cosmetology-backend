@@ -527,22 +527,6 @@ export class CashierService {
     return resp;
   }
 
-  public async cashOutTransaction({
-    data,
-  }: {
-    data: CreateTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.cashOutTransaction({
-      data,
-    });
-
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Cash Out');
-    }
-
-    return true;
-  }
-
   public async receiptTransaction({
     data,
   }: {
@@ -771,6 +755,56 @@ export class CashierService {
 
     if (!Boolean(newTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Open Balance Obligation');
+    }
+
+    return true;
+  }
+
+  public async cashOutTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
+    const {
+      debitId,
+      creditId,
+      description,
+    } = data;
+
+    if (!creditId) {
+      throw new InternalServerErrorException(`Cash Out create error. Account ${creditId} should be exist`);
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+      });
+
+      const bigAmount = BigInt(amount);
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+
+      if (debitId) {
+        const debitAccount = this.checkAccount(accounts[debitId], {
+          context: `Debit account ${debitId}`,
+          checkCurrencyId: creditAccount.currencyId,
+        });
+        await uow.accounts.increaseBalance(debitAccount, bigAmount);
+      }
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId,
+        operationType: OperationType.CASH_OUT,
+        description,
+      });
+    });
+
+    if (!Boolean(newTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Cash Out');
     }
 
     return true;
