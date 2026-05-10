@@ -32,11 +32,24 @@ export class AccountsTxOps extends CommonTxOps<AccountEntity> {
     return createdMapFromEntity(accounts);
   }
 
-  public async findByName(name: AccountEntity['name']): Promise<AccountEntity | null> {
+  public async findByName(
+    name: AccountEntity['name'],
+    {
+      filter,
+      forUpdate,
+    }: {
+      filter?: {
+        moneyStorageId?: AccountEntity['moneyStorageId'];
+      };
+      forUpdate?: boolean;
+    } = {}
+  ): Promise<AccountEntity | null> {
     return super.findOne({
       where: {
         name: Raw((alias) => `LOWER(${alias}) = LOWER(:value)`, { value: name }),
+        moneyStorageId: filter?.moneyStorageId,
       },
+      forUpdate,
     });
   }
 

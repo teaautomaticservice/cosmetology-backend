@@ -17,3 +17,13 @@ export type CreateTransaction = Pick<RecordEntity<
   'creditId' |
   'description'
 > & { amount: number };
+
+export type LoanTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'debitId' |
+  'creditId' |
+  'description'
+> & {
+  obligationStorageId: number;
+  amount: number;
+}
