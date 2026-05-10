@@ -35,7 +35,6 @@ import { TransactionsTxOps } from './transactions.txOps';
 import {
   LentRepaymentTransaction,
   LentTransaction,
-  LoanRepaymentTransaction,
   RefundInTransaction,
   RefundOutTransaction,
   TransactionsFilter
@@ -121,109 +120,6 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           parentTransactionId: filter?.anyId,
         }
       ] : baseWhere
-    });
-  }
-
-  public async loanRepaymentTransaction({
-    data,
-  }: {
-    data: LoanRepaymentTransaction;
-  }): Promise<[TransactionEntity, TransactionEntity]> {
-    const {
-      creditObligationAccountId,
-      debitId,
-      creditId,
-      description,
-    } = data;
-
-    const amount = this.validateAmount(data.amount);
-
-    if (!creditObligationAccountId || !creditId || !debitId) {
-      throw new InternalServerErrorException(`Loan Repayment create error. creditObligationAccountId and creditId should be exist`);
-    }
-
-    return this.buildTransactions(async (manager) => {
-      const accounts = await this.getAccountsForUpdate({
-        manager,
-        accountIds: [creditObligationAccountId, debitId, creditId]
-      });
-
-      const debitAccount =
-        this.checkAccount(accounts[debitId], {
-          context: `Debit AccountId account ${debitId}.`,
-        });
-
-      const creditAccount =
-        this.checkAccount(accounts[creditId], {
-          context: `Credit AccountId account ${creditId}.`,
-        });
-
-      const creditObligationAccountAccount =
-        this.checkAccount(accounts[creditObligationAccountId], {
-          context: `Credit Obligation AccountId account ${creditObligationAccountId}.`,
-          additionalCheck: (acc) => {
-            if (
-              acc.currencyId !== creditAccount.currencyId ||
-              acc.currencyId !== debitAccount.currencyId
-            ) {
-              throw new BadRequestException('Accounts must have the same currency');
-            }
-            return true;
-          }
-        });
-
-      const formattedAmount = BigInt(amount);
-      const creditAvailable = BigInt(creditAccount.available);
-      const creditObligationAvailable = BigInt(creditObligationAccountAccount.available);
-
-      if (creditAvailable < formattedAmount) {
-        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
-      }
-
-      if (creditObligationAvailable < formattedAmount) {
-        throw new BadRequestException(`Insufficient funds in the Obligation account ${creditObligationAccountId}`);
-      }
-
-      await Promise.all([
-        this.decreaseAccountBalance({
-          manager,
-          account: creditAccount,
-          amount,
-        }),
-        this.decreaseAccountBalance({
-          manager,
-          account: creditObligationAccountAccount,
-          amount,
-        }),
-        this.increaseAccountBalance({
-          manager,
-          account: debitAccount,
-          amount,
-        }),
-      ]);
-
-      const transaction = this.createTransaction({
-        manager,
-        amount,
-        debitId: debitId,
-        creditId: creditId,
-        operationType: OperationType.LOAN_REPAYMENT,
-        description,
-      });
-
-      const obligationTransaction = this.createTransaction({
-        manager,
-        parentTransactionId: transaction.transactionId,
-        amount,
-        creditId: creditObligationAccountId,
-        operationType: OperationType.LOAN_REPAYMENT,
-        description,
-      });
-
-      await manager.save(transaction);
-      await manager.save(obligationTransaction);
-
-      return [transaction, obligationTransaction];
     });
   }
 

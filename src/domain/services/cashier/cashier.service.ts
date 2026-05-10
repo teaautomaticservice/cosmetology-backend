@@ -25,7 +25,6 @@ import { TransactionsProvider } from '@providers/cashier/transactions/transactio
 import {
   LentRepaymentTransaction,
   LentTransaction,
-  LoanRepaymentTransaction,
   RefundInTransaction,
   RefundOutTransaction,
   TransactionsFilter
@@ -49,7 +48,12 @@ import {
   MoneyStorageType
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
-import { CreateOpenBalanceObligationTransaction, CreateTransaction, LoanTransaction } from './cashier.types';
+import {
+  CreateOpenBalanceObligationTransaction,
+  CreateTransaction,
+  LoanRepaymentTransaction,
+  LoanTransaction
+} from './cashier.types';
 
 @Injectable()
 export class CashierService {
@@ -525,22 +529,6 @@ export class CashierService {
     return resp;
   }
 
-  public async loanRepaymentTransaction({
-    data,
-  }: {
-    data: LoanRepaymentTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.loanRepaymentTransaction({
-      data,
-    });
-
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Loan Repayment');
-    }
-
-    return true;
-  }
-
   public async lentTransaction({
     data,
   }: {
@@ -960,6 +948,87 @@ export class CashierService {
 
     if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Loan');
+    }
+
+    return true;
+  }
+
+  public async loanRepaymentTransaction({
+    data,
+  }: {
+    data: LoanRepaymentTransaction;
+  }): Promise<boolean> {
+    const {
+      creditObligationAccountId,
+      debitId,
+      creditId,
+      description,
+    } = data;
+
+    if (!creditObligationAccountId || !debitId || !creditId) {
+      throw new InternalServerErrorException(
+        `Loan Repayment create error. creditObligationAccountId, debitId and creditId should be exist`
+      );
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const [newTransaction, newObligationTransaction] = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([
+        creditObligationAccountId,
+        debitId,
+        creditId,
+      ]);
+
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+        checkCurrencyId: debitAccount.currencyId,
+      });
+      const obligationAccount = this.checkAccount(accounts[creditObligationAccountId], {
+        context: `Credit obligation account ${creditObligationAccountId}`,
+        checkCurrencyId: debitAccount.currencyId,
+      });
+
+      const bigAmount = BigInt(amount);
+
+      if (BigInt(creditAccount.available) < bigAmount) {
+        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
+      }
+
+      if (BigInt(obligationAccount.available) < bigAmount) {
+        throw new BadRequestException(
+          `Insufficient funds in the Obligation account ${creditObligationAccountId}`
+        );
+      }
+
+      const transaction = await uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId,
+        operationType: OperationType.LOAN_REPAYMENT,
+        description,
+      });
+
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      await uow.accounts.decreaseBalance(obligationAccount, bigAmount);
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      const obligationTransaction = await uow.transactions.createTransaction({
+        parentTransactionId: transaction.transactionId,
+        amount: bigAmount.toString(),
+        creditId: creditObligationAccountId,
+        operationType: OperationType.LOAN_REPAYMENT,
+        description,
+      });
+
+      return [transaction, obligationTransaction];
+    });
+
+    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Loan Repayment');
     }
 
     return true;
