@@ -14,6 +14,7 @@ export class MoneyStoragesTxOps extends CommonTxOps<MoneyStoragesEntity> {
         id,
         type: MoneyStorageType.OBLIGATION,
       },
+      forUpdate: true,
     });
   }
 }
