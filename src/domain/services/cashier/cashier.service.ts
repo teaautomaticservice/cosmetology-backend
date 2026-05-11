@@ -24,7 +24,6 @@ import { COMMON_TRANSACTION_ERROR } from '@providers/cashier/transactions/transa
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
   LentRepaymentTransaction,
-  LentTransaction,
   RefundInTransaction,
   RefundOutTransaction,
   TransactionsFilter
@@ -51,6 +50,7 @@ import {
 import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
+  LentTransaction,
   LoanRepaymentTransaction,
   LoanTransaction
 } from './cashier.types';
@@ -527,22 +527,6 @@ export class CashierService {
       filter,
     });
     return resp;
-  }
-
-  public async lentTransaction({
-    data,
-  }: {
-    data: LentTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.lentTransaction({
-      data,
-    });
-
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Lent');
-    }
-
-    return true;
   }
 
   public async lentRepaymentTransaction({
@@ -1029,6 +1013,95 @@ export class CashierService {
 
     if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Loan Repayment');
+    }
+
+    return true;
+  }
+
+  public async lentTransaction({
+    data,
+  }: {
+    data: LentTransaction;
+  }): Promise<boolean> {
+    const {
+      creditId,
+      creditObligationStorageId,
+      description,
+    } = data;
+
+    if (!creditId || !creditObligationStorageId) {
+      throw new InternalServerErrorException(
+        `Lent create error. creditId and creditObligationStorageId should be exist`
+      );
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const [newTransaction, newObligationTransaction] = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([creditId]);
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+      });
+
+      const obligationStorage = await uow.moneyStorages.findObligationByIdForUpdate(creditObligationStorageId);
+
+      if (!obligationStorage) {
+        throw new BadRequestException(`Obligation storage ${creditObligationStorageId} not found`);
+      }
+
+      const bigAmount = BigInt(amount);
+
+      if (BigInt(creditAccount.available) < bigAmount) {
+        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
+      }
+
+      const transaction = await uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        creditId,
+        operationType: OperationType.LENT,
+        description,
+      });
+
+      let obligationAccount = await uow.accounts.findByName(creditAccount.name, {
+        filter: {
+          moneyStorageId: creditObligationStorageId,
+        },
+        forUpdate: true,
+      });
+
+      if (obligationAccount) {
+        obligationAccount = this.checkAccount(obligationAccount, {
+          context: `Obligation account ${obligationAccount.id}`,
+          checkCurrencyId: creditAccount.currencyId,
+        });
+
+        await uow.accounts.decreaseBalance(obligationAccount, bigAmount, { allowNegative: true });
+      } else {
+        obligationAccount = await uow.accounts.createAccount({
+          name: creditAccount.name,
+          moneyStorageId: creditObligationStorageId,
+          amount: (-bigAmount).toString(),
+          currencyId: creditAccount.currencyId,
+          description: 'Automatic create while give lent',
+        });
+      }
+
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+
+      const obligationTransaction = await uow.transactions.createTransaction({
+        parentTransactionId: transaction.transactionId,
+        amount: bigAmount.toString(),
+        debitId: null,
+        creditId: obligationAccount.id,
+        operationType: OperationType.LENT,
+        description,
+      });
+
+      return [transaction, obligationTransaction];
+    });
+
+    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Lent');
     }
 
     return true;

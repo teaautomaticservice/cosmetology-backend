@@ -16,7 +16,6 @@ import { v4 as uuid } from 'uuid';
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
-import { MoneyStoragesEntity } from '@postgresql/repositories/cashier/moneyStorages/moneyStorages.entity';
 import { TransactionsDb } from '@postgresql/repositories/cashier/transactions/transactions.db';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
@@ -25,7 +24,6 @@ import {
   FoundAndCounted,
   ID,
   Pagination,
-  RecordEntity,
   TxOpsDeps
 } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
@@ -34,7 +32,6 @@ import { COMMON_TRANSACTION_ERROR } from './transactions.contants';
 import { TransactionsTxOps } from './transactions.txOps';
 import {
   LentRepaymentTransaction,
-  LentTransaction,
   RefundInTransaction,
   RefundOutTransaction,
   TransactionsFilter
@@ -120,121 +117,6 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           parentTransactionId: filter?.anyId,
         }
       ] : baseWhere
-    });
-  }
-
-  public async lentTransaction({
-    data,
-  }: {
-    data: LentTransaction;
-  }): Promise<[TransactionEntity, TransactionEntity]> {
-    const {
-      creditId,
-      creditObligationStorageId,
-      description,
-    } = data;
-
-    const amount = this.validateAmount(data.amount);
-
-    if (!creditId || !creditObligationStorageId) {
-      throw new InternalServerErrorException(`Lent create error. creditObligationStorageId and creditId and should be exist`);
-    }
-
-    return this.buildTransactions(async (manager) => {
-      const accounts = await this.getAccountsForUpdate({
-        manager,
-        accountIds: [creditId]
-      });
-
-      const creditAccount = this.checkAccount(accounts[creditId], {
-        context: `Credit account ${creditId}.`,
-      });
-
-      const obligationStorage = await manager
-        .createQueryBuilder(MoneyStoragesEntity, 'moneyStorage')
-        .where('moneyStorage.id = :id', { id: creditObligationStorageId })
-        .getOne();
-
-      if (!obligationStorage) {
-        throw new BadRequestException(`Obligation storage ${creditObligationStorageId} not found`);
-      }
-
-      const formattedAmount = BigInt(amount);
-      const creditAvailable = BigInt(creditAccount.available);
-
-      if (creditAvailable < formattedAmount) {
-        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
-      }
-
-      const transaction = this.createTransaction({
-        manager,
-        amount,
-        creditId: creditId,
-        operationType: OperationType.LENT,
-        description,
-      });
-
-      let obligationAccount = await manager
-        .createQueryBuilder(AccountEntity, 'account')
-        .setLock('pessimistic_write')
-        .where('LOWER(account.name) = LOWER(:name)', { name: creditAccount.name })
-        .andWhere('account.moneyStorageId = :storageId', { storageId: creditObligationStorageId })
-        .getOne();
-
-      if (obligationAccount) {
-        obligationAccount = this.checkAccount(obligationAccount, {
-          context: `Obligation account ${obligationAccount.id}.`,
-          additionalCheck: (acc) => {
-            if (creditAccount.currencyId !== acc.currencyId) {
-              throw new BadRequestException('Obligation account must have the same currency');
-            }
-
-            return true;
-          }
-        });
-
-        await this.decreaseAccountBalance({
-          manager,
-          account: obligationAccount,
-          amount,
-          isMayBeNegative: true,
-        });
-      } else {
-        const newObligationAccountData: RecordEntity<AccountEntity> = {
-          name: creditAccount.name,
-          moneyStorageId: creditObligationStorageId,
-          status: AccountStatus.ACTIVE,
-          balance: (formattedAmount * BigInt(-1)).toString(),
-          available: (formattedAmount * BigInt(-1)).toString(),
-          currencyId: creditAccount.currencyId,
-          description: 'Automatic create while give lent',
-        };
-
-        const newObligationAccount = manager.create(AccountEntity, newObligationAccountData);
-        await manager.save(newObligationAccount);
-        obligationAccount = newObligationAccount;
-      }
-
-      const obligationTransaction = this.createTransaction({
-        manager,
-        parentTransactionId: transaction.transactionId,
-        amount,
-        debitId: null,
-        creditId: obligationAccount.id,
-        operationType: OperationType.LENT,
-        description,
-      });
-
-      await this.decreaseAccountBalance({
-        manager,
-        account: creditAccount,
-        amount,
-      });
-
-      await manager.save(transaction);
-      await manager.save(obligationTransaction);
-
-      return [transaction, obligationTransaction];
     });
   }
 
