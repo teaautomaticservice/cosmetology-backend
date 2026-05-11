@@ -31,7 +31,6 @@ import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.pro
 import { COMMON_TRANSACTION_ERROR } from './transactions.contants';
 import { TransactionsTxOps } from './transactions.txOps';
 import {
-  LentRepaymentTransaction,
   RefundInTransaction,
   RefundOutTransaction,
   TransactionsFilter
@@ -117,83 +116,6 @@ export class TransactionsProvider extends CommonPostgresqlProvider<TransactionEn
           parentTransactionId: filter?.anyId,
         }
       ] : baseWhere
-    });
-  }
-
-  public async lentRepaymentTransaction({
-    data,
-  }: {
-    data: LentRepaymentTransaction;
-  }): Promise<[TransactionEntity, TransactionEntity]> {
-    const {
-      obligationAccountId,
-      debitId,
-      description,
-    } = data;
-
-    const amount = this.validateAmount(data.amount);
-
-    if (!obligationAccountId || !debitId) {
-      throw new InternalServerErrorException(`Lent Repayment create error. obligationAccountId and debitId should be exist`);
-    }
-
-    return this.buildTransactions(async (manager) => {
-      const accounts = await this.getAccountsForUpdate({
-        manager,
-        accountIds: [obligationAccountId, debitId]
-      });
-
-      const debitAccount = this.checkAccount(accounts[debitId], {
-        context: `Debit account ${debitId}.`,
-      });
-
-      const obligationAccount = this.checkAccount(accounts[obligationAccountId], {
-        context: `Obligation account ${obligationAccountId}.`,
-        additionalCheck: (acc) => {
-          if (debitAccount.currencyId !== acc.currencyId) {
-            throw new BadRequestException('Accounts must have the same currency');
-          }
-
-          return true;
-        }
-      });
-
-      await Promise.all([
-        this.increaseAccountBalance({
-          manager,
-          account: debitAccount,
-          amount,
-        }),
-        this.increaseAccountBalance({
-          manager,
-          account: obligationAccount,
-          amount,
-        }),
-      ]);
-
-      const transaction = this.createTransaction({
-        manager,
-        amount,
-        debitId: debitId,
-        creditId: null,
-        operationType: OperationType.LENT_REPAYMENT,
-        description,
-      });
-
-      const obligationTransaction = this.createTransaction({
-        manager,
-        parentTransactionId: transaction.transactionId,
-        amount,
-        debitId: obligationAccountId,
-        creditId: null,
-        operationType: OperationType.LENT_REPAYMENT,
-        description,
-      });
-
-      await manager.save(transaction);
-      await manager.save(obligationTransaction);
-
-      return [transaction, obligationTransaction];
     });
   }
 

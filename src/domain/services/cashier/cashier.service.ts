@@ -23,7 +23,6 @@ import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneySto
 import { COMMON_TRANSACTION_ERROR } from '@providers/cashier/transactions/transactions.contants';
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
-  LentRepaymentTransaction,
   RefundInTransaction,
   RefundOutTransaction,
   TransactionsFilter
@@ -50,6 +49,7 @@ import {
 import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
+  LentRepaymentTransaction,
   LentTransaction,
   LoanRepaymentTransaction,
   LoanTransaction
@@ -527,22 +527,6 @@ export class CashierService {
       filter,
     });
     return resp;
-  }
-
-  public async lentRepaymentTransaction({
-    data,
-  }: {
-    data: LentRepaymentTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.lentRepaymentTransaction({
-      data,
-    });
-
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Lent Repayment');
-    }
-
-    return true;
   }
 
   public async refundInTransaction({
@@ -1102,6 +1086,71 @@ export class CashierService {
 
     if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Lent');
+    }
+
+    return true;
+  }
+
+  public async lentRepaymentTransaction({
+    data,
+  }: {
+    data: LentRepaymentTransaction;
+  }): Promise<boolean> {
+    const {
+      obligationAccountId,
+      debitId,
+      description,
+    } = data;
+
+    if (!obligationAccountId || !debitId) {
+      throw new InternalServerErrorException(
+        `Lent Repayment create error. obligationAccountId and debitId should be exist`
+      );
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const [newTransaction, newObligationTransaction] = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([
+        obligationAccountId,
+        debitId,
+      ]);
+
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+      const obligationAccount = this.checkAccount(accounts[obligationAccountId], {
+        context: `Obligation account ${obligationAccountId}`,
+        checkCurrencyId: debitAccount.currencyId,
+      });
+
+      const bigAmount = BigInt(amount);
+
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+      await uow.accounts.increaseBalance(obligationAccount, bigAmount);
+
+      const transaction = await uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId: null,
+        operationType: OperationType.LENT_REPAYMENT,
+        description,
+      });
+
+      const obligationTransaction = await uow.transactions.createTransaction({
+        parentTransactionId: transaction.transactionId,
+        amount: bigAmount.toString(),
+        debitId: obligationAccountId,
+        creditId: null,
+        operationType: OperationType.LENT_REPAYMENT,
+        description,
+      });
+
+      return [transaction, obligationTransaction];
+    });
+
+    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Lent Repayment');
     }
 
     return true;
