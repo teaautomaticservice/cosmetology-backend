@@ -1,12 +1,6 @@
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType } from '@postgresql/repositories/cashier/transactions/transactions.types';
-import { ID, RecordEntity } from '@providers/common/common.type';
-
-export type RefundInTransaction = Pick<RecordEntity<
-  TransactionEntity>,
-  'transactionId' |
-  'description'
-> & { amount: number }
+import { ID } from '@providers/common/common.type';
 
 export type TransactionsFilter = {
   parentTransactionIds?: string[];

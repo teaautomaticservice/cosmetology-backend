@@ -61,3 +61,9 @@ export type RefundOutTransaction = Pick<RecordEntity<
   'transactionId' |
   'description'
 > & { amount: number };
+
+export type RefundInTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'transactionId' |
+  'description'
+> & { amount: number };
