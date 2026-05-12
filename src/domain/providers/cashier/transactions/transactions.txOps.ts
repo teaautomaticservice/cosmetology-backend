@@ -41,6 +41,7 @@ export class TransactionsTxOps extends CommonTxOps<TransactionEntity> {
     return super.findOne({
       where: {
         debitId,
+        status: TransactionStatus.COMPLETED,
       },
       order: {
         createdAt: -1,
