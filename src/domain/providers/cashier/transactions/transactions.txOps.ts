@@ -48,6 +48,40 @@ export class TransactionsTxOps extends CommonTxOps<TransactionEntity> {
     });
   }
 
+  public async findByTransactionId(
+    transactionId: TransactionEntity['transactionId'],
+    { forUpdate }: { forUpdate?: boolean } = {},
+  ): Promise<TransactionEntity | null> {
+    return super.findOne({
+      where: { transactionId },
+      forUpdate,
+    });
+  }
+
+  public async sumByParent(
+    parentTransactionId: NonNullable<TransactionEntity['parentTransactionId']>,
+    {
+      operationType,
+    }: {
+      operationType?: OperationType;
+    } = {},
+  ): Promise<string> {
+    const [row] = await super.aggregate({
+      where: {
+        parentTransactionId,
+        operationType,
+      },
+      aggregates: {
+        total: {
+          field: 'amount',
+          fn: 'SUM',
+        },
+      },
+    });
+
+    return row?.total ?? '0';
+  }
+
   private generateTransactionId(): string {
     const year = new Date().getFullYear();
     const additionalId = uuid().replace(/-/g, '').substring(0, 12).toUpperCase();

@@ -5,7 +5,7 @@ import { VALIDATION_ERROR } from '@constants/errors';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
-import { OperationType } from '@postgresql/repositories/cashier/transactions/transactions.types';
+import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import {
   AccountsAggregatedWithStorage,
@@ -24,7 +24,6 @@ import { COMMON_TRANSACTION_ERROR } from '@providers/cashier/transactions/transa
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
   RefundInTransaction,
-  RefundOutTransaction,
   TransactionsFilter
 } from '@providers/cashier/transactions/transactions.types';
 import {
@@ -52,7 +51,8 @@ import {
   LentRepaymentTransaction,
   LentTransaction,
   LoanRepaymentTransaction,
-  LoanTransaction
+  LoanTransaction,
+  RefundOutTransaction
 } from './cashier.types';
 
 @Injectable()
@@ -550,11 +550,88 @@ export class CashierService {
   }: {
     data: RefundOutTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.refundOutTransaction({
-      data,
+    const { transactionId, description } = data;
+
+    if (!transactionId) {
+      throw new InternalServerErrorException(
+        `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} should be exist`
+      );
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const refundTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const originalTransaction = await uow.transactions.findByTransactionId(transactionId, {
+        forUpdate: true,
+      });
+
+      if (!originalTransaction || originalTransaction.status !== TransactionStatus.COMPLETED) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} not found or incorrect status`
+        );
+      }
+
+      const {
+        debitId: originalDebitId,
+        creditId: originalCreditId,
+        operationType,
+        amount: originalAmount,
+      } = originalTransaction;
+
+      if (!originalDebitId) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Account ${originalDebitId} should be exist`
+        );
+      }
+
+      if (operationType !== OperationType.RECEIPT) {
+        throw new InternalServerErrorException(
+          COMMON_TRANSACTION_ERROR +
+          ' Refund out should apply only for Receipt transaction'
+        );
+      }
+
+      const totalRefunded = await uow.transactions.sumByParent(
+        originalTransaction.transactionId,
+        { operationType: OperationType.REFUND_OUT },
+      );
+
+      const bigAmount = BigInt(amount);
+      const availableForRefund = BigInt(originalAmount) - BigInt(totalRefunded);
+
+      if (availableForRefund < bigAmount) {
+        throw new BadRequestException(
+          `Insufficient funds for refund. Available: ${availableForRefund}, Required: ${bigAmount}`
+        );
+      }
+
+      const accounts = await uow.accounts.findManyForUpdate([originalDebitId, originalCreditId]);
+
+      const sourceAccount = this.checkAccount(accounts[originalDebitId], {
+        context: `Source account ${originalDebitId}`,
+      });
+
+      if (originalCreditId) {
+        const targetAccount = this.checkAccount(accounts[originalCreditId], {
+          context: `Target account ${originalCreditId}`,
+          checkCurrencyId: sourceAccount.currencyId,
+        });
+        await uow.accounts.increaseBalance(targetAccount, bigAmount);
+      }
+
+      await uow.accounts.decreaseBalance(sourceAccount, bigAmount);
+
+      return uow.transactions.createTransaction({
+        parentTransactionId: originalTransaction.transactionId,
+        amount: bigAmount.toString(),
+        debitId: originalCreditId,
+        creditId: originalDebitId,
+        operationType: OperationType.REFUND_OUT,
+        description,
+      });
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(refundTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Refund Out');
     }
 

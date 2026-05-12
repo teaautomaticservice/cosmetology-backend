@@ -45,7 +45,7 @@ export type LentTransaction = Pick<RecordEntity<
 > & {
   creditObligationStorageId: number;
   amount: number;
-}
+};
 
 export type LentRepaymentTransaction = Pick<RecordEntity<
   TransactionEntity>,
@@ -54,4 +54,10 @@ export type LentRepaymentTransaction = Pick<RecordEntity<
 > & {
   obligationAccountId: number;
   amount: number;
-}
+};
+
+export type RefundOutTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'transactionId' |
+  'description'
+> & { amount: number };
