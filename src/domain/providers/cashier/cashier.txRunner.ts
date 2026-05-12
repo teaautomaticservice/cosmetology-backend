@@ -1,4 +1,3 @@
-// src/domain/providers/cashier/cashier.txRunner.ts
 import { DataSource } from 'typeorm';
 
 import { Resources } from '@commonConstants/resources';
