@@ -1344,11 +1344,9 @@ export class CashierService {
     {
       context,
       checkCurrencyId,
-      // additionalCheck,
     }: {
       context?: string;
       checkCurrencyId?: ID;
-      // additionalCheck?: (account: AccountEntity) => boolean;
     } = {}): AccountEntity {
     if (!account) {
       throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account not found. ${context}`);
@@ -1361,12 +1359,6 @@ export class CashierService {
     if (checkCurrencyId && account.currencyId !== checkCurrencyId) {
       throw new BadRequestException('Accounts must have the same currency');
     }
-
-    // const additionalCheckResult = additionalCheck?.(account) ?? true;
-
-    // if (!additionalCheckResult) {
-    //   throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Additional check failed. ${context}`);
-    // }
 
     return account;
   }
