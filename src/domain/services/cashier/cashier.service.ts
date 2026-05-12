@@ -5,6 +5,7 @@ import { VALIDATION_ERROR } from '@constants/errors';
 import { BadRequestException, Inject, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
+import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { AccountsProvider } from '@providers/cashier/accounts/accounts.provider';
 import {
   AccountsAggregatedWithStorage,
@@ -16,18 +17,12 @@ import {
 import { AccountsByStoreDto } from '@providers/cashier/accounts/dtos/accountByStore.dto';
 import { AccountAggregatedWithStorageDto } from '@providers/cashier/accounts/dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from '@providers/cashier/accounts/dtos/accountWithMoneyStorage.dto';
+import { CashierTxRunner } from '@providers/cashier/cashier.txRunner';
 import { CurrenciesProvider } from '@providers/cashier/currencies/currencies.provider';
 import { MoneyStoragesProvider } from '@providers/cashier/moneyStorages/moneyStorages.provider';
+import { COMMON_TRANSACTION_ERROR } from '@providers/cashier/transactions/transactions.contants';
 import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
 import {
-  CreateOpenBalanceObligationTransaction,
-  CreateTransaction,
-  LentRepaymentTransaction,
-  LentTransaction,
-  LoanRepaymentTransaction,
-  LoanTransaction,
-  RefundInTransaction,
-  RefundOutTransaction,
   TransactionsFilter
 } from '@providers/cashier/transactions/transactions.types';
 import {
@@ -49,6 +44,17 @@ import {
   MoneyStorageType
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
+import {
+  CreateOpenBalanceObligationTransaction,
+  CreateTransaction,
+  LentRepaymentTransaction,
+  LentTransaction,
+  LoanRepaymentTransaction,
+  LoanTransaction,
+  RefundInTransaction,
+  RefundOutTransaction
+} from './cashier.types';
+
 @Injectable()
 export class CashierService {
   constructor(
@@ -57,6 +63,7 @@ export class CashierService {
     private readonly moneyStoragesProvider: MoneyStoragesProvider,
     private readonly accountsProvider: AccountsProvider,
     private readonly transactionsProvider: TransactionsProvider,
+    private readonly cashierTxRunner: CashierTxRunner,
   ) { }
 
   public async getCurrenciesList(params: { pagination: Pagination }): Promise<[CurrencyEntity[], number]> {
@@ -527,13 +534,60 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.openBalanceTransaction({
-      data,
+    const { debitId, creditId, description } = data;
+    const amount = this.validateAmount(data.amount);
+
+    if (!debitId) {
+      throw new BadRequestException('debitId are required for transfer');
+    }
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+
+      const bigDebitAvailable = BigInt(debitAccount.available);
+      const bigDebitBalance = BigInt(debitAccount.balance);
+
+      if (bigDebitAvailable !== 0n || bigDebitBalance !== 0n) {
+        throw new BadRequestException(`Debit account ${debitId} should be empty`);
+      }
+
+      const lastDebitTransaction = await uow.transactions.lastDebitTransaction({ debitId });
+
+      if (lastDebitTransaction && lastDebitTransaction.operationType !== OperationType.CLOSING_BALANCE) {
+        throw new BadRequestException(
+          `Cannot create Opening Balance. Last debit transaction for account ${debitId} is not CLOSING_BALANCE`
+        );
+      }
+
+      const bigAmount = BigInt(amount);
+
+      if (creditId) {
+        const creditAccount = this.checkAccount(accounts[creditId], {
+          context: `Credit account ${creditId}.`,
+          checkCurrencyId: debitAccount.currencyId,
+        });
+        await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      }
+
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId: debitId,
+        creditId: creditId,
+        operationType: OperationType.OPENING_BALANCE,
+        description,
+      });
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(newTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Open Balance');
     }
+
+    this.logger.info('Creating transaction Open Balance', newTransaction);
 
     return true;
   }
@@ -543,11 +597,53 @@ export class CashierService {
   }: {
     data: CreateOpenBalanceObligationTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.openBalanceObligationTransaction({
-      data,
+    const {
+      obligationStorageId,
+      description,
+      debitName,
+      currencyId,
+    } = data;
+
+    const amount = this.validateAmount(data.amount);
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const obligationStorage = await uow.moneyStorages.findObligationByIdForUpdate(obligationStorageId);
+
+      if (!obligationStorage) {
+        throw new InternalServerErrorException(`Open Balance create error. Obligation storage with id: ${obligationStorageId} not found`);
+      }
+
+      const currency = await uow.currencies.findById(currencyId);
+
+      if (!currency) {
+        throw new InternalServerErrorException(`Open Balance create error. Currency with id: ${currencyId} not found`);
+      }
+
+      const obligationAccount = await uow.accounts.findByName(debitName);
+
+      if (obligationAccount) {
+        throw new BadRequestException(`Debit account ${debitName} already exists`);
+      }
+
+      const bigAmount = BigInt(amount);
+
+      const newObligationAccount = await uow.accounts.createAccount({
+        name: debitName,
+        moneyStorageId: obligationStorageId,
+        amount: bigAmount.toString(),
+        currencyId,
+        description: 'Automatic create while opening balance for obligation storage',
+      });
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId: newObligationAccount.id,
+        operationType: OperationType.OPENING_BALANCE,
+        description,
+      });
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(newTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Open Balance Obligation');
     }
 
@@ -559,11 +655,45 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.cashOutTransaction({
-      data,
+    const {
+      debitId,
+      creditId,
+      description,
+    } = data;
+
+    if (!creditId) {
+      throw new InternalServerErrorException(`Cash Out create error. Account ${creditId} should be exist`);
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+      });
+
+      const bigAmount = BigInt(amount);
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+
+      if (debitId) {
+        const debitAccount = this.checkAccount(accounts[debitId], {
+          context: `Debit account ${debitId}`,
+          checkCurrencyId: creditAccount.currencyId,
+        });
+        await uow.accounts.increaseBalance(debitAccount, bigAmount);
+      }
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId,
+        operationType: OperationType.CASH_OUT,
+        description,
+      });
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(newTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Cash Out');
     }
 
@@ -575,13 +705,93 @@ export class CashierService {
   }: {
     data: CreateTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.receiptTransaction({
-      data,
+    const {
+      debitId,
+      creditId,
+      description,
+    } = data;
+
+    const amount = this.validateAmount(data.amount);
+
+    if (!debitId) {
+      throw new InternalServerErrorException(`Receipt transaction create error. Account ${debitId} should be exist`);
+    }
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+
+      const bigAmount = BigInt(amount);
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      if (creditId) {
+        const creditAccount = this.checkAccount(accounts[creditId], {
+          context: `Credit account ${creditId}`,
+          checkCurrencyId: debitAccount.currencyId,
+        });
+
+        await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      }
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId,
+        operationType: OperationType.RECEIPT,
+        description,
+      });
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(newTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Receipt');
     }
+
+    return true;
+  }
+
+  public async transferTransaction({
+    data,
+  }: {
+    data: CreateTransaction;
+  }): Promise<boolean> {
+    const { debitId, creditId, description } = data;
+    const amount = this.validateAmount(data.amount);
+
+    if (!debitId || !creditId) {
+      throw new BadRequestException('debitId and creditId are required for transfer');
+    }
+
+    const newTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+        checkCurrencyId: debitAccount.currencyId,
+      });
+
+      const bigAmount = BigInt(amount);
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      return uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId,
+        operationType: OperationType.TRANSFER,
+        description,
+      });
+    });
+
+    if (!Boolean(newTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Transfer');
+    }
+
+    this.logger.info('Creating transaction Transfer', newTransaction);
 
     return true;
   }
@@ -591,11 +801,88 @@ export class CashierService {
   }: {
     data: LoanTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.loanTransaction({
-      data,
+    const {
+      debitId,
+      creditId,
+      obligationStorageId,
+      description,
+    } = data;
+
+    if (!debitId || !creditId) {
+      throw new InternalServerErrorException(`Loan create error. debitId and creditId and should be exist`);
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const [newTransaction, newObligationTransaction] = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([debitId, creditId]);
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+        checkCurrencyId: debitAccount.currencyId,
+      });
+
+      const obligationStorage = await uow.moneyStorages.findObligationByIdForUpdate(obligationStorageId);
+
+      if (!obligationStorage) {
+        throw new BadRequestException(`Obligation storage ${obligationStorageId} not found`);
+      }
+
+      const bigAmount = BigInt(amount);
+
+      if (BigInt(creditAccount.available) < bigAmount) {
+        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
+      }
+
+      const transaction = await uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId,
+        operationType: OperationType.LOAN,
+        description,
+      });
+
+      let obligationAccount = await uow.accounts.findByName(creditAccount.name, {
+        filter: {
+          moneyStorageId: obligationStorageId,
+        },
+      });
+
+      if (obligationAccount) {
+        obligationAccount = this.checkAccount(obligationAccount, {
+          context: `Obligation account ${obligationAccount.id}`,
+          checkCurrencyId: creditAccount.currencyId,
+        });
+
+        await uow.accounts.increaseBalance(obligationAccount, bigAmount);
+      } else {
+        obligationAccount = await uow.accounts.createAccount({
+          name: creditAccount.name,
+          moneyStorageId: obligationStorageId,
+          amount: bigAmount.toString(),
+          currencyId: creditAccount.currencyId,
+          description: 'Automatic create while taken loan',
+        });
+      }
+
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      const obligationTransaction = await uow.transactions.createTransaction({
+        parentTransactionId: transaction.transactionId,
+        amount: bigAmount.toString(),
+        debitId: obligationAccount.id,
+        creditId: null,
+        operationType: OperationType.LOAN,
+        description,
+      });
+
+      return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Loan');
     }
 
@@ -607,11 +894,76 @@ export class CashierService {
   }: {
     data: LoanRepaymentTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.loanRepaymentTransaction({
-      data,
+    const {
+      creditObligationAccountId,
+      debitId,
+      creditId,
+      description,
+    } = data;
+
+    if (!creditObligationAccountId || !debitId || !creditId) {
+      throw new InternalServerErrorException(
+        `Loan Repayment create error. creditObligationAccountId, debitId and creditId should be exist`
+      );
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const [newTransaction, newObligationTransaction] = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([
+        creditObligationAccountId,
+        debitId,
+        creditId,
+      ]);
+
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+        checkCurrencyId: debitAccount.currencyId,
+      });
+      const obligationAccount = this.checkAccount(accounts[creditObligationAccountId], {
+        context: `Credit obligation account ${creditObligationAccountId}`,
+        checkCurrencyId: debitAccount.currencyId,
+      });
+
+      const bigAmount = BigInt(amount);
+
+      if (BigInt(creditAccount.available) < bigAmount) {
+        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
+      }
+
+      if (BigInt(obligationAccount.available) < bigAmount) {
+        throw new BadRequestException(
+          `Insufficient funds in the Obligation account ${creditObligationAccountId}`
+        );
+      }
+
+      const transaction = await uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId,
+        operationType: OperationType.LOAN_REPAYMENT,
+        description,
+      });
+
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+      await uow.accounts.decreaseBalance(obligationAccount, bigAmount);
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+
+      const obligationTransaction = await uow.transactions.createTransaction({
+        parentTransactionId: transaction.transactionId,
+        amount: bigAmount.toString(),
+        creditId: creditObligationAccountId,
+        operationType: OperationType.LOAN_REPAYMENT,
+        description,
+      });
+
+      return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Loan Repayment');
     }
 
@@ -623,11 +975,84 @@ export class CashierService {
   }: {
     data: LentTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.lentTransaction({
-      data,
+    const {
+      creditId,
+      creditObligationStorageId,
+      description,
+    } = data;
+
+    if (!creditId || !creditObligationStorageId) {
+      throw new InternalServerErrorException(
+        `Lent create error. creditId and creditObligationStorageId should be exist`
+      );
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const [newTransaction, newObligationTransaction] = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([creditId]);
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+      });
+
+      const obligationStorage = await uow.moneyStorages.findObligationByIdForUpdate(creditObligationStorageId);
+
+      if (!obligationStorage) {
+        throw new BadRequestException(`Obligation storage ${creditObligationStorageId} not found`);
+      }
+
+      const bigAmount = BigInt(amount);
+
+      if (BigInt(creditAccount.available) < bigAmount) {
+        throw new BadRequestException(`Insufficient funds in the account ${creditId}`);
+      }
+
+      const transaction = await uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        creditId,
+        operationType: OperationType.LENT,
+        description,
+      });
+
+      let obligationAccount = await uow.accounts.findByName(creditAccount.name, {
+        filter: {
+          moneyStorageId: creditObligationStorageId,
+        },
+        forUpdate: true,
+      });
+
+      if (obligationAccount) {
+        obligationAccount = this.checkAccount(obligationAccount, {
+          context: `Obligation account ${obligationAccount.id}`,
+          checkCurrencyId: creditAccount.currencyId,
+        });
+
+        await uow.accounts.decreaseBalance(obligationAccount, bigAmount, { allowNegative: true });
+      } else {
+        obligationAccount = await uow.accounts.createAccount({
+          name: creditAccount.name,
+          moneyStorageId: creditObligationStorageId,
+          amount: (-bigAmount).toString(),
+          currencyId: creditAccount.currencyId,
+          description: 'Automatic create while give lent',
+        });
+      }
+
+      await uow.accounts.decreaseBalance(creditAccount, bigAmount);
+
+      const obligationTransaction = await uow.transactions.createTransaction({
+        parentTransactionId: transaction.transactionId,
+        amount: bigAmount.toString(),
+        debitId: null,
+        creditId: obligationAccount.id,
+        operationType: OperationType.LENT,
+        description,
+      });
+
+      return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Lent');
     }
 
@@ -639,28 +1064,61 @@ export class CashierService {
   }: {
     data: LentRepaymentTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.lentRepaymentTransaction({
-      data,
-    });
+    const {
+      obligationAccountId,
+      debitId,
+      description,
+    } = data;
 
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Lent Repayment');
+    if (!obligationAccountId || !debitId) {
+      throw new InternalServerErrorException(
+        `Lent Repayment create error. obligationAccountId and debitId should be exist`
+      );
     }
 
-    return true;
-  }
+    const amount = this.validateAmount(data.amount);
 
-  public async transferTransaction({
-    data,
-  }: {
-    data: CreateTransaction;
-  }): Promise<boolean> {
-    const resp = await this.transactionsProvider.transferTransaction({
-      data,
+    const [newTransaction, newObligationTransaction] = await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([
+        obligationAccountId,
+        debitId,
+      ]);
+
+      const debitAccount = this.checkAccount(accounts[debitId], {
+        context: `Debit account ${debitId}`,
+      });
+      const obligationAccount = this.checkAccount(accounts[obligationAccountId], {
+        context: `Obligation account ${obligationAccountId}`,
+        checkCurrencyId: debitAccount.currencyId,
+      });
+
+      const bigAmount = BigInt(amount);
+
+      await uow.accounts.increaseBalance(debitAccount, bigAmount);
+      await uow.accounts.increaseBalance(obligationAccount, bigAmount);
+
+      const transaction = await uow.transactions.createTransaction({
+        amount: bigAmount.toString(),
+        debitId,
+        creditId: null,
+        operationType: OperationType.LENT_REPAYMENT,
+        description,
+      });
+
+      const obligationTransaction = await uow.transactions.createTransaction({
+        parentTransactionId: transaction.transactionId,
+        amount: bigAmount.toString(),
+        debitId: obligationAccountId,
+        creditId: null,
+        operationType: OperationType.LENT_REPAYMENT,
+        description,
+      });
+
+      return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(resp)) {
-      throw new InternalServerErrorException('Error creating transaction Transfer');
+    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+      throw new InternalServerErrorException('Error creating transaction Lent Repayment');
     }
 
     return true;
@@ -671,11 +1129,88 @@ export class CashierService {
   }: {
     data: RefundInTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.refundInTransaction({
-      data,
+    const { transactionId, description } = data;
+
+    if (!transactionId) {
+      throw new InternalServerErrorException(
+        `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} should be exist`
+      );
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const refundTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const originalTransaction = await uow.transactions.findByTransactionId(transactionId, {
+        forUpdate: true,
+      });
+
+      if (!originalTransaction || originalTransaction.status !== TransactionStatus.COMPLETED) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} not found or incorrect status`
+        );
+      }
+
+      const {
+        creditId: originalCreditId,
+        debitId: originalDebitId,
+        operationType,
+        amount: originalAmount,
+      } = originalTransaction;
+
+      if (!originalCreditId) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Account ${originalCreditId} should be exist`
+        );
+      }
+
+      if (operationType !== OperationType.CASH_OUT) {
+        throw new InternalServerErrorException(
+          COMMON_TRANSACTION_ERROR +
+          ' Refund in should apply only for Cash Out transaction'
+        );
+      }
+
+      const totalRefunded = await uow.transactions.sumByParent(
+        originalTransaction.transactionId,
+        { operationType: OperationType.REFUND_IN },
+      );
+
+      const bigAmount = BigInt(amount);
+      const availableForRefund = BigInt(originalAmount) - BigInt(totalRefunded);
+
+      if (availableForRefund < bigAmount) {
+        throw new BadRequestException(
+          `Insufficient funds for refund. Available: ${availableForRefund}, Required: ${bigAmount}`
+        );
+      }
+
+      const accounts = await uow.accounts.findManyForUpdate([originalCreditId, originalDebitId]);
+
+      const targetAccount = this.checkAccount(accounts[originalCreditId], {
+        context: `Target account ${originalCreditId}`,
+      });
+
+      if (originalDebitId) {
+        const sourceAccount = this.checkAccount(accounts[originalDebitId], {
+          context: `Source account ${originalDebitId}`,
+          checkCurrencyId: targetAccount.currencyId,
+        });
+        await uow.accounts.decreaseBalance(sourceAccount, bigAmount);
+      }
+
+      await uow.accounts.increaseBalance(targetAccount, bigAmount);
+
+      return uow.transactions.createTransaction({
+        parentTransactionId: originalTransaction.transactionId,
+        amount: bigAmount.toString(),
+        debitId: originalCreditId,
+        creditId: originalDebitId,
+        operationType: OperationType.REFUND_IN,
+        description,
+      });
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(refundTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Refund In');
     }
 
@@ -687,14 +1222,144 @@ export class CashierService {
   }: {
     data: RefundOutTransaction;
   }): Promise<boolean> {
-    const resp = await this.transactionsProvider.refundOutTransaction({
-      data,
+    const { transactionId, description } = data;
+
+    if (!transactionId) {
+      throw new InternalServerErrorException(
+        `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} should be exist`
+      );
+    }
+
+    const amount = this.validateAmount(data.amount);
+
+    const refundTransaction = await this.cashierTxRunner.run(async (uow) => {
+      const originalTransaction = await uow.transactions.findByTransactionId(transactionId, {
+        forUpdate: true,
+      });
+
+      if (!originalTransaction || originalTransaction.status !== TransactionStatus.COMPLETED) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Transaction ${transactionId} not found or incorrect status`
+        );
+      }
+
+      const {
+        debitId: originalDebitId,
+        creditId: originalCreditId,
+        operationType,
+        amount: originalAmount,
+      } = originalTransaction;
+
+      if (!originalDebitId) {
+        throw new InternalServerErrorException(
+          `${COMMON_TRANSACTION_ERROR} Account ${originalDebitId} should be exist`
+        );
+      }
+
+      if (operationType !== OperationType.RECEIPT) {
+        throw new InternalServerErrorException(
+          COMMON_TRANSACTION_ERROR +
+          ' Refund out should apply only for Receipt transaction'
+        );
+      }
+
+      const totalRefunded = await uow.transactions.sumByParent(
+        originalTransaction.transactionId,
+        { operationType: OperationType.REFUND_OUT },
+      );
+
+      const bigAmount = BigInt(amount);
+      const availableForRefund = BigInt(originalAmount) - BigInt(totalRefunded);
+
+      if (availableForRefund < bigAmount) {
+        throw new BadRequestException(
+          `Insufficient funds for refund. Available: ${availableForRefund}, Required: ${bigAmount}`
+        );
+      }
+
+      const accounts = await uow.accounts.findManyForUpdate([originalDebitId, originalCreditId]);
+
+      const sourceAccount = this.checkAccount(accounts[originalDebitId], {
+        context: `Source account ${originalDebitId}`,
+      });
+
+      if (originalCreditId) {
+        const targetAccount = this.checkAccount(accounts[originalCreditId], {
+          context: `Target account ${originalCreditId}`,
+          checkCurrencyId: sourceAccount.currencyId,
+        });
+        await uow.accounts.increaseBalance(targetAccount, bigAmount);
+      }
+
+      await uow.accounts.decreaseBalance(sourceAccount, bigAmount);
+
+      return uow.transactions.createTransaction({
+        parentTransactionId: originalTransaction.transactionId,
+        amount: bigAmount.toString(),
+        debitId: originalCreditId,
+        creditId: originalDebitId,
+        operationType: OperationType.REFUND_OUT,
+        description,
+      });
     });
 
-    if (!Boolean(resp)) {
+    if (!Boolean(refundTransaction)) {
       throw new InternalServerErrorException('Error creating transaction Refund Out');
     }
 
     return true;
+  }
+
+  private getTransactionAmountError = (amount?: number | null): InternalServerErrorException => {
+    return new InternalServerErrorException(
+      `${COMMON_TRANSACTION_ERROR} Amount ${amount} isn't correct`
+    );
+  };
+
+  private validateAmount(
+    amount?: number | null,
+    {
+      allowZero,
+    }: {
+      allowZero?: boolean;
+    } = {}
+  ): number {
+    if (amount == null || Number.isNaN(amount)) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    if (amount < 0) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    if (amount === 0 && !allowZero) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    return amount;
+  }
+
+  private checkAccount(
+    account?: AccountEntity | null,
+    {
+      context,
+      checkCurrencyId,
+    }: {
+      context?: string;
+      checkCurrencyId?: ID;
+    } = {}): AccountEntity {
+    if (!account) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account not found. ${context}`);
+    }
+
+    if (account.status !== AccountStatus.ACTIVE) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account should be active. ${context}`);
+    }
+
+    if (checkCurrencyId && account.currencyId !== checkCurrencyId) {
+      throw new BadRequestException('Accounts must have the same currency');
+    }
+
+    return account;
   }
 }

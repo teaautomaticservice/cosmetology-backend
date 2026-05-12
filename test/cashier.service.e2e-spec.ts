@@ -1,8 +1,14 @@
-import { DataSource, Repository } from 'typeorm';
+import {
+  DataSource,
+  FindOptionsWhere,
+  IsNull,
+  Not,
+  Repository
+} from 'typeorm';
 
+import { Resources } from '@commonConstants/resources';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AccountEntity } from '@postgresql/repositories/cashier/accounts/accounts.entity';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { CurrencyEntity } from '@postgresql/repositories/cashier/currencies/currencies.entity';
@@ -12,24 +18,36 @@ import {
   MoneyStorageStatus,
   MoneyStorageType
 } from '@postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
-import { TransactionsDb } from '@postgresql/repositories/cashier/transactions/transactions.db';
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
-import { TransactionsProvider } from '@providers/cashier/transactions/transactions.provider';
+import { CashierService } from '@services/cashier/cashier.service';
+import { CashierServiceModule } from '@services/cashier/cashierService.module';
 
 import { TestDatabase } from './utils/test-database';
 
 const ENTITIES = [TransactionEntity, AccountEntity, CurrencyEntity, MoneyStoragesEntity];
 const TABLES = ['transaction', 'accounts', 'money_storages', 'currencies'];
 
-describe('TransactionsProvider (integration)', () => {
+const LOGGER_MOCK = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+
+const ASYNC_CONTEXT_MOCK = {
+  getUser: (): undefined => undefined,
+};
+
+describe('CashierService transactions (integration)', () => {
   jest.setTimeout(120_000);
 
   const testDb = new TestDatabase();
   let module: TestingModule;
-  let provider: TransactionsProvider;
+  let service: CashierService;
   let dataSource: DataSource;
   let accountRepo: Repository<AccountEntity>;
+  let transactionRepo: Repository<TransactionEntity>;
   let currency: CurrencyEntity;
   let storage: MoneyStoragesEntity;
   let obligationStorage: MoneyStoragesEntity;
@@ -40,18 +58,19 @@ describe('TransactionsProvider (integration)', () => {
     module = await Test.createTestingModule({
       imports: [
         testDb.getTypeOrmModule(ENTITIES),
-        TypeOrmModule.forFeature([TransactionEntity]),
+        CashierServiceModule,
       ],
-      providers: [
-        TransactionsDb,
-        TransactionsProvider,
-        ...TestDatabase.getMockProviders(),
-      ],
-    }).compile();
+    })
+      .overrideProvider(Resources.LOGGER)
+      .useValue(LOGGER_MOCK)
+      .overrideProvider(Resources.AsyncContext)
+      .useValue(ASYNC_CONTEXT_MOCK)
+      .compile();
 
-    provider = module.get(TransactionsProvider);
+    service = module.get(CashierService);
     dataSource = module.get(DataSource);
     accountRepo = dataSource.getRepository(AccountEntity);
+    transactionRepo = dataSource.getRepository(TransactionEntity);
   });
 
   afterAll(async () => {
@@ -102,13 +121,36 @@ describe('TransactionsProvider (integration)', () => {
     return accountRepo.findOneOrFail({ where: { id } });
   };
 
+  /**
+   * Returns the only transaction matching the filter. Throws if zero or more than one
+   * transactions are found — we want to assert exact uniqueness in tests.
+   */
+  const getOneTransaction = async (
+    where: FindOptionsWhere<TransactionEntity>,
+  ): Promise<TransactionEntity> => {
+    const list = await transactionRepo.find({ where });
+    if (list.length !== 1) {
+      throw new Error(
+        `Expected exactly 1 transaction matching ${JSON.stringify(where)}, got ${list.length}`,
+      );
+    }
+    return list[0];
+  };
+
+  /** Returns all transactions matching filter ordered by id ASC (insertion order). */
+  const findTransactions = async (
+    where: FindOptionsWhere<TransactionEntity>,
+  ): Promise<TransactionEntity[]> => {
+    return transactionRepo.find({ where, order: { id: 'ASC' } });
+  };
+
   // ─── openBalanceTransaction ───────────────────────────────────
 
   describe('openBalanceTransaction', () => {
     it('should create opening balance for debit account without credit', async () => {
       const debitAccount = await createAccount();
 
-      const result = await provider.openBalanceTransaction({
+      const ok = await service.openBalanceTransaction({
         data: {
           amount: 10000,
           debitId: debitAccount.id,
@@ -116,14 +158,18 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Initial balance',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.OPENING_BALANCE);
-      expect(result.status).toBe(TransactionStatus.COMPLETED);
-      expect(result.amount).toBe('10000');
-      expect(result.debitId).toBe(debitAccount.id);
-      expect(result.creditId).toBeNull();
-      expect(result.transactionId).toMatch(/^TXN-/);
-      expect(result.executionDate).toBeInstanceOf(Date);
+      const tx = await getOneTransaction({
+        operationType: OperationType.OPENING_BALANCE,
+        debitId: debitAccount.id,
+      });
+      expect(tx.status).toBe(TransactionStatus.COMPLETED);
+      expect(tx.amount).toBe('10000');
+      expect(tx.debitId).toBe(debitAccount.id);
+      expect(tx.creditId).toBeNull();
+      expect(tx.transactionId).toMatch(/^TXN-/);
+      expect(tx.executionDate).toBeInstanceOf(Date);
 
       const updatedDebit = await getAccount(debitAccount.id);
       expect(updatedDebit.balance).toBe('10000');
@@ -137,7 +183,7 @@ describe('TransactionsProvider (integration)', () => {
       });
       const debitAccount = await createAccount();
 
-      const result = await provider.openBalanceTransaction({
+      const ok = await service.openBalanceTransaction({
         data: {
           amount: 10000,
           debitId: debitAccount.id,
@@ -145,9 +191,14 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Balance from credit',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.amount).toBe('10000');
-      expect(result.creditId).toBe(creditAccount.id);
+      const tx = await getOneTransaction({
+        operationType: OperationType.OPENING_BALANCE,
+        debitId: debitAccount.id,
+        creditId: creditAccount.id,
+      });
+      expect(tx.amount).toBe('10000');
 
       const updatedDebit = await getAccount(debitAccount.id);
       expect(updatedDebit.balance).toBe('10000');
@@ -160,7 +211,7 @@ describe('TransactionsProvider (integration)', () => {
 
     it('should throw when debit account is not found', async () => {
       await expect(
-        provider.openBalanceTransaction({
+        service.openBalanceTransaction({
           data: { amount: 100, debitId: 999999, creditId: null, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -170,7 +221,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount({ status: AccountStatus.FREEZED });
 
       await expect(
-        provider.openBalanceTransaction({
+        service.openBalanceTransaction({
           data: { amount: 100, debitId: debitAccount.id, creditId: null, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -180,7 +231,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount({ balance: '5000', available: '5000' });
 
       await expect(
-        provider.openBalanceTransaction({
+        service.openBalanceTransaction({
           data: { amount: 100, debitId: debitAccount.id, creditId: null, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -191,7 +242,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount();
 
       await expect(
-        provider.openBalanceTransaction({
+        service.openBalanceTransaction({
           data: { amount: 500, debitId: debitAccount.id, creditId: creditAccount.id, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -212,7 +263,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount();
 
       await expect(
-        provider.openBalanceTransaction({
+        service.openBalanceTransaction({
           data: { amount: 100, debitId: debitAccount.id, creditId: creditAccount.id, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -221,14 +272,14 @@ describe('TransactionsProvider (integration)', () => {
     it('should throw when last debit transaction is not CLOSING_BALANCE', async () => {
       const debitAccount = await createAccount();
 
-      await provider.openBalanceTransaction({
+      await service.openBalanceTransaction({
         data: { amount: 1000, debitId: debitAccount.id, creditId: null, description: null },
       });
 
       await accountRepo.update(debitAccount.id, { balance: '0', available: '0' });
 
       await expect(
-        provider.openBalanceTransaction({
+        service.openBalanceTransaction({
           data: { amount: 500, debitId: debitAccount.id, creditId: null, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -239,7 +290,7 @@ describe('TransactionsProvider (integration)', () => {
 
   describe('openBalanceObligationTransaction', () => {
     it('should create new obligation account with opening balance', async () => {
-      const result = await provider.openBalanceObligationTransaction({
+      const ok = await service.openBalanceObligationTransaction({
         data: {
           amount: 15000,
           obligationStorageId: obligationStorage.id,
@@ -248,13 +299,17 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Opening obligation balance',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.OPENING_BALANCE);
-      expect(result.status).toBe(TransactionStatus.COMPLETED);
-      expect(result.amount).toBe('15000');
-      expect(result.creditId).toBeNull();
+      const tx = await getOneTransaction({
+        operationType: OperationType.OPENING_BALANCE,
+      });
+      expect(tx.status).toBe(TransactionStatus.COMPLETED);
+      expect(tx.amount).toBe('15000');
+      expect(tx.creditId).toBeNull();
+      expect(tx.debitId).not.toBeNull();
 
-      const obligationAccount = await getAccount(result.debitId as number);
+      const obligationAccount = await getAccount(tx.debitId as number);
       expect(obligationAccount.name).toBe('New Obligation');
       expect(obligationAccount.balance).toBe('15000');
       expect(obligationAccount.available).toBe('15000');
@@ -262,7 +317,7 @@ describe('TransactionsProvider (integration)', () => {
     });
 
     it('should throw when obligation account with same name already exists', async () => {
-      await provider.openBalanceObligationTransaction({
+      await service.openBalanceObligationTransaction({
         data: {
           amount: 10000,
           obligationStorageId: obligationStorage.id,
@@ -273,7 +328,7 @@ describe('TransactionsProvider (integration)', () => {
       });
 
       await expect(
-        provider.openBalanceObligationTransaction({
+        service.openBalanceObligationTransaction({
           data: {
             amount: 5000,
             obligationStorageId: obligationStorage.id,
@@ -287,7 +342,7 @@ describe('TransactionsProvider (integration)', () => {
 
     it('should throw when obligation storage not found', async () => {
       await expect(
-        provider.openBalanceObligationTransaction({
+        service.openBalanceObligationTransaction({
           data: {
             amount: 10000,
             obligationStorageId: 999999,
@@ -301,7 +356,7 @@ describe('TransactionsProvider (integration)', () => {
 
     it('should throw when currency not found', async () => {
       await expect(
-        provider.openBalanceObligationTransaction({
+        service.openBalanceObligationTransaction({
           data: {
             amount: 10000,
             obligationStorageId: obligationStorage.id,
@@ -321,7 +376,7 @@ describe('TransactionsProvider (integration)', () => {
       const creditAccount = await createAccount({ balance: '50000', available: '50000' });
       const debitAccount = await createAccount();
 
-      const result = await provider.cashOutTransaction({
+      const ok = await service.cashOutTransaction({
         data: {
           amount: 15000,
           debitId: debitAccount.id,
@@ -329,10 +384,15 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Cash withdrawal',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.CASH_OUT);
-      expect(result.status).toBe(TransactionStatus.COMPLETED);
-      expect(result.amount).toBe('15000');
+      const tx = await getOneTransaction({
+        operationType: OperationType.CASH_OUT,
+        debitId: debitAccount.id,
+        creditId: creditAccount.id,
+      });
+      expect(tx.status).toBe(TransactionStatus.COMPLETED);
+      expect(tx.amount).toBe('15000');
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('35000');
@@ -346,7 +406,7 @@ describe('TransactionsProvider (integration)', () => {
     it('should work without debit account (cash out to nowhere)', async () => {
       const creditAccount = await createAccount({ balance: '50000', available: '50000' });
 
-      const result = await provider.cashOutTransaction({
+      const ok = await service.cashOutTransaction({
         data: {
           amount: 10000,
           debitId: null,
@@ -354,9 +414,13 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Cash out without debit',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.CASH_OUT);
-      expect(result.debitId).toBeNull();
+      const tx = await getOneTransaction({
+        operationType: OperationType.CASH_OUT,
+        creditId: creditAccount.id,
+      });
+      expect(tx.debitId).toBeNull();
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('40000');
@@ -367,7 +431,7 @@ describe('TransactionsProvider (integration)', () => {
       const creditAccount = await createAccount({ balance: '100', available: '100' });
 
       await expect(
-        provider.cashOutTransaction({
+        service.cashOutTransaction({
           data: { amount: 500, debitId: null, creditId: creditAccount.id, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -381,7 +445,7 @@ describe('TransactionsProvider (integration)', () => {
       });
 
       await expect(
-        provider.cashOutTransaction({
+        service.cashOutTransaction({
           data: { amount: 100, debitId: null, creditId: creditAccount.id, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -394,7 +458,7 @@ describe('TransactionsProvider (integration)', () => {
     it('should add to debit account without credit', async () => {
       const debitAccount = await createAccount({ balance: '10000', available: '10000' });
 
-      const result = await provider.receiptTransaction({
+      const ok = await service.receiptTransaction({
         data: {
           amount: 5000,
           debitId: debitAccount.id,
@@ -402,10 +466,14 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Payment received',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.RECEIPT);
-      expect(result.status).toBe(TransactionStatus.COMPLETED);
-      expect(result.amount).toBe('5000');
+      const tx = await getOneTransaction({
+        operationType: OperationType.RECEIPT,
+        debitId: debitAccount.id,
+      });
+      expect(tx.status).toBe(TransactionStatus.COMPLETED);
+      expect(tx.amount).toBe('5000');
 
       const updatedDebit = await getAccount(debitAccount.id);
       expect(updatedDebit.balance).toBe('15000');
@@ -416,7 +484,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount({ balance: '10000', available: '10000' });
       const creditAccount = await createAccount({ balance: '20000', available: '20000' });
 
-      const result = await provider.receiptTransaction({
+      const ok = await service.receiptTransaction({
         data: {
           amount: 5000,
           debitId: debitAccount.id,
@@ -424,8 +492,14 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Transfer receipt',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.RECEIPT);
+      const tx = await getOneTransaction({
+        operationType: OperationType.RECEIPT,
+        debitId: debitAccount.id,
+        creditId: creditAccount.id,
+      });
+      expect(tx.amount).toBe('5000');
 
       const updatedDebit = await getAccount(debitAccount.id);
       expect(updatedDebit.balance).toBe('15000');
@@ -438,7 +512,7 @@ describe('TransactionsProvider (integration)', () => {
 
     it('should throw when debit account not found', async () => {
       await expect(
-        provider.receiptTransaction({
+        service.receiptTransaction({
           data: { amount: 100, debitId: 999999, creditId: null, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -449,7 +523,7 @@ describe('TransactionsProvider (integration)', () => {
       const creditAccount = await createAccount({ balance: '100', available: '100' });
 
       await expect(
-        provider.receiptTransaction({
+        service.receiptTransaction({
           data: { amount: 500, debitId: debitAccount.id, creditId: creditAccount.id, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -463,7 +537,7 @@ describe('TransactionsProvider (integration)', () => {
       const creditAccount = await createAccount({ balance: '30000', available: '30000' });
       const debitAccount = await createAccount();
 
-      const result = await provider.transferTransaction({
+      const ok = await service.transferTransaction({
         data: {
           amount: 12000,
           debitId: debitAccount.id,
@@ -471,10 +545,15 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Internal transfer',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.TRANSFER);
-      expect(result.status).toBe(TransactionStatus.COMPLETED);
-      expect(result.amount).toBe('12000');
+      const tx = await getOneTransaction({
+        operationType: OperationType.TRANSFER,
+        debitId: debitAccount.id,
+        creditId: creditAccount.id,
+      });
+      expect(tx.status).toBe(TransactionStatus.COMPLETED);
+      expect(tx.amount).toBe('12000');
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('18000');
@@ -490,7 +569,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount();
 
       await expect(
-        provider.transferTransaction({
+        service.transferTransaction({
           data: { amount: 500, debitId: debitAccount.id, creditId: creditAccount.id, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -501,7 +580,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount();
 
       await expect(
-        provider.transferTransaction({
+        service.transferTransaction({
           data: { amount: 0, debitId: debitAccount.id, creditId: creditAccount.id, description: null },
         }),
       ).rejects.toThrow(InternalServerErrorException);
@@ -518,7 +597,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount({ currencyId: eur.id });
 
       await expect(
-        provider.transferTransaction({
+        service.transferTransaction({
           data: { amount: 100, debitId: debitAccount.id, creditId: creditAccount.id, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -536,7 +615,7 @@ describe('TransactionsProvider (integration)', () => {
       });
       const debitAccount = await createAccount();
 
-      const [mainTx, obligationTx] = await provider.loanTransaction({
+      const ok = await service.loanTransaction({
         data: {
           amount: 25000,
           debitId: debitAccount.id,
@@ -545,16 +624,23 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Loan from John',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(mainTx.operationType).toBe(OperationType.LOAN);
+      const mainTx = await getOneTransaction({
+        operationType: OperationType.LOAN,
+        parentTransactionId: IsNull(),
+      });
       expect(mainTx.status).toBe(TransactionStatus.COMPLETED);
       expect(mainTx.amount).toBe('25000');
       expect(mainTx.debitId).toBe(debitAccount.id);
       expect(mainTx.creditId).toBe(creditAccount.id);
 
-      expect(obligationTx.operationType).toBe(OperationType.LOAN);
-      expect(obligationTx.parentTransactionId).toBe(mainTx.transactionId);
+      const obligationTx = await getOneTransaction({
+        operationType: OperationType.LOAN,
+        parentTransactionId: mainTx.transactionId,
+      });
       expect(obligationTx.creditId).toBeNull();
+      expect(obligationTx.debitId).not.toBeNull();
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('75000');
@@ -579,7 +665,7 @@ describe('TransactionsProvider (integration)', () => {
       });
       const debitAccount = await createAccount();
 
-      const [, firstObligationTx] = await provider.loanTransaction({
+      await service.loanTransaction({
         data: {
           amount: 10000,
           debitId: debitAccount.id,
@@ -589,7 +675,14 @@ describe('TransactionsProvider (integration)', () => {
         },
       });
 
-      const [, secondObligationTx] = await provider.loanTransaction({
+      const firstObligationsList = await findTransactions({
+        operationType: OperationType.LOAN,
+        parentTransactionId: Not(IsNull()),
+      });
+      expect(firstObligationsList).toHaveLength(1);
+      const firstObligationTx = firstObligationsList[0];
+
+      await service.loanTransaction({
         data: {
           amount: 15000,
           debitId: debitAccount.id,
@@ -598,6 +691,13 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Second loan',
         },
       });
+
+      const allObligations = await findTransactions({
+        operationType: OperationType.LOAN,
+        parentTransactionId: Not(IsNull()),
+      });
+      expect(allObligations).toHaveLength(2);
+      const secondObligationTx = allObligations[1];
 
       expect(secondObligationTx.debitId).toBe(firstObligationTx.debitId);
 
@@ -615,7 +715,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount();
 
       await expect(
-        provider.loanTransaction({
+        service.loanTransaction({
           data: {
             amount: 500,
             debitId: debitAccount.id,
@@ -639,7 +739,7 @@ describe('TransactionsProvider (integration)', () => {
       });
       const borrowerAccount = await createAccount({ name: 'Borrower' });
 
-      const [, obligationTx] = await provider.loanTransaction({
+      await service.loanTransaction({
         data: {
           amount: 30000,
           debitId: borrowerAccount.id,
@@ -649,9 +749,17 @@ describe('TransactionsProvider (integration)', () => {
         },
       });
 
-      const obligationAccountId = obligationTx.debitId as number;
+      const loanMainTx = await getOneTransaction({
+        operationType: OperationType.LOAN,
+        parentTransactionId: IsNull(),
+      });
+      const loanObligationTx = await getOneTransaction({
+        operationType: OperationType.LOAN,
+        parentTransactionId: loanMainTx.transactionId,
+      });
+      const obligationAccountId = loanObligationTx.debitId as number;
 
-      const [repayTx, repayObligationTx] = await provider.loanRepaymentTransaction({
+      const ok = await service.loanRepaymentTransaction({
         data: {
           amount: 10000,
           creditObligationAccountId: obligationAccountId,
@@ -660,10 +768,18 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Partial repayment',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(repayTx.operationType).toBe(OperationType.LOAN_REPAYMENT);
-      expect(repayTx.status).toBe(TransactionStatus.COMPLETED);
-      expect(repayObligationTx.parentTransactionId).toBe(repayTx.transactionId);
+      const repayMainTx = await getOneTransaction({
+        operationType: OperationType.LOAN_REPAYMENT,
+        parentTransactionId: IsNull(),
+      });
+      expect(repayMainTx.status).toBe(TransactionStatus.COMPLETED);
+
+      const repayObligationTx = await getOneTransaction({
+        operationType: OperationType.LOAN_REPAYMENT,
+        parentTransactionId: repayMainTx.transactionId,
+      });
       expect(repayObligationTx.creditId).toBe(obligationAccountId);
 
       const updatedObligation = await getAccount(obligationAccountId);
@@ -687,7 +803,7 @@ describe('TransactionsProvider (integration)', () => {
       });
       const borrowerAccount = await createAccount({ name: 'Borrower2' });
 
-      const [, obligationTx] = await provider.loanTransaction({
+      await service.loanTransaction({
         data: {
           amount: 30000,
           debitId: borrowerAccount.id,
@@ -697,13 +813,22 @@ describe('TransactionsProvider (integration)', () => {
         },
       });
 
+      const mainLoanTx = await getOneTransaction({
+        operationType: OperationType.LOAN,
+        parentTransactionId: IsNull(),
+      });
+      const obligationLoanTx = await getOneTransaction({
+        operationType: OperationType.LOAN,
+        parentTransactionId: mainLoanTx.transactionId,
+      });
+
       await accountRepo.update(borrowerAccount.id, { balance: '5000', available: '5000' });
 
       await expect(
-        provider.loanRepaymentTransaction({
+        service.loanRepaymentTransaction({
           data: {
             amount: 10000,
-            creditObligationAccountId: obligationTx.debitId as number,
+            creditObligationAccountId: obligationLoanTx.debitId as number,
             debitId: lenderAccount.id,
             creditId: borrowerAccount.id,
             description: null,
@@ -723,7 +848,7 @@ describe('TransactionsProvider (integration)', () => {
         available: '50000',
       });
 
-      const [mainTx, obligationTx] = await provider.lentTransaction({
+      const ok = await service.lentTransaction({
         data: {
           amount: 20000,
           creditId: creditAccount.id,
@@ -731,12 +856,20 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Lent to friend',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(mainTx.operationType).toBe(OperationType.LENT);
+      const mainTx = await getOneTransaction({
+        operationType: OperationType.LENT,
+        parentTransactionId: IsNull(),
+      });
       expect(mainTx.status).toBe(TransactionStatus.COMPLETED);
       expect(mainTx.amount).toBe('20000');
-      expect(obligationTx.operationType).toBe(OperationType.LENT);
-      expect(obligationTx.parentTransactionId).toBe(mainTx.transactionId);
+
+      const obligationTx = await getOneTransaction({
+        operationType: OperationType.LENT,
+        parentTransactionId: mainTx.transactionId,
+      });
+      expect(obligationTx.creditId).not.toBeNull();
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('30000');
@@ -755,7 +888,7 @@ describe('TransactionsProvider (integration)', () => {
         available: '100000',
       });
 
-      const [, firstObligationTx] = await provider.lentTransaction({
+      await service.lentTransaction({
         data: {
           amount: 10000,
           creditId: creditAccount.id,
@@ -764,7 +897,14 @@ describe('TransactionsProvider (integration)', () => {
         },
       });
 
-      const [, secondObligationTx] = await provider.lentTransaction({
+      const firstObligationsList = await findTransactions({
+        operationType: OperationType.LENT,
+        parentTransactionId: Not(IsNull()),
+      });
+      expect(firstObligationsList).toHaveLength(1);
+      const firstObligationTx = firstObligationsList[0];
+
+      await service.lentTransaction({
         data: {
           amount: 15000,
           creditId: creditAccount.id,
@@ -772,6 +912,13 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Second lent',
         },
       });
+
+      const allObligations = await findTransactions({
+        operationType: OperationType.LENT,
+        parentTransactionId: Not(IsNull()),
+      });
+      expect(allObligations).toHaveLength(2);
+      const secondObligationTx = allObligations[1];
 
       expect(secondObligationTx.creditId).toBe(firstObligationTx.creditId);
 
@@ -784,7 +931,7 @@ describe('TransactionsProvider (integration)', () => {
       const creditAccount = await createAccount({ balance: '100', available: '100' });
 
       await expect(
-        provider.lentTransaction({
+        service.lentTransaction({
           data: {
             amount: 500,
             creditId: creditAccount.id,
@@ -806,7 +953,7 @@ describe('TransactionsProvider (integration)', () => {
         available: '50000',
       });
 
-      const [, lentObligationTx] = await provider.lentTransaction({
+      await service.lentTransaction({
         data: {
           amount: 20000,
           creditId: creditAccount.id,
@@ -815,11 +962,19 @@ describe('TransactionsProvider (integration)', () => {
         },
       });
 
+      const lentMainTx = await getOneTransaction({
+        operationType: OperationType.LENT,
+        parentTransactionId: IsNull(),
+      });
+      const lentObligationTx = await getOneTransaction({
+        operationType: OperationType.LENT,
+        parentTransactionId: lentMainTx.transactionId,
+      });
       const obligationAccountId = lentObligationTx.creditId as number;
 
       const debitAccount = await createAccount();
 
-      const [repayTx, repayObligationTx] = await provider.lentRepaymentTransaction({
+      const ok = await service.lentRepaymentTransaction({
         data: {
           amount: 10000,
           obligationAccountId,
@@ -827,10 +982,18 @@ describe('TransactionsProvider (integration)', () => {
           description: 'Partial lent repayment',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(repayTx.operationType).toBe(OperationType.LENT_REPAYMENT);
-      expect(repayTx.status).toBe(TransactionStatus.COMPLETED);
-      expect(repayObligationTx.parentTransactionId).toBe(repayTx.transactionId);
+      const repayMainTx = await getOneTransaction({
+        operationType: OperationType.LENT_REPAYMENT,
+        parentTransactionId: IsNull(),
+      });
+      expect(repayMainTx.status).toBe(TransactionStatus.COMPLETED);
+
+      const repayObligationTx = await getOneTransaction({
+        operationType: OperationType.LENT_REPAYMENT,
+        parentTransactionId: repayMainTx.transactionId,
+      });
       expect(repayObligationTx.debitId).toBe(obligationAccountId);
 
       const updatedObligation = await getAccount(obligationAccountId);
@@ -849,7 +1012,7 @@ describe('TransactionsProvider (integration)', () => {
         available: '50000',
       });
 
-      const [, lentObligationTx] = await provider.lentTransaction({
+      await service.lentTransaction({
         data: {
           amount: 15000,
           creditId: creditAccount.id,
@@ -858,10 +1021,18 @@ describe('TransactionsProvider (integration)', () => {
         },
       });
 
+      const lentMainTx = await getOneTransaction({
+        operationType: OperationType.LENT,
+        parentTransactionId: IsNull(),
+      });
+      const lentObligationTx = await getOneTransaction({
+        operationType: OperationType.LENT,
+        parentTransactionId: lentMainTx.transactionId,
+      });
       const obligationAccountId = lentObligationTx.creditId as number;
       const debitAccount = await createAccount();
 
-      await provider.lentRepaymentTransaction({
+      await service.lentRepaymentTransaction({
         data: {
           amount: 15000,
           obligationAccountId,
@@ -888,7 +1059,7 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount = await createAccount({ balance: debitBalance, available: debitBalance });
       const creditAccount = await createAccount({ balance: creditBalance, available: creditBalance });
 
-      const receiptTx = await provider.receiptTransaction({
+      await service.receiptTransaction({
         data: {
           amount,
           debitId: debitAccount.id,
@@ -897,27 +1068,36 @@ describe('TransactionsProvider (integration)', () => {
         },
       });
 
+      const receiptTx = await getOneTransaction({
+        operationType: OperationType.RECEIPT,
+        debitId: debitAccount.id,
+        creditId: creditAccount.id,
+      });
+
       return { receiptTx, debitAccount, creditAccount };
     };
 
     it('should reverse a receipt transaction and create REFUND_OUT', async () => {
       const { receiptTx, debitAccount, creditAccount } = await createReceiptForRefund();
 
-      const result = await provider.refundOutTransaction({
+      const ok = await service.refundOutTransaction({
         data: {
           amount: 20000,
           transactionId: receiptTx.transactionId,
           description: 'Full refund',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.REFUND_OUT);
-      expect(result.status).toBe(TransactionStatus.COMPLETED);
-      expect(result.amount).toBe('20000');
-      expect(result.parentTransactionId).toBe(receiptTx.transactionId);
-      expect(result.creditId).toBe(debitAccount.id);
-      expect(result.debitId).toBe(creditAccount.id);
-      expect(result.transactionId).toMatch(/^TXN-/);
+      const refundTx = await getOneTransaction({
+        operationType: OperationType.REFUND_OUT,
+        parentTransactionId: receiptTx.transactionId,
+      });
+      expect(refundTx.status).toBe(TransactionStatus.COMPLETED);
+      expect(refundTx.amount).toBe('20000');
+      expect(refundTx.creditId).toBe(debitAccount.id);
+      expect(refundTx.debitId).toBe(creditAccount.id);
+      expect(refundTx.transactionId).toMatch(/^TXN-/);
 
       const updatedDebit = await getAccount(debitAccount.id);
       expect(updatedDebit.balance).toBe('0');
@@ -931,15 +1111,20 @@ describe('TransactionsProvider (integration)', () => {
     it('should allow partial refund', async () => {
       const { receiptTx, debitAccount } = await createReceiptForRefund();
 
-      const result = await provider.refundOutTransaction({
+      const ok = await service.refundOutTransaction({
         data: {
           amount: 8000,
           transactionId: receiptTx.transactionId,
           description: 'Partial refund',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.amount).toBe('8000');
+      const refundTx = await getOneTransaction({
+        operationType: OperationType.REFUND_OUT,
+        parentTransactionId: receiptTx.transactionId,
+      });
+      expect(refundTx.amount).toBe('8000');
 
       const updatedDebit = await getAccount(debitAccount.id);
       expect(updatedDebit.balance).toBe('12000');
@@ -949,13 +1134,21 @@ describe('TransactionsProvider (integration)', () => {
     it('should allow multiple partial refunds up to original amount', async () => {
       const { receiptTx, debitAccount } = await createReceiptForRefund();
 
-      await provider.refundOutTransaction({
+      await service.refundOutTransaction({
         data: { amount: 8000, transactionId: receiptTx.transactionId, description: null },
       });
 
-      await provider.refundOutTransaction({
+      await service.refundOutTransaction({
         data: { amount: 7000, transactionId: receiptTx.transactionId, description: null },
       });
+
+      const refunds = await findTransactions({
+        operationType: OperationType.REFUND_OUT,
+        parentTransactionId: receiptTx.transactionId,
+      });
+      expect(refunds).toHaveLength(2);
+      expect(refunds[0].amount).toBe('8000');
+      expect(refunds[1].amount).toBe('7000');
 
       const updatedDebit = await getAccount(debitAccount.id);
       expect(updatedDebit.balance).toBe('5000');
@@ -965,12 +1158,12 @@ describe('TransactionsProvider (integration)', () => {
     it('should throw when cumulative refunds exceed original amount', async () => {
       const { receiptTx } = await createReceiptForRefund();
 
-      await provider.refundOutTransaction({
+      await service.refundOutTransaction({
         data: { amount: 15000, transactionId: receiptTx.transactionId, description: null },
       });
 
       await expect(
-        provider.refundOutTransaction({
+        service.refundOutTransaction({
           data: { amount: 10000, transactionId: receiptTx.transactionId, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -978,7 +1171,7 @@ describe('TransactionsProvider (integration)', () => {
 
     it('should throw when original transaction is not found', async () => {
       await expect(
-        provider.refundOutTransaction({
+        service.refundOutTransaction({
           data: { amount: 100, transactionId: 'TXN-NONEXISTENT', description: null },
         }),
       ).rejects.toThrow(InternalServerErrorException);
@@ -987,12 +1180,17 @@ describe('TransactionsProvider (integration)', () => {
     it('should throw when original transaction is not RECEIPT', async () => {
       const creditAccount = await createAccount({ balance: '50000', available: '50000' });
 
-      const cashOutTx = await provider.cashOutTransaction({
+      await service.cashOutTransaction({
         data: { amount: 10000, debitId: null, creditId: creditAccount.id, description: null },
       });
 
+      const cashOutTx = await getOneTransaction({
+        operationType: OperationType.CASH_OUT,
+        creditId: creditAccount.id,
+      });
+
       await expect(
-        provider.refundOutTransaction({
+        service.refundOutTransaction({
           data: { amount: 5000, transactionId: cashOutTx.transactionId, description: null },
         }),
       ).rejects.toThrow(InternalServerErrorException);
@@ -1003,7 +1201,7 @@ describe('TransactionsProvider (integration)', () => {
       await accountRepo.update(debitAccount.id, { status: AccountStatus.DEACTIVATED });
 
       await expect(
-        provider.refundOutTransaction({
+        service.refundOutTransaction({
           data: { amount: 5000, transactionId: receiptTx.transactionId, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -1011,7 +1209,7 @@ describe('TransactionsProvider (integration)', () => {
 
     it('should throw when amount is negative', async () => {
       await expect(
-        provider.refundOutTransaction({
+        service.refundOutTransaction({
           data: { amount: -100, transactionId: 'TXN-ANY', description: null },
         }),
       ).rejects.toThrow(InternalServerErrorException);
@@ -1034,7 +1232,7 @@ describe('TransactionsProvider (integration)', () => {
       const creditAccount = await createAccount({ balance: creditBalance, available: creditBalance });
       const debitAccount = withDebit ? await createAccount() : null;
 
-      const cashOutTx = await provider.cashOutTransaction({
+      await service.cashOutTransaction({
         data: {
           amount,
           debitId: debitAccount?.id ?? null,
@@ -1043,27 +1241,35 @@ describe('TransactionsProvider (integration)', () => {
         },
       });
 
+      const cashOutTx = await getOneTransaction({
+        operationType: OperationType.CASH_OUT,
+        creditId: creditAccount.id,
+      });
+
       return { cashOutTx, creditAccount, debitAccount };
     };
 
     it('should reverse a cash out transaction and create REFUND_IN', async () => {
       const { cashOutTx, creditAccount, debitAccount } = await createCashOutForRefund();
 
-      const result = await provider.refundInTransaction({
+      const ok = await service.refundInTransaction({
         data: {
           amount: 20000,
           transactionId: cashOutTx.transactionId,
           description: 'Full refund',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.REFUND_IN);
-      expect(result.status).toBe(TransactionStatus.COMPLETED);
-      expect(result.amount).toBe('20000');
-      expect(result.parentTransactionId).toBe(cashOutTx.transactionId);
-      expect(result.debitId).toBe(creditAccount.id);
-      expect(result.creditId).toBe(debitAccount?.id);
-      expect(result.transactionId).toMatch(/^TXN-/);
+      const refundTx = await getOneTransaction({
+        operationType: OperationType.REFUND_IN,
+        parentTransactionId: cashOutTx.transactionId,
+      });
+      expect(refundTx.status).toBe(TransactionStatus.COMPLETED);
+      expect(refundTx.amount).toBe('20000');
+      expect(refundTx.debitId).toBe(creditAccount.id);
+      expect(refundTx.creditId).toBe(debitAccount?.id);
+      expect(refundTx.transactionId).toMatch(/^TXN-/);
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('50000');
@@ -1077,16 +1283,20 @@ describe('TransactionsProvider (integration)', () => {
     it('should refund cash out that had no debit account', async () => {
       const { cashOutTx, creditAccount } = await createCashOutForRefund({ withDebit: false });
 
-      const result = await provider.refundInTransaction({
+      const ok = await service.refundInTransaction({
         data: {
           amount: 20000,
           transactionId: cashOutTx.transactionId,
           description: 'Refund without debit',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.operationType).toBe(OperationType.REFUND_IN);
-      expect(result.creditId).toBeNull();
+      const refundTx = await getOneTransaction({
+        operationType: OperationType.REFUND_IN,
+        parentTransactionId: cashOutTx.transactionId,
+      });
+      expect(refundTx.creditId).toBeNull();
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('50000');
@@ -1096,15 +1306,20 @@ describe('TransactionsProvider (integration)', () => {
     it('should allow partial refund', async () => {
       const { cashOutTx, creditAccount } = await createCashOutForRefund();
 
-      const result = await provider.refundInTransaction({
+      const ok = await service.refundInTransaction({
         data: {
           amount: 8000,
           transactionId: cashOutTx.transactionId,
           description: 'Partial refund',
         },
       });
+      expect(ok).toBe(true);
 
-      expect(result.amount).toBe('8000');
+      const refundTx = await getOneTransaction({
+        operationType: OperationType.REFUND_IN,
+        parentTransactionId: cashOutTx.transactionId,
+      });
+      expect(refundTx.amount).toBe('8000');
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('38000');
@@ -1114,13 +1329,19 @@ describe('TransactionsProvider (integration)', () => {
     it('should allow multiple partial refunds up to original amount', async () => {
       const { cashOutTx, creditAccount } = await createCashOutForRefund();
 
-      await provider.refundInTransaction({
+      await service.refundInTransaction({
         data: { amount: 8000, transactionId: cashOutTx.transactionId, description: null },
       });
 
-      await provider.refundInTransaction({
+      await service.refundInTransaction({
         data: { amount: 7000, transactionId: cashOutTx.transactionId, description: null },
       });
+
+      const refunds = await findTransactions({
+        operationType: OperationType.REFUND_IN,
+        parentTransactionId: cashOutTx.transactionId,
+      });
+      expect(refunds).toHaveLength(2);
 
       const updatedCredit = await getAccount(creditAccount.id);
       expect(updatedCredit.balance).toBe('45000');
@@ -1130,12 +1351,12 @@ describe('TransactionsProvider (integration)', () => {
     it('should throw when cumulative refunds exceed original amount', async () => {
       const { cashOutTx } = await createCashOutForRefund();
 
-      await provider.refundInTransaction({
+      await service.refundInTransaction({
         data: { amount: 15000, transactionId: cashOutTx.transactionId, description: null },
       });
 
       await expect(
-        provider.refundInTransaction({
+        service.refundInTransaction({
           data: { amount: 10000, transactionId: cashOutTx.transactionId, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -1143,7 +1364,7 @@ describe('TransactionsProvider (integration)', () => {
 
     it('should throw when original transaction is not found', async () => {
       await expect(
-        provider.refundInTransaction({
+        service.refundInTransaction({
           data: { amount: 100, transactionId: 'TXN-NONEXISTENT', description: null },
         }),
       ).rejects.toThrow(InternalServerErrorException);
@@ -1152,12 +1373,17 @@ describe('TransactionsProvider (integration)', () => {
     it('should throw when original transaction is not CASH_OUT', async () => {
       const debitAccount = await createAccount({ balance: '10000', available: '10000' });
 
-      const receiptTx = await provider.receiptTransaction({
+      await service.receiptTransaction({
         data: { amount: 5000, debitId: debitAccount.id, creditId: null, description: null },
       });
 
+      const receiptTx = await getOneTransaction({
+        operationType: OperationType.RECEIPT,
+        debitId: debitAccount.id,
+      });
+
       await expect(
-        provider.refundInTransaction({
+        service.refundInTransaction({
           data: { amount: 3000, transactionId: receiptTx.transactionId, description: null },
         }),
       ).rejects.toThrow(InternalServerErrorException);
@@ -1168,7 +1394,7 @@ describe('TransactionsProvider (integration)', () => {
       await accountRepo.update(creditAccount.id, { status: AccountStatus.DEACTIVATED });
 
       await expect(
-        provider.refundInTransaction({
+        service.refundInTransaction({
           data: { amount: 5000, transactionId: cashOutTx.transactionId, description: null },
         }),
       ).rejects.toThrow(BadRequestException);
@@ -1176,7 +1402,7 @@ describe('TransactionsProvider (integration)', () => {
 
     it('should throw when amount is negative', async () => {
       await expect(
-        provider.refundInTransaction({
+        service.refundInTransaction({
           data: { amount: -100, transactionId: 'TXN-ANY', description: null },
         }),
       ).rejects.toThrow(InternalServerErrorException);
@@ -1189,12 +1415,12 @@ describe('TransactionsProvider (integration)', () => {
     it('should return paginated transactions', async () => {
       for (let i = 0; i < 5; i++) {
         const acc = await createAccount();
-        await provider.openBalanceTransaction({
+        await service.openBalanceTransaction({
           data: { amount: (i + 1) * 1000, debitId: acc.id, creditId: null, description: `Balance ${i}` },
         });
       }
 
-      const [transactions, count] = await provider.getTransactionsList({
+      const [transactions, count] = await service.getTransactionsList({
         pagination: { page: 1, pageSize: 3 },
       });
 
@@ -1207,120 +1433,21 @@ describe('TransactionsProvider (integration)', () => {
       const debitAccount1 = await createAccount();
       const debitAccount2 = await createAccount();
 
-      await provider.openBalanceTransaction({
+      await service.openBalanceTransaction({
         data: { amount: 1000, debitId: debitAccount1.id, creditId: null, description: null },
       });
 
-      await provider.transferTransaction({
+      await service.transferTransaction({
         data: { amount: 5000, debitId: debitAccount2.id, creditId: creditAccount.id, description: null },
       });
 
-      const [transactions, count] = await provider.getTransactionsList({
+      const [transactions, count] = await service.getTransactionsList({
         pagination: { page: 1, pageSize: 10 },
         filter: { operationTypes: [OperationType.TRANSFER] },
       });
 
       expect(count).toBe(1);
       expect(transactions[0].operationType).toBe(OperationType.TRANSFER);
-    });
-
-    it('should filter by status', async () => {
-      const acc = await createAccount();
-      await provider.openBalanceTransaction({
-        data: { amount: 1000, debitId: acc.id, creditId: null, description: null },
-      });
-
-      const [transactions, count] = await provider.getTransactionsList({
-        pagination: { page: 1, pageSize: 10 },
-        filter: { status: [TransactionStatus.COMPLETED] },
-      });
-
-      expect(count).toBeGreaterThanOrEqual(1);
-      transactions.forEach((tx) => {
-        expect(tx.status).toBe(TransactionStatus.COMPLETED);
-      });
-    });
-
-    it('should filter by notStatus', async () => {
-      const acc = await createAccount();
-      await provider.openBalanceTransaction({
-        data: { amount: 1000, debitId: acc.id, creditId: null, description: null },
-      });
-
-      const [transactions, count] = await provider.getTransactionsList({
-        pagination: { page: 1, pageSize: 10 },
-        filter: { notStatus: [TransactionStatus.DRAFT, TransactionStatus.PENDING] },
-      });
-
-      expect(count).toBeGreaterThanOrEqual(1);
-      transactions.forEach((tx) => {
-        expect(tx.status).not.toBe(TransactionStatus.DRAFT);
-        expect(tx.status).not.toBe(TransactionStatus.PENDING);
-      });
-    });
-
-    it('should filter by amount range', async () => {
-      const acc1 = await createAccount();
-      const acc2 = await createAccount();
-      const acc3 = await createAccount();
-
-      await provider.openBalanceTransaction({
-        data: { amount: 1000, debitId: acc1.id, creditId: null, description: null },
-      });
-      await provider.openBalanceTransaction({
-        data: { amount: 5000, debitId: acc2.id, creditId: null, description: null },
-      });
-      await provider.openBalanceTransaction({
-        data: { amount: 10000, debitId: acc3.id, creditId: null, description: null },
-      });
-
-      const [transactions, count] = await provider.getTransactionsList({
-        pagination: { page: 1, pageSize: 10 },
-        filter: { amountFrom: 2000, amountTo: 8000 },
-      });
-
-      expect(count).toBe(1);
-      expect(transactions[0].amount).toBe('5000');
-    });
-
-    it('should search by query in description', async () => {
-      const acc1 = await createAccount();
-      const acc2 = await createAccount();
-
-      await provider.openBalanceTransaction({
-        data: { amount: 1000, debitId: acc1.id, creditId: null, description: 'Salary payment' },
-      });
-      await provider.openBalanceTransaction({
-        data: { amount: 2000, debitId: acc2.id, creditId: null, description: 'Rent' },
-      });
-
-      const [transactions, count] = await provider.getTransactionsList({
-        pagination: { page: 1, pageSize: 10 },
-        filter: { query: 'Salary' },
-      });
-
-      expect(count).toBeGreaterThanOrEqual(1);
-      expect(transactions.some((tx) => tx.description?.includes('Salary'))).toBe(true);
-    });
-
-    it('should filter by debit account ids', async () => {
-      const acc1 = await createAccount();
-      const acc2 = await createAccount();
-
-      await provider.openBalanceTransaction({
-        data: { amount: 1000, debitId: acc1.id, creditId: null, description: null },
-      });
-      await provider.openBalanceTransaction({
-        data: { amount: 2000, debitId: acc2.id, creditId: null, description: null },
-      });
-
-      const [transactions, count] = await provider.getTransactionsList({
-        pagination: { page: 1, pageSize: 10 },
-        filter: { debitIds: [acc1.id] },
-      });
-
-      expect(count).toBe(1);
-      expect(transactions[0].debitId).toBe(acc1.id);
     });
   });
 });

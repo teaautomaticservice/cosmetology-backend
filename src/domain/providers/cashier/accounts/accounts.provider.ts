@@ -18,7 +18,8 @@ import {
   Order,
   Pagination,
   RecordEntity,
-  Sort
+  Sort,
+  TxOpsDeps
 } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { AccountsDb } from '@providers/postgresql/repositories/cashier/accounts/accounts.db';
@@ -32,6 +33,7 @@ import { AccountsByStoreDto } from './dtos/accountByStore.dto';
 import { AccountAggregatedWithStorageDto } from './dtos/accountsAggregatedWithStorage.dto';
 import { AccountWithMoneyStorageDto } from './dtos/accountWithMoneyStorage.dto';
 import { expendTransactionTypes, incomeTransactionTypes, transferTransactionTypes } from './accounts.constants';
+import { AccountsTxOps } from './accounts.txOps';
 import {
   AccountsAggregatedWithStorage,
   AccountsAggregatedWithStorageFilter,
@@ -548,6 +550,10 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
 
   public async updateByIds(ids: ID[], data: UpdateAccountsByIdsData): Promise<boolean> {
     return super.updateByIds(ids, data);
+  }
+
+  public forTx(deps: TxOpsDeps): AccountsTxOps {
+    return new AccountsTxOps(deps);
   }
 
   private async accountsEnrichment<T extends {

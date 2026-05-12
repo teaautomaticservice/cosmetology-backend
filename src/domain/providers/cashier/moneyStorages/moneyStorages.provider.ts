@@ -6,7 +6,8 @@ import {
   ID,
   Order,
   Pagination,
-  RecordEntity
+  RecordEntity,
+  TxOpsDeps
 } from '@providers/common/common.type';
 import { CommonPostgresqlProvider } from '@providers/common/commonPostgresql.provider';
 import { MoneyStoragesDb } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.db';
@@ -18,6 +19,7 @@ import {
   MoneyStorageType
 } from '@providers/postgresql/repositories/cashier/moneyStorages/moneyStorages.types';
 
+import { MoneyStoragesTxOps } from './moneyStorages.txOps';
 import { MoneyStoragesFilter } from './moneyStorages.types';
 
 @Injectable()
@@ -138,5 +140,9 @@ export class MoneyStoragesProvider extends CommonPostgresqlProvider<MoneyStorage
         }),
       },
     });
+  }
+
+  public forTx(deps: TxOpsDeps): MoneyStoragesTxOps {
+    return new MoneyStoragesTxOps(deps);
   }
 }

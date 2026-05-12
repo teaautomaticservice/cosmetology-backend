@@ -1,6 +1,7 @@
 import { LoggerProviderModule } from '@ambientProviders/logger/loggerProvider.module';
 import { Module } from '@nestjs/common';
 import { AccountsProviderModule } from '@providers/cashier/accounts/accountsProvider.module';
+import { CashierProviderModule } from '@providers/cashier/cashierProvider.module';
 import { CurrenciesProviderModule } from '@providers/cashier/currencies/currenciesProvider.module';
 import { MoneyStoragesProviderModule } from '@providers/cashier/moneyStorages/moneyStorageProvider.module';
 import { TransactionsProviderModule } from '@providers/cashier/transactions/transactionsProvider.module';
@@ -14,6 +15,7 @@ import { CashierService } from './cashier.service';
     MoneyStoragesProviderModule,
     AccountsProviderModule,
     TransactionsProviderModule,
+    CashierProviderModule,
   ],
   providers: [CashierService],
   exports: [CashierService],
