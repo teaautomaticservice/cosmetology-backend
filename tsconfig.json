@@ -28,7 +28,7 @@
       "@postgresql/*": ["src/domain/providers/postgresql/*"],
       "@providers/*": ["src/domain/providers/*"],
       "@services/*": ["src/domain/services/*"],
-      "@sheduler/*": ["src/domain/sheduler/*"],
+      "@scheduler/*": ["src/domain/scheduler/*"],
       "@typings/*": ["src/domain/typings/*"]
     }
   }

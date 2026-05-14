@@ -2,10 +2,10 @@ import { LoggerProviderModule } from '@ambientProviders/logger/loggerProvider.mo
 import { Module } from '@nestjs/common';
 import { AuthorizationServiceModule } from '@services/authorization/authorizationService.module';
 
-import { authorizationClearExpiredShedulerProvider } from './authorizationClearExpired.provider';
+import { authorizationClearExpiredSchedulerProvider } from './authorizationClearExpired.provider';
 
 @Module({
   imports: [AuthorizationServiceModule, LoggerProviderModule],
-  providers: [authorizationClearExpiredShedulerProvider],
+  providers: [authorizationClearExpiredSchedulerProvider],
 })
-export class AuthorizationClearExpiredShedulerModule {}
+export class AuthorizationClearExpiredSchedulerModule {}

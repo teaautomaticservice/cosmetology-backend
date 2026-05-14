@@ -1,6 +1,6 @@
 export const Resources = {
   LOGGER: Symbol.for('LoggerService'),
-  ClearLogsSheduler: Symbol.for('ClearLogsSheduler'),
-  AuthorizationClearExpiredSheduler: Symbol.for('AuthorizationClearExpiredSheduler'),
+  ClearLogsScheduler: Symbol.for('ClearLogsScheduler'),
+  AuthorizationClearExpiredScheduler: Symbol.for('AuthorizationClearExpiredScheduler'),
   AsyncContext: Symbol.for('AsyncContext'),
 };

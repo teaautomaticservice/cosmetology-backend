@@ -18,7 +18,7 @@
     "^@postgresql/(.*)$": "<rootDir>/src/domain/providers/postgresql/$1",
     "^@providers/(.*)$": "<rootDir>/src/domain/providers/$1",
     "^@services/(.*)$": "<rootDir>/src/domain/services/$1",
-    "^@sheduler/(.*)$": "<rootDir>/src/domain/sheduler/$1",
+    "^@scheduler/(.*)$": "<rootDir>/src/domain/scheduler/$1",
     "^@typings/(.*)$": "<rootDir>/src/domain/typings/$1"
   }
 }
