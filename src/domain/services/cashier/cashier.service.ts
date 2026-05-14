@@ -86,7 +86,7 @@ export class CashierService {
       });
     }
 
-    this.currenciesProvider.create({
+    await this.currenciesProvider.create({
       ...data,
       status: CurrencyStatus.ACTIVE,
     });
@@ -329,7 +329,7 @@ export class CashierService {
     if (!currency || currency.status === CurrencyStatus.DISABLED) {
       throw new BadRequestException(VALIDATION_ERROR, {
         cause: {
-          currencyId: [`Currency shout be is active`],
+          currencyId: [`Currency should be active`],
         },
       });
     }
@@ -409,7 +409,7 @@ export class CashierService {
     const entity = await this.accountsProvider.findById(accountId);
 
     if (!entity) {
-      throw new BadRequestException(`Incorrect ID: '${accountId}' for currency`);
+      throw new BadRequestException(`Incorrect ID: '${accountId}' for account`);
     }
 
     if (!(entity.status === AccountStatus.CREATED || entity.status === AccountStatus.DEACTIVATED)) {
