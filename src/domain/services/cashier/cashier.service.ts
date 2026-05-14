@@ -165,7 +165,7 @@ export class CashierService {
 
     const result = await this.moneyStoragesProvider.create(data);
 
-    this.logger.warn('moneyStorage created bu user', {
+    this.logger.warn('moneyStorage created by user', {
       newData: data,
       result,
     });
@@ -193,7 +193,7 @@ export class CashierService {
 
     const result = await this.moneyStoragesProvider.create(data);
 
-    this.logger.warn('obligationStorage created bu user', {
+    this.logger.warn('obligationStorage created by user', {
       newData: data,
       result,
     });
@@ -214,7 +214,7 @@ export class CashierService {
       );
     }
 
-    this.logger.warn('moneyStorage deleted bu user', {
+    this.logger.warn('moneyStorage deleted by user', {
       entity,
     });
 
@@ -424,7 +424,7 @@ export class CashierService {
       );
     }
 
-    this.logger.warn('account deleted bu user', {
+    this.logger.warn('account deleted by user', {
       entity,
     });
 
@@ -461,7 +461,7 @@ export class CashierService {
       );
     }
 
-    this.logger.warn('currency deleted bu user', {
+    this.logger.warn('currency deleted by user', {
       entity,
     });
 
@@ -583,7 +583,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Open Balance');
     }
 
@@ -643,7 +643,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Open Balance Obligation');
     }
 
@@ -693,7 +693,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Cash Out');
     }
 
@@ -745,7 +745,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Receipt');
     }
 
@@ -787,7 +787,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Transfer');
     }
 
@@ -863,7 +863,7 @@ export class CashierService {
           moneyStorageId: obligationStorageId,
           amount: bigAmount.toString(),
           currencyId: creditAccount.currencyId,
-          description: 'Automatic create while taken loan',
+          description: 'Automatic create while taking a loan',
         });
       }
 
@@ -882,7 +882,7 @@ export class CashierService {
       return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+    if (!newTransaction || !newObligationTransaction) {
       throw new InternalServerErrorException('Error creating transaction Loan');
     }
 
@@ -963,7 +963,7 @@ export class CashierService {
       return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+    if (!newTransaction || !newObligationTransaction) {
       throw new InternalServerErrorException('Error creating transaction Loan Repayment');
     }
 
@@ -1034,7 +1034,7 @@ export class CashierService {
           moneyStorageId: creditObligationStorageId,
           amount: (-bigAmount).toString(),
           currencyId: creditAccount.currencyId,
-          description: 'Automatic create while give lent',
+          description: 'Automatic create while giving a lent',
         });
       }
 
@@ -1052,7 +1052,7 @@ export class CashierService {
       return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+    if (!newTransaction || !newObligationTransaction) {
       throw new InternalServerErrorException('Error creating transaction Lent');
     }
 
@@ -1117,7 +1117,7 @@ export class CashierService {
       return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+    if (!newTransaction || !newObligationTransaction) {
       throw new InternalServerErrorException('Error creating transaction Lent Repayment');
     }
 
@@ -1159,7 +1159,7 @@ export class CashierService {
 
       if (!originalCreditId) {
         throw new InternalServerErrorException(
-          `${COMMON_TRANSACTION_ERROR} Account ${originalCreditId} should be exist`
+          `${COMMON_TRANSACTION_ERROR} Original transaction ${transactionId} has no creditId — cannot apply Refund In`
         );
       }
 
@@ -1210,7 +1210,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(refundTransaction)) {
+    if (!refundTransaction) {
       throw new InternalServerErrorException('Error creating transaction Refund In');
     }
 
@@ -1252,7 +1252,7 @@ export class CashierService {
 
       if (!originalDebitId) {
         throw new InternalServerErrorException(
-          `${COMMON_TRANSACTION_ERROR} Account ${originalDebitId} should be exist`
+          `${COMMON_TRANSACTION_ERROR} Original transaction ${transactionId} has no debitId — cannot apply Refund Out`
         );
       }
 
@@ -1303,7 +1303,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(refundTransaction)) {
+    if (!refundTransaction) {
       throw new InternalServerErrorException('Error creating transaction Refund Out');
     }
 

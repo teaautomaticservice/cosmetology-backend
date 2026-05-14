@@ -44,7 +44,7 @@ export class TransactionsTxOps extends CommonTxOps<TransactionEntity> {
         status: TransactionStatus.COMPLETED,
       },
       order: {
-        createdAt: -1,
+        createdAt: 'DESC',
       },
     });
   }
