@@ -69,6 +69,14 @@ export abstract class CommonPostgresqlProvider<Entity extends CommonEntity> {
     ]);
   }
 
+  protected async count({
+    where,
+  }: {
+    where?: Where<Entity>;
+  }): Promise<number> {
+    return this.db.count({ where });
+  }
+
   protected async create(data: RecordEntity<Entity>): Promise<Entity> {
     return this.db.create(data as DeepPartial<Entity>);
   }

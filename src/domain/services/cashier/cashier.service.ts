@@ -444,14 +444,10 @@ export class CashierService {
       );
     }
 
-    const [_, count] = await this.accountsProvider.getRawAccountsList({
+    const count = await this.accountsProvider.getAccountsCount({
       filter: {
         currenciesIds: [entity.id],
         status: [AccountStatus.ACTIVE, AccountStatus.FREEZED],
-      },
-      pagination: {
-        page: 1,
-        pageSize: 10,
       },
     });
 
@@ -479,11 +475,7 @@ export class CashierService {
     }
 
     if (newData.status === CurrencyStatus.DISABLED) {
-      const [_, countAccounts] = await this.accountsProvider.getRawAccountsList({
-        pagination: {
-          page: 1,
-          pageSize: 10,
-        },
+      const countAccounts = await this.accountsProvider.getAccountsCount({
         filter: {
           currenciesIds: [entity.id],
           notStatus: [AccountStatus.DEACTIVATED],
