@@ -17,6 +17,7 @@ import { ApiBody, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { OperationType, TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
 import { CashierService } from '@services/cashier/cashier.service';
 
+import { CreateDistributionDto } from './dtos/createDistribution.dto';
 import { GetTransactionDto } from './dtos/getTransaction.dto';
 import { NewLentDto } from './dtos/newLent.dto';
 import { NewLentRepaymentDto } from './dtos/newLentRepayment.dto';
@@ -331,6 +332,24 @@ export class TransactionsController {
     @Body() transactionReq: NewRefundOutDto,
   ): Promise<boolean> {
     const resp = await this.cashierService.refundOutTransaction({
+      data: transactionReq,
+    });
+    return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/distribution')
+  @ApiBody({
+    description: 'Distribution',
+    type: CreateDistributionDto,
+  })
+  @ApiOkResponse({
+    description: 'New transaction Refund Out successful created',
+  })
+  public async distribution(
+    @Body() transactionReq: CreateDistributionDto,
+  ): Promise<boolean> {
+    const resp = await this.cashierService.distributionTransactions({
       data: transactionReq,
     });
     return resp;

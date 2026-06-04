@@ -47,6 +47,7 @@ import {
 import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
+  DistributionTransactions,
   LentRepaymentTransaction,
   LentTransaction,
   LoanRepaymentTransaction,
@@ -1302,6 +1303,91 @@ export class CashierService {
     return true;
   }
 
+  public async distributionTransactions({
+    data,
+  }: {
+    data: DistributionTransactions;
+  }): Promise<boolean> {
+    const { creditId, distributedAccounts, description } = data;
+
+    if (!distributedAccounts || !distributedAccounts.length || !creditId) {
+      throw new BadRequestException('distributedAccounts and creditId are required for distribution');
+    }
+
+    const { accountsIdsSet, totalAmount } = distributedAccounts.reduce<{
+      accountsIdsSet: Set<number>;
+      totalAmount: bigint;
+    }>((acc, { debitId, amount }) => {
+      if (!debitId) {
+        throw new BadRequestException('debitId is required for distribution');
+      }
+
+      if (debitId === creditId) {
+        throw new BadRequestException('creditId cannot be among distribution targets');
+      }
+
+      if (acc.accountsIdsSet.has(debitId)) {
+        throw new BadRequestException(`Duplicate debitId ${debitId} in distribution`);
+      }
+
+      const validAmount = this.validateAmount(amount);
+
+      acc.accountsIdsSet.add(debitId);
+      acc.totalAmount = acc.totalAmount + BigInt(validAmount);
+
+      return acc;
+    }, { accountsIdsSet: new Set(), totalAmount: 0n });
+
+    const accountsIds = Array.from(accountsIdsSet);
+
+    await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([creditId, ...accountsIds]);
+
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+      });
+
+      await uow.accounts.decreaseBalance(creditAccount, totalAmount);
+
+      let previousTransaction!: TransactionEntity;
+
+      for (const { debitId, amount } of distributedAccounts) {
+        if (!debitId) {
+          throw new BadRequestException('debitId is required for distribution');
+        }
+
+        const currentDebitAccount = this.checkAccount(accounts[debitId], {
+          context: `Debit account ${debitId}`,
+          checkCurrencyId: creditAccount.currencyId,
+          checkMoneyStorageId: creditAccount.moneyStorageId,
+        });
+
+        const currentAmount = BigInt(amount);
+
+        await uow.accounts.increaseBalance(currentDebitAccount, currentAmount);
+
+        previousTransaction = await uow.transactions.createTransaction({
+          amount: currentAmount.toString(),
+          debitId,
+          creditId,
+          operationType: OperationType.TRANSFER,
+          description,
+          parentTransactionId: previousTransaction?.transactionId ?? null,
+        });
+      }
+
+      return previousTransaction;
+    });
+
+    this.logger.info('Creating distribution transaction', {
+      creditId,
+      accountsIds,
+      totalAmount: totalAmount.toString(),
+    });
+
+    return true;
+  }
+
   private getTransactionAmountError = (amount?: number | null): InternalServerErrorException => {
     return new InternalServerErrorException(
       `${COMMON_TRANSACTION_ERROR} Amount ${amount} isn't correct`
@@ -1317,6 +1403,10 @@ export class CashierService {
     } = {}
   ): number {
     if (amount == null || Number.isNaN(amount)) {
+      throw this.getTransactionAmountError(amount);
+    }
+
+    if (!Number.isInteger(amount)) {
       throw this.getTransactionAmountError(amount);
     }
 
@@ -1336,9 +1426,11 @@ export class CashierService {
     {
       context,
       checkCurrencyId,
+      checkMoneyStorageId,
     }: {
       context?: string;
       checkCurrencyId?: ID;
+      checkMoneyStorageId?: ID;
     } = {}): AccountEntity {
     if (!account) {
       throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account not found. ${context}`);
@@ -1349,7 +1441,11 @@ export class CashierService {
     }
 
     if (checkCurrencyId && account.currencyId !== checkCurrencyId) {
-      throw new BadRequestException('Accounts must have the same currency');
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Accounts must have the same currency. ${context}`);
+    }
+
+    if (checkMoneyStorageId && account.moneyStorageId !== checkMoneyStorageId) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Accounts must have the same Money Storage. ${context}`);
     }
 
     return account;
