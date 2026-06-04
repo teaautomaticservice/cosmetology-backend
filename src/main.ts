@@ -18,7 +18,7 @@ import { WinstonLogger } from 'nest-winston';
 async function bootstrap(): Promise<void> {
   const httpsOptions = {
     key: readFileSync('./https/localhost.key'),
-    cert: readFileSync('./https//localhost.crt'),
+    cert: readFileSync('./https/localhost.crt'),
   };
 
   const app = await NestFactory.create(AppModule, {

@@ -1409,6 +1409,322 @@ describe('CashierService transactions (integration)', () => {
     });
   });
 
+  // ─── distributionTransactions ─────────────────────────────────
+
+  describe('distributionTransactions', () => {
+    it('should distribute funds from credit to multiple debit accounts', async () => {
+      const creditAccount = await createAccount({ balance: '100000', available: '100000' });
+      const debit1 = await createAccount();
+      const debit2 = await createAccount();
+      const debit3 = await createAccount();
+
+      const ok = await service.distributionTransactions({
+        data: {
+          creditId: creditAccount.id,
+          description: 'Salary distribution',
+          distributedAccounts: [
+            { debitId: debit1.id, amount: 20000 },
+            { debitId: debit2.id, amount: 30000 },
+            { debitId: debit3.id, amount: 10000 },
+          ],
+        },
+      });
+      expect(ok).toBe(true);
+
+      const transfers = await findTransactions({ operationType: OperationType.TRANSFER });
+      expect(transfers).toHaveLength(3);
+      transfers.forEach((tx) => {
+        expect(tx.status).toBe(TransactionStatus.COMPLETED);
+        expect(tx.creditId).toBe(creditAccount.id);
+        expect(tx.description).toBe('Salary distribution');
+        expect(tx.transactionId).toMatch(/^TXN-/);
+      });
+
+      const updatedCredit = await getAccount(creditAccount.id);
+      expect(updatedCredit.balance).toBe('40000');
+      expect(updatedCredit.available).toBe('40000');
+
+      expect((await getAccount(debit1.id)).balance).toBe('20000');
+      expect((await getAccount(debit2.id)).balance).toBe('30000');
+      expect((await getAccount(debit3.id)).balance).toBe('10000');
+    });
+
+    it('should link created transactions as a chain (linked list)', async () => {
+      const creditAccount = await createAccount({ balance: '100000', available: '100000' });
+      const debit1 = await createAccount();
+      const debit2 = await createAccount();
+      const debit3 = await createAccount();
+
+      await service.distributionTransactions({
+        data: {
+          creditId: creditAccount.id,
+          description: null,
+          distributedAccounts: [
+            { debitId: debit1.id, amount: 1000 },
+            { debitId: debit2.id, amount: 2000 },
+            { debitId: debit3.id, amount: 3000 },
+          ],
+        },
+      });
+
+      const transfers = await findTransactions({ operationType: OperationType.TRANSFER });
+      expect(transfers).toHaveLength(3);
+
+      expect(transfers[0].parentTransactionId).toBeNull();
+      expect(transfers[1].parentTransactionId).toBe(transfers[0].transactionId);
+      expect(transfers[2].parentTransactionId).toBe(transfers[1].transactionId);
+
+      expect(transfers[0].debitId).toBe(debit1.id);
+      expect(transfers[1].debitId).toBe(debit2.id);
+      expect(transfers[2].debitId).toBe(debit3.id);
+    });
+
+    it('should distribute to a single debit account', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount();
+
+      const ok = await service.distributionTransactions({
+        data: {
+          creditId: creditAccount.id,
+          description: null,
+          distributedAccounts: [{ debitId: debit.id, amount: 5000 }],
+        },
+      });
+      expect(ok).toBe(true);
+
+      const tx = await getOneTransaction({ operationType: OperationType.TRANSFER });
+      expect(tx.parentTransactionId).toBeNull();
+      expect(tx.amount).toBe('5000');
+
+      expect((await getAccount(creditAccount.id)).balance).toBe('0');
+      expect((await getAccount(debit.id)).balance).toBe('5000');
+    });
+
+    it('should throw when distributedAccounts is empty', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+
+      await expect(
+        service.distributionTransactions({
+          data: { creditId: creditAccount.id, description: null, distributedAccounts: [] },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when creditId is among distribution targets', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount();
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [
+              { debitId: debit.id, amount: 1000 },
+              { debitId: creditAccount.id, amount: 1000 },
+            ],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when a debitId is duplicated', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount();
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [
+              { debitId: debit.id, amount: 1000 },
+              { debitId: debit.id, amount: 2000 },
+            ],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when an amount is zero', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount();
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [{ debitId: debit.id, amount: 0 }],
+          },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when an amount is negative', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount();
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [{ debitId: debit.id, amount: -1000 }],
+          },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when an amount is not an integer', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount();
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [{ debitId: debit.id, amount: 10.5 }],
+          },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when credit account is not found', async () => {
+      const debit = await createAccount();
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: 999999,
+            description: null,
+            distributedAccounts: [{ debitId: debit.id, amount: 1000 }],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when credit account has insufficient funds and roll back', async () => {
+      const creditAccount = await createAccount({ balance: '1000', available: '1000' });
+      const debit = await createAccount();
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [{ debitId: debit.id, amount: 5000 }],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect((await getAccount(creditAccount.id)).balance).toBe('1000');
+      expect((await getAccount(debit.id)).balance).toBe('0');
+      const transfers = await findTransactions({ operationType: OperationType.TRANSFER });
+      expect(transfers).toHaveLength(0);
+    });
+
+    it('should throw when a debit account is not found', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [{ debitId: 999999, amount: 1000 }],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when a debit account is not active', async () => {
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount({ status: AccountStatus.FREEZED });
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [{ debitId: debit.id, amount: 1000 }],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when a debit account has a different currency', async () => {
+      const eur = await dataSource.getRepository(CurrencyEntity).save({
+        name: 'Euro',
+        status: CurrencyStatus.ACTIVE,
+        code: 'EUR',
+      });
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount({ currencyId: eur.id });
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [{ debitId: debit.id, amount: 1000 }],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when a debit account is in a different money storage', async () => {
+      const otherStorage = await dataSource.getRepository(MoneyStoragesEntity).save({
+        name: 'Other Storage',
+        status: MoneyStorageStatus.ACTIVE,
+        code: 'OTHER',
+        type: MoneyStorageType.COMMON,
+      });
+      const creditAccount = await createAccount({ balance: '5000', available: '5000' });
+      const debit = await createAccount({ moneyStorageId: otherStorage.id });
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [{ debitId: debit.id, amount: 1000 }],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should roll back the whole distribution when one target is invalid', async () => {
+      const eur = await dataSource.getRepository(CurrencyEntity).save({
+        name: 'Euro2',
+        status: CurrencyStatus.ACTIVE,
+        code: 'EU2',
+      });
+      const creditAccount = await createAccount({ balance: '100000', available: '100000' });
+      const validDebit = await createAccount();
+      const invalidDebit = await createAccount({ currencyId: eur.id });
+
+      await expect(
+        service.distributionTransactions({
+          data: {
+            creditId: creditAccount.id,
+            description: null,
+            distributedAccounts: [
+              { debitId: validDebit.id, amount: 10000 },
+              { debitId: invalidDebit.id, amount: 5000 },
+            ],
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect((await getAccount(creditAccount.id)).balance).toBe('100000');
+      expect((await getAccount(validDebit.id)).balance).toBe('0');
+      const transfers = await findTransactions({ operationType: OperationType.TRANSFER });
+      expect(transfers).toHaveLength(0);
+    });
+  });
+
   // ─── getTransactionsList ──────────────────────────────────────
 
   describe('getTransactionsList', () => {

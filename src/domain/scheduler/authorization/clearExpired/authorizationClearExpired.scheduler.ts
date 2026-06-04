@@ -8,7 +8,7 @@ import { AuthorizationService } from '@services/authorization/authorization.serv
 const DAEMON_NAME = 'daemonAuthorizationClearExpired';
 
 @Injectable()
-export class AuthorizationClearExpiredSheduler {
+export class AuthorizationClearExpiredScheduler {
   constructor(
     @Inject(Resources.LOGGER) private readonly logger: Logger,
     private readonly authorizationService: AuthorizationService,

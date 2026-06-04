@@ -12,6 +12,7 @@ import {
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { AccountStatus } from '@postgresql/repositories/cashier/accounts/accounts.types';
 import { TransactionStatus } from '@postgresql/repositories/cashier/transactions/transactions.types';
+import { Where } from '@postgresql/repositories/common/common.types';
 import {
   FoundAndCounted,
   ID,
@@ -454,6 +455,14 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
     return [resp, count];
   }
 
+  public async getAccountsCount({
+    filter
+  }: {
+    filter: AccountsWithStorageFilter;
+  }): Promise<number> {
+    return super.count({ where: this.buildWhereForAccountsWithStorage({ filter }) });
+  }
+
   public async getRawAccountsList({
     pagination,
     order,
@@ -465,24 +474,7 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
   }): Promise<FoundAndCounted<AccountEntity>> {
     return super.findAndCount({
       pagination,
-      where: [
-        ...(filter?.query && AccountEntity.checkLikeId(filter?.query) ? [{ id: Number(filter.query) }] : []),
-        {
-          ...(filter?.name && { name: filter.name }),
-          ...(filter?.query ? { name: ILike(`%${filter.query}%`) } : {}),
-          ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
-          ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
-          ...(filter?.status && { status: In(filter.status) }),
-          ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
-          ...(filter?.ids && { id: In(filter.ids) }),
-          ...((filter?.balanceFrom || filter?.balanceTo) && {
-            balance: And(
-              ...(filter?.balanceFrom ? [MoreThanOrEqual(filter.balanceFrom.toString())] : []),
-              ...(filter?.balanceTo ? [LessThanOrEqual(filter.balanceTo.toString())] : []),
-            )
-          }),
-        },
-      ],
+      where: filter && this.buildWhereForAccountsWithStorage({ filter }),
       order,
     });
   }
@@ -554,6 +546,31 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
 
   public forTx(deps: TxOpsDeps): AccountsTxOps {
     return new AccountsTxOps(deps);
+  }
+
+  private buildWhereForAccountsWithStorage({
+    filter,
+  }: {
+    filter: AccountsWithStorageFilter;
+  }): Where<AccountEntity> {
+    return [
+      ...(filter?.query && AccountEntity.checkLikeId(filter?.query) ? [{ id: Number(filter.query) }] : []),
+      {
+        ...(filter?.name && { name: filter.name }),
+        ...(filter?.query ? { name: ILike(`%${filter.query}%`) } : {}),
+        ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
+        ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
+        ...(filter?.status && { status: In(filter.status) }),
+        ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
+        ...(filter?.ids && { id: In(filter.ids) }),
+        ...((filter?.balanceFrom || filter?.balanceTo) && {
+          balance: And(
+            ...(filter?.balanceFrom ? [MoreThanOrEqual(filter.balanceFrom.toString())] : []),
+            ...(filter?.balanceTo ? [LessThanOrEqual(filter.balanceTo.toString())] : []),
+          )
+        }),
+      },
+    ];
   }
 
   private async accountsEnrichment<T extends {

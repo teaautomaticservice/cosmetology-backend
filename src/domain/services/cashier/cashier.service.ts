@@ -47,6 +47,7 @@ import {
 import {
   CreateOpenBalanceObligationTransaction,
   CreateTransaction,
+  DistributionTransactions,
   LentRepaymentTransaction,
   LentTransaction,
   LoanRepaymentTransaction,
@@ -86,7 +87,7 @@ export class CashierService {
       });
     }
 
-    this.currenciesProvider.create({
+    await this.currenciesProvider.create({
       ...data,
       status: CurrencyStatus.ACTIVE,
     });
@@ -165,7 +166,7 @@ export class CashierService {
 
     const result = await this.moneyStoragesProvider.create(data);
 
-    this.logger.warn('moneyStorage created bu user', {
+    this.logger.warn('moneyStorage created by user', {
       newData: data,
       result,
     });
@@ -193,7 +194,7 @@ export class CashierService {
 
     const result = await this.moneyStoragesProvider.create(data);
 
-    this.logger.warn('obligationStorage created bu user', {
+    this.logger.warn('obligationStorage created by user', {
       newData: data,
       result,
     });
@@ -214,7 +215,7 @@ export class CashierService {
       );
     }
 
-    this.logger.warn('moneyStorage deleted bu user', {
+    this.logger.warn('moneyStorage deleted by user', {
       entity,
     });
 
@@ -329,7 +330,7 @@ export class CashierService {
     if (!currency || currency.status === CurrencyStatus.DISABLED) {
       throw new BadRequestException(VALIDATION_ERROR, {
         cause: {
-          currencyId: [`Currency shout be is active`],
+          currencyId: [`Currency should be active`],
         },
       });
     }
@@ -409,7 +410,7 @@ export class CashierService {
     const entity = await this.accountsProvider.findById(accountId);
 
     if (!entity) {
-      throw new BadRequestException(`Incorrect ID: '${accountId}' for currency`);
+      throw new BadRequestException(`Incorrect ID: '${accountId}' for account`);
     }
 
     if (!(entity.status === AccountStatus.CREATED || entity.status === AccountStatus.DEACTIVATED)) {
@@ -424,7 +425,7 @@ export class CashierService {
       );
     }
 
-    this.logger.warn('account deleted bu user', {
+    this.logger.warn('account deleted by user', {
       entity,
     });
 
@@ -444,14 +445,10 @@ export class CashierService {
       );
     }
 
-    const [_, count] = await this.accountsProvider.getRawAccountsList({
+    const count = await this.accountsProvider.getAccountsCount({
       filter: {
         currenciesIds: [entity.id],
         status: [AccountStatus.ACTIVE, AccountStatus.FREEZED],
-      },
-      pagination: {
-        page: 1,
-        pageSize: 10,
       },
     });
 
@@ -461,7 +458,7 @@ export class CashierService {
       );
     }
 
-    this.logger.warn('currency deleted bu user', {
+    this.logger.warn('currency deleted by user', {
       entity,
     });
 
@@ -479,11 +476,7 @@ export class CashierService {
     }
 
     if (newData.status === CurrencyStatus.DISABLED) {
-      const [_, countAccounts] = await this.accountsProvider.getRawAccountsList({
-        pagination: {
-          page: 1,
-          pageSize: 10,
-        },
+      const countAccounts = await this.accountsProvider.getAccountsCount({
         filter: {
           currenciesIds: [entity.id],
           notStatus: [AccountStatus.DEACTIVATED],
@@ -583,7 +576,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Open Balance');
     }
 
@@ -643,7 +636,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Open Balance Obligation');
     }
 
@@ -693,7 +686,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Cash Out');
     }
 
@@ -745,7 +738,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Receipt');
     }
 
@@ -787,7 +780,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(newTransaction)) {
+    if (!newTransaction) {
       throw new InternalServerErrorException('Error creating transaction Transfer');
     }
 
@@ -863,7 +856,7 @@ export class CashierService {
           moneyStorageId: obligationStorageId,
           amount: bigAmount.toString(),
           currencyId: creditAccount.currencyId,
-          description: 'Automatic create while taken loan',
+          description: 'Automatic create while taking a loan',
         });
       }
 
@@ -882,7 +875,7 @@ export class CashierService {
       return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+    if (!newTransaction || !newObligationTransaction) {
       throw new InternalServerErrorException('Error creating transaction Loan');
     }
 
@@ -963,7 +956,7 @@ export class CashierService {
       return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+    if (!newTransaction || !newObligationTransaction) {
       throw new InternalServerErrorException('Error creating transaction Loan Repayment');
     }
 
@@ -1034,7 +1027,7 @@ export class CashierService {
           moneyStorageId: creditObligationStorageId,
           amount: (-bigAmount).toString(),
           currencyId: creditAccount.currencyId,
-          description: 'Automatic create while give lent',
+          description: 'Automatic create while giving a lent',
         });
       }
 
@@ -1052,7 +1045,7 @@ export class CashierService {
       return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+    if (!newTransaction || !newObligationTransaction) {
       throw new InternalServerErrorException('Error creating transaction Lent');
     }
 
@@ -1117,7 +1110,7 @@ export class CashierService {
       return [transaction, obligationTransaction];
     });
 
-    if (!Boolean(newTransaction) || !Boolean(newObligationTransaction)) {
+    if (!newTransaction || !newObligationTransaction) {
       throw new InternalServerErrorException('Error creating transaction Lent Repayment');
     }
 
@@ -1159,7 +1152,7 @@ export class CashierService {
 
       if (!originalCreditId) {
         throw new InternalServerErrorException(
-          `${COMMON_TRANSACTION_ERROR} Account ${originalCreditId} should be exist`
+          `${COMMON_TRANSACTION_ERROR} Original transaction ${transactionId} has no creditId — cannot apply Refund In`
         );
       }
 
@@ -1210,7 +1203,7 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(refundTransaction)) {
+    if (!refundTransaction) {
       throw new InternalServerErrorException('Error creating transaction Refund In');
     }
 
@@ -1252,7 +1245,7 @@ export class CashierService {
 
       if (!originalDebitId) {
         throw new InternalServerErrorException(
-          `${COMMON_TRANSACTION_ERROR} Account ${originalDebitId} should be exist`
+          `${COMMON_TRANSACTION_ERROR} Original transaction ${transactionId} has no debitId — cannot apply Refund Out`
         );
       }
 
@@ -1303,9 +1296,94 @@ export class CashierService {
       });
     });
 
-    if (!Boolean(refundTransaction)) {
+    if (!refundTransaction) {
       throw new InternalServerErrorException('Error creating transaction Refund Out');
     }
+
+    return true;
+  }
+
+  public async distributionTransactions({
+    data,
+  }: {
+    data: DistributionTransactions;
+  }): Promise<boolean> {
+    const { creditId, distributedAccounts, description } = data;
+
+    if (!distributedAccounts || !distributedAccounts.length || !creditId) {
+      throw new BadRequestException('distributedAccounts and creditId are required for distribution');
+    }
+
+    const { accountsIdsSet, totalAmount } = distributedAccounts.reduce<{
+      accountsIdsSet: Set<number>;
+      totalAmount: bigint;
+    }>((acc, { debitId, amount }) => {
+      if (!debitId) {
+        throw new BadRequestException('debitId is required for distribution');
+      }
+
+      if (debitId === creditId) {
+        throw new BadRequestException('creditId cannot be among distribution targets');
+      }
+
+      if (acc.accountsIdsSet.has(debitId)) {
+        throw new BadRequestException(`Duplicate debitId ${debitId} in distribution`);
+      }
+
+      const validAmount = this.validateAmount(amount);
+
+      acc.accountsIdsSet.add(debitId);
+      acc.totalAmount = acc.totalAmount + BigInt(validAmount);
+
+      return acc;
+    }, { accountsIdsSet: new Set(), totalAmount: 0n });
+
+    const accountsIds = Array.from(accountsIdsSet);
+
+    await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([creditId, ...accountsIds]);
+
+      const creditAccount = this.checkAccount(accounts[creditId], {
+        context: `Credit account ${creditId}`,
+      });
+
+      await uow.accounts.decreaseBalance(creditAccount, totalAmount);
+
+      let previousTransaction!: TransactionEntity;
+
+      for (const { debitId, amount } of distributedAccounts) {
+        if (!debitId) {
+          throw new BadRequestException('debitId is required for distribution');
+        }
+
+        const currentDebitAccount = this.checkAccount(accounts[debitId], {
+          context: `Debit account ${debitId}`,
+          checkCurrencyId: creditAccount.currencyId,
+          checkMoneyStorageId: creditAccount.moneyStorageId,
+        });
+
+        const currentAmount = BigInt(amount);
+
+        await uow.accounts.increaseBalance(currentDebitAccount, currentAmount);
+
+        previousTransaction = await uow.transactions.createTransaction({
+          amount: currentAmount.toString(),
+          debitId,
+          creditId,
+          operationType: OperationType.TRANSFER,
+          description,
+          parentTransactionId: previousTransaction?.transactionId ?? null,
+        });
+      }
+
+      return previousTransaction;
+    });
+
+    this.logger.info('Creating distribution transaction', {
+      creditId,
+      accountsIds,
+      totalAmount: totalAmount.toString(),
+    });
 
     return true;
   }
@@ -1328,6 +1406,10 @@ export class CashierService {
       throw this.getTransactionAmountError(amount);
     }
 
+    if (!Number.isInteger(amount)) {
+      throw this.getTransactionAmountError(amount);
+    }
+
     if (amount < 0) {
       throw this.getTransactionAmountError(amount);
     }
@@ -1344,9 +1426,11 @@ export class CashierService {
     {
       context,
       checkCurrencyId,
+      checkMoneyStorageId,
     }: {
       context?: string;
       checkCurrencyId?: ID;
+      checkMoneyStorageId?: ID;
     } = {}): AccountEntity {
     if (!account) {
       throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Account not found. ${context}`);
@@ -1357,7 +1441,11 @@ export class CashierService {
     }
 
     if (checkCurrencyId && account.currencyId !== checkCurrencyId) {
-      throw new BadRequestException('Accounts must have the same currency');
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Accounts must have the same currency. ${context}`);
+    }
+
+    if (checkMoneyStorageId && account.moneyStorageId !== checkMoneyStorageId) {
+      throw new BadRequestException(`${COMMON_TRANSACTION_ERROR} Accounts must have the same Money Storage. ${context}`);
     }
 
     return account;

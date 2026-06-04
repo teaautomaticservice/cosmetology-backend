@@ -67,3 +67,14 @@ export type RefundInTransaction = Pick<RecordEntity<
   'transactionId' |
   'description'
 > & { amount: number };
+
+type DistributedAccountTransaction = Pick<RecordEntity<
+  TransactionEntity>,
+  'debitId'
+> & { amount: number };
+
+export type DistributionTransactions = Pick<RecordEntity<
+  TransactionEntity>,
+  'creditId' |
+  'description'
+> & { distributedAccounts: DistributedAccountTransaction[] };
