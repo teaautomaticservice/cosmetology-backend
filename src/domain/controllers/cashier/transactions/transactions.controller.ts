@@ -344,7 +344,7 @@ export class TransactionsController {
     type: CreateDistributionDto,
   })
   @ApiOkResponse({
-    description: 'New transaction Refund Out successful created',
+    description: 'New distributions accounts transaction successful created',
   })
   public async distribution(
     @Body() transactionReq: CreateDistributionDto,
