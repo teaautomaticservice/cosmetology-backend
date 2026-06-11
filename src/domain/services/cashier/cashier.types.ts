@@ -1,5 +1,5 @@
 import { TransactionEntity } from '@postgresql/repositories/cashier/transactions/transactions.entity';
-import { RecordEntity } from '@providers/common/common.type';
+import { ID, RecordEntity } from '@providers/common/common.type';
 
 export type CreateOpenBalanceObligationTransaction = Pick<RecordEntity<
   TransactionEntity>,
@@ -78,3 +78,12 @@ export type DistributionTransactions = Pick<RecordEntity<
   'creditId' |
   'description'
 > & { distributedAccounts: DistributedAccountTransaction[] };
+
+export type SwapTransactions = {
+  amount: number;
+  firstCreditId: ID;
+  firstDebitId: ID;
+  secondCreditId: ID;
+  secondDebitId: ID;
+  description: string | null;
+};
