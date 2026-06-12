@@ -245,6 +245,13 @@ export class AccountsController {
   @ApiQuery({
     name: 'moneyStoragesIds',
     required: false,
+    type: 'number',
+    isArray: true,
+  })
+  @ApiQuery({
+    name: 'notMoneyStoragesIds',
+    required: false,
+    type: 'number',
     isArray: true,
   })
   @ApiQuery({
@@ -279,6 +286,7 @@ export class AccountsController {
     @Query('sort', ParseString) sort?: SortAccountsByStorages,
     @Query('order', ParseSortOrderPipe) order?: 1 | -1,
     @Query('moneyStoragesIds', parseArrayNumbers) moneyStoragesIds?: number[],
+    @Query('notMoneyStoragesIds', parseArrayNumbers) notMoneyStoragesIds?: number[],
     @Query('status', ParseArray) status?: AccountStatus[],
     @Query('query', ParseString) query?: string,
     @QueryInt('balanceFrom') balanceFrom?: number,
@@ -296,6 +304,7 @@ export class AccountsController {
       }),
       filter: {
         moneyStoragesIds,
+        notMoneyStoragesIds,
         status,
         query,
         balanceFrom,

@@ -14,6 +14,7 @@ export type AccountsWithStorageFilter = {
   notStatus?: AccountEntity['status'][];
   currenciesIds?: ID[];
   moneyStoragesIds?: ID[];
+  notMoneyStoragesIds?: ID[];
   query?: string;
   balanceFrom?: number;
   balanceTo?: number;
