@@ -26,6 +26,7 @@ import { NewLoanRepaymentDto } from './dtos/newLoanRepayment.dto';
 import { NewOpenBalanceObligationDto } from './dtos/newOpenBalanceObligation.dto';
 import { NewRefundInDto } from './dtos/newRefundIn.dto';
 import { NewRefundOutDto } from './dtos/newRefundOut.dto';
+import { NewSwapDto } from './dtos/newSwap.dto';
 import { NewTransactionDto } from './dtos/newTransaction.dto';
 import { NewTransferDto } from './dtos/newTransferDto.dto';
 import { TransactionsPaginated } from './dtos/transactionsPaginated.dto';
@@ -353,5 +354,22 @@ export class TransactionsController {
       data: transactionReq,
     });
     return resp;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('/swap')
+  @ApiBody({
+    description: 'Swap',
+    type: NewSwapDto,
+  })
+  @ApiOkResponse({
+    description: 'New transactions swap successful created',
+  })
+  public async swap(
+    @Body() transactionReq: NewSwapDto,
+  ): Promise<boolean> {
+    return this.cashierService.swapTransactions({
+      data: transactionReq,
+    });
   }
 }

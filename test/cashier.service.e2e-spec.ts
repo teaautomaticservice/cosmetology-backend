@@ -1725,6 +1725,269 @@ describe('CashierService transactions (integration)', () => {
     });
   });
 
+  // ─── swapTransactions ─────────────────────────────────────────
+
+  describe('swapTransactions', () => {
+    /**
+     * Builds a valid two-storage swap setup:
+     *   storage X (default `storage`): firstCredit (funded), secondDebit
+     *   storage Y (created here):      firstDebit, secondCredit (funded)
+     */
+    const setupSwap = async (overrides: {
+      firstCredit?: Partial<AccountEntity>;
+      firstDebit?: Partial<AccountEntity>;
+      secondCredit?: Partial<AccountEntity>;
+      secondDebit?: Partial<AccountEntity>;
+    } = {}): Promise<{
+      storageY: MoneyStoragesEntity;
+      firstCredit: AccountEntity;
+      firstDebit: AccountEntity;
+      secondCredit: AccountEntity;
+      secondDebit: AccountEntity;
+    }> => {
+      const storageY = await dataSource.getRepository(MoneyStoragesEntity).save({
+        name: 'Storage Y',
+        status: MoneyStorageStatus.ACTIVE,
+        code: 'STORE_Y',
+        type: MoneyStorageType.COMMON,
+      });
+
+      const firstCredit = await createAccount({
+        balance: '100000',
+        available: '100000',
+        ...overrides.firstCredit,
+      });
+      const secondDebit = await createAccount({ ...overrides.secondDebit });
+      const firstDebit = await createAccount({
+        moneyStorageId: storageY.id,
+        ...overrides.firstDebit,
+      });
+      const secondCredit = await createAccount({
+        moneyStorageId: storageY.id,
+        balance: '100000',
+        available: '100000',
+        ...overrides.secondCredit,
+      });
+
+      return {
+        storageY, firstCredit, firstDebit, secondCredit, secondDebit
+      };
+    };
+
+    it('should swap the same amount between two storages', async () => {
+      const { firstCredit, firstDebit, secondCredit, secondDebit } = await setupSwap();
+
+      const ok = await service.swapTransactions({
+        data: {
+          amount: 5000,
+          firstCreditId: firstCredit.id,
+          firstDebitId: firstDebit.id,
+          secondCreditId: secondCredit.id,
+          secondDebitId: secondDebit.id,
+          description: 'Storage swap',
+        },
+      });
+      expect(ok).toBe(true);
+
+      const firstTx = await getOneTransaction({
+        operationType: OperationType.TRANSFER,
+        parentTransactionId: IsNull(),
+      });
+      expect(firstTx.status).toBe(TransactionStatus.COMPLETED);
+      expect(firstTx.amount).toBe('5000');
+      expect(firstTx.creditId).toBe(firstCredit.id);
+      expect(firstTx.debitId).toBe(firstDebit.id);
+
+      const secondTx = await getOneTransaction({
+        operationType: OperationType.TRANSFER,
+        parentTransactionId: firstTx.transactionId,
+      });
+      expect(secondTx.amount).toBe('5000');
+      expect(secondTx.creditId).toBe(secondCredit.id);
+      expect(secondTx.debitId).toBe(secondDebit.id);
+      expect(secondTx.description).toBe('Storage swap');
+
+      expect((await getAccount(firstCredit.id)).balance).toBe('95000');
+      expect((await getAccount(firstDebit.id)).balance).toBe('5000');
+      expect((await getAccount(secondCredit.id)).balance).toBe('95000');
+      expect((await getAccount(secondDebit.id)).balance).toBe('5000');
+    });
+
+    it('should throw when account ids are not unique', async () => {
+      const { firstCredit, firstDebit, secondDebit } = await setupSwap();
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: 5000,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: firstCredit.id,
+            secondDebitId: secondDebit.id,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when amount is zero', async () => {
+      const { firstCredit, firstDebit, secondCredit, secondDebit } = await setupSwap();
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: 0,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: secondCredit.id,
+            secondDebitId: secondDebit.id,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when amount is negative', async () => {
+      const { firstCredit, firstDebit, secondCredit, secondDebit } = await setupSwap();
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: -5000,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: secondCredit.id,
+            secondDebitId: secondDebit.id,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when amount is not an integer', async () => {
+      const { firstCredit, firstDebit, secondCredit, secondDebit } = await setupSwap();
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: 10.5,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: secondCredit.id,
+            secondDebitId: secondDebit.id,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
+    });
+
+    it('should throw when an account is not found', async () => {
+      const { firstCredit, firstDebit, secondCredit } = await setupSwap();
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: 5000,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: secondCredit.id,
+            secondDebitId: 999999,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when an account is not active', async () => {
+      const { firstCredit, firstDebit, secondCredit, secondDebit } = await setupSwap({
+        firstDebit: { status: AccountStatus.FREEZED },
+      });
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: 5000,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: secondCredit.id,
+            secondDebitId: secondDebit.id,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when accounts have different currencies', async () => {
+      const eur = await dataSource.getRepository(CurrencyEntity).save({
+        name: 'Euro',
+        status: CurrencyStatus.ACTIVE,
+        code: 'EUR',
+      });
+      const { firstCredit, firstDebit, secondCredit, secondDebit } = await setupSwap({
+        firstDebit: { currencyId: eur.id },
+      });
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: 5000,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: secondCredit.id,
+            secondDebitId: secondDebit.id,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw when storage topology is violated', async () => {
+      const { firstCredit, firstDebit, secondCredit, secondDebit } = await setupSwap({
+        secondCredit: { moneyStorageId: storage.id },
+      });
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: 5000,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: secondCredit.id,
+            secondDebitId: secondDebit.id,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should roll back the whole swap when the second leg has insufficient funds', async () => {
+      const { firstCredit, firstDebit, secondCredit, secondDebit } = await setupSwap({
+        secondCredit: { balance: '100', available: '100' },
+      });
+
+      await expect(
+        service.swapTransactions({
+          data: {
+            amount: 5000,
+            firstCreditId: firstCredit.id,
+            firstDebitId: firstDebit.id,
+            secondCreditId: secondCredit.id,
+            secondDebitId: secondDebit.id,
+            description: null,
+          },
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect((await getAccount(firstCredit.id)).balance).toBe('100000');
+      expect((await getAccount(firstDebit.id)).balance).toBe('0');
+      expect((await getAccount(secondCredit.id)).balance).toBe('100');
+      expect((await getAccount(secondDebit.id)).balance).toBe('0');
+
+      const transfers = await findTransactions({ operationType: OperationType.TRANSFER });
+      expect(transfers).toHaveLength(0);
+    });
+  });
+
   // ─── getTransactionsList ──────────────────────────────────────
 
   describe('getTransactionsList', () => {

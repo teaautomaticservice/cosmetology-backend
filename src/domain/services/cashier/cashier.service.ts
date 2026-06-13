@@ -53,7 +53,8 @@ import {
   LoanRepaymentTransaction,
   LoanTransaction,
   RefundInTransaction,
-  RefundOutTransaction
+  RefundOutTransaction,
+  SwapTransactions
 } from './cashier.types';
 
 @Injectable()
@@ -1383,6 +1384,98 @@ export class CashierService {
       creditId,
       accountsIds,
       totalAmount: totalAmount.toString(),
+    });
+
+    return true;
+  }
+
+  public async swapTransactions({
+    data,
+  }: {
+    data: SwapTransactions;
+  }): Promise<boolean> {
+    const {
+      amount,
+      firstCreditId,
+      firstDebitId,
+      secondCreditId,
+      secondDebitId,
+      description
+    } = data;
+
+    if (!firstCreditId || !firstDebitId || !secondCreditId || !secondDebitId) {
+      throw new BadRequestException('swapTransactions error. ALl transactions should be exist');
+    }
+
+    const accountIds = [firstCreditId, firstDebitId, secondCreditId, secondDebitId];
+
+    if (new Set(accountIds).size !== accountIds.length) {
+      throw new BadRequestException('swapTransactions error. All accounts must be unique');
+    }
+
+    const validAmount = this.validateAmount(amount);
+    const formatAmount = BigInt(validAmount);
+
+    await this.cashierTxRunner.run(async (uow) => {
+      const accounts = await uow.accounts.findManyForUpdate([
+        firstCreditId,
+        firstDebitId,
+        secondCreditId,
+        secondDebitId,
+      ]);
+
+      const firstCreditAccount = this.checkAccount(accounts[firstCreditId], {
+        context: `First credit account ${firstCreditId}`,
+      });
+
+      const firstDebitAccount = this.checkAccount(accounts[firstDebitId], {
+        context: `First debit account ${firstDebitId}`,
+        checkCurrencyId: firstCreditAccount.currencyId,
+      });
+
+      const secondCreditAccount = this.checkAccount(accounts[secondCreditId], {
+        context: `Second credit account ${secondCreditId}`,
+        checkCurrencyId: firstCreditAccount.currencyId,
+        checkMoneyStorageId: firstDebitAccount.moneyStorageId,
+      });
+
+      const secondDebitAccount = this.checkAccount(accounts[secondDebitId], {
+        context: `Second debit account ${secondDebitId}`,
+        checkCurrencyId: firstCreditAccount.currencyId,
+        checkMoneyStorageId: firstCreditAccount.moneyStorageId,
+      });
+
+      await uow.accounts.decreaseBalance(firstCreditAccount, formatAmount);
+      await uow.accounts.increaseBalance(firstDebitAccount, formatAmount);
+
+      const firstTransaction = await uow.transactions.createTransaction({
+        amount: formatAmount.toString(),
+        debitId: firstDebitId,
+        creditId: firstCreditId,
+        operationType: OperationType.TRANSFER,
+        description,
+      });
+
+      await uow.accounts.decreaseBalance(secondCreditAccount, formatAmount);
+      await uow.accounts.increaseBalance(secondDebitAccount, formatAmount);
+
+      await uow.transactions.createTransaction({
+        amount: formatAmount.toString(),
+        debitId: secondDebitId,
+        creditId: secondCreditId,
+        operationType: OperationType.TRANSFER,
+        description,
+        parentTransactionId: firstTransaction.transactionId,
+      });
+    });
+
+    this.logger.info('Creating swap transactions', {
+      amount: amount.toString(),
+      firstCreditId,
+      firstDebitId,
+      secondCreditId,
+      secondDebitId,
+      description,
     });
 
     return true;

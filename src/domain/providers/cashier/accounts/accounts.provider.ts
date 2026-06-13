@@ -257,6 +257,10 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
           Array.isArray(filter?.moneyStoragesIds) && filter?.moneyStoragesIds.length ?
             filter?.moneyStoragesIds :
             moneyStoragesIds,
+        notMoneyStoragesIds:
+          Array.isArray(filter?.notMoneyStoragesIds) && filter?.notMoneyStoragesIds.length ?
+            filter?.notMoneyStoragesIds :
+            undefined,
       },
     });
 
@@ -558,10 +562,19 @@ export class AccountsProvider extends CommonPostgresqlProvider<AccountEntity> {
       {
         ...(filter?.name && { name: filter.name }),
         ...(filter?.query ? { name: ILike(`%${filter.query}%`) } : {}),
-        ...(filter?.moneyStoragesIds && { moneyStorageId: In(filter.moneyStoragesIds) }),
+        ...((filter?.moneyStoragesIds || filter?.notMoneyStoragesIds) && {
+          moneyStorageId: And(
+            ...(filter?.moneyStoragesIds ? [In(filter.moneyStoragesIds)] : []),
+            ...(filter?.notMoneyStoragesIds ? [Not(In(filter.notMoneyStoragesIds))] : []),
+          ),
+        }),
         ...(filter?.currenciesIds && { currencyId: In(filter.currenciesIds) }),
-        ...(filter?.status && { status: In(filter.status) }),
-        ...(filter?.notStatus && { status: Not(In(filter.notStatus)) }),
+        ...((filter?.status || filter?.notStatus) && {
+          status: And(
+            ...(filter?.status ? [In(filter.status)] : []),
+            ...(filter?.notStatus ? [Not(In(filter.notStatus))] : []),
+          ),
+        }),
         ...(filter?.ids && { id: In(filter.ids) }),
         ...((filter?.balanceFrom || filter?.balanceTo) && {
           balance: And(
